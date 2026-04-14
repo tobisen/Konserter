@@ -113,6 +113,25 @@ async function logout() {
   passwordStatus.value = ''
 }
 
+function scrollToSection(sectionId) {
+  const element = document.getElementById(sectionId)
+
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+async function handleAuthMenuAction() {
+  if (isAuthenticated.value) {
+    await logout()
+    status.value = 'Du är utloggad.'
+    scrollToSection('home')
+    return
+  }
+
+  scrollToSection('sources')
+}
+
 async function refreshConcerts() {
   concerts.value = await loadStoredConcerts()
 }
@@ -230,7 +249,19 @@ onMounted(async () => {
 
 <template>
   <main class="page">
-    <header class="hero">
+    <header class="site-header">
+      <p class="brand">Konsertnavigator</p>
+      <nav class="main-nav" aria-label="Huvudmeny">
+        <button class="nav-link" @click="scrollToSection('home')">Hem</button>
+        <button class="nav-link" @click="scrollToSection('sources')">Källor</button>
+        <button class="nav-link" @click="scrollToSection('concerts')">Spelningar</button>
+        <button class="nav-link" @click="handleAuthMenuAction">
+          {{ isAuthenticated ? 'Logga ut' : 'Logga in' }}
+        </button>
+      </nav>
+    </header>
+
+    <header id="home" class="hero">
       <p class="kicker">Konsertnavigator</p>
       <h1>Hantera källor och samla konserter</h1>
       <p class="lead">
@@ -250,7 +281,7 @@ onMounted(async () => {
       <p class="lead">Laddar inloggningsstatus...</p>
     </section>
 
-    <section v-else-if="isAuthenticated" class="hero source-panel">
+    <section v-else-if="isAuthenticated" id="sources" class="hero source-panel">
       <div class="auth-header">
         <h2>Källor</h2>
         <button class="link-button" @click="logout">Logga ut</button>
@@ -300,7 +331,7 @@ onMounted(async () => {
       <p v-if="passwordStatus" class="updated">{{ passwordStatus }}</p>
     </section>
 
-    <section v-else class="hero source-panel">
+    <section v-else id="sources" class="hero source-panel">
       <h2>Admin-inloggning</h2>
       <p class="lead">Endast inloggad admin kan lägga till och ta bort källor.</p>
 
@@ -322,7 +353,7 @@ onMounted(async () => {
       </ul>
     </section>
 
-    <section v-if="groupedByYear.length" class="list">
+    <section v-if="groupedByYear.length" id="concerts" class="list">
       <article v-for="group in groupedByYear" :key="group.year" class="year-group">
         <h2>{{ group.year }}</h2>
 
@@ -345,7 +376,7 @@ onMounted(async () => {
       </article>
     </section>
 
-    <section v-else class="hero">
+    <section v-else id="concerts" class="hero">
       <p class="lead">Inga konserter lagrade än.</p>
     </section>
   </main>
