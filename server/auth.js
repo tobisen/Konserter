@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import {
   changeAdminPassword,
   verifyAdminCredentials
-} from './adminCredentials'
+} from './adminCredentials.js'
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const sessions = new Map()

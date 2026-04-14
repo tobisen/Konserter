@@ -5,14 +5,14 @@ import {
   handleLogin,
   handleLogout,
   requireAuth
-} from './auth'
-import { fetchConcertsFromUrl, handleSourceEventsRequest } from './sourceEvents'
+} from './auth.js'
+import { fetchConcertsFromUrl, handleSourceEventsRequest } from './sourceEvents.js'
 import {
   loadConcertsFromFile,
   loadSourcesFromFile,
   saveConcertsToFile,
   saveSourcesToFile
-} from './storage'
+} from './storage.js'
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode

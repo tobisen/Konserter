@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { handleApiRequest } from './server/api'
+import { handleApiRequest } from './server/api.js'
 
 function apiPlugin() {
   return {

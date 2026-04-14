@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import {
   loadAdminCredentialsFromStore,
   saveAdminCredentialsToStore
-} from './storage'
+} from './storage.js'
 
 function parsePasswordHash(hash) {
   if (!hash || typeof hash !== 'string') return null
