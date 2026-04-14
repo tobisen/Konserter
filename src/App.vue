@@ -83,6 +83,8 @@ const deselectedGenres = ref([])
 const concertsSearch = ref('')
 const filtersExpanded = ref(false)
 const concertsSubView = ref('upcoming')
+const sharedConcertId = ref('')
+const shareStatus = ref('')
 
 const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' })
@@ -328,6 +330,11 @@ const groupedByYearAndMonth = computed(() => {
           )
         }))
     }))
+})
+
+const sharedConcert = computed(() => {
+  if (!sharedConcertId.value) return null
+  return concerts.value.find((concert) => getConcertId(concert) === sharedConcertId.value) || null
 })
 
 const favoriteConcerts = computed(() => {
@@ -621,6 +628,45 @@ function formatStatusDate(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return 'Okänd'
   return updatedAtFormatter.format(date)
+}
+
+function buildSharedConcertUrl(concert) {
+  const concertId = getConcertId(concert)
+  if (!concertId) return window.location.href
+
+  const url = new URL(window.location.href)
+  url.searchParams.set('concert', concertId)
+  url.searchParams.set('view', 'concerts')
+  return url.toString()
+}
+
+async function shareConcert(concert) {
+  const shareUrl = buildSharedConcertUrl(concert)
+  const title = `${concert?.artist || 'Spelning'} – ${concert?.venue || 'Okänd scen'}`
+  const text = 'Kolla in den här spelningen i Konsertnavigator'
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text, url: shareUrl })
+      shareStatus.value = 'Länk delad.'
+      return
+    }
+  } catch {
+    // Fallback to clipboard below if native share fails or is cancelled.
+  }
+
+  try {
+    await navigator.clipboard.writeText(shareUrl)
+    shareStatus.value = 'Länk kopierad.'
+  } catch {
+    window.prompt('Kopiera länken:', shareUrl)
+    shareStatus.value = 'Delningslänk skapad.'
+  }
+}
+
+async function handleSharedConcertCta() {
+  if (!sharedConcert.value) return
+  await toggleFavorite(sharedConcert.value)
 }
 
 async function trackVisitor() {
@@ -1045,10 +1091,15 @@ async function submitPasswordChange() {
 onMounted(async () => {
   const url = new URL(window.location.href)
   const tokenFromUrl = url.searchParams.get('resetToken')
+  const sharedConcertFromUrl = url.searchParams.get('concert')
   if (tokenFromUrl) {
     resetToken.value = tokenFromUrl
     showResetForm.value = true
     currentView.value = 'my-concerts'
+  }
+  if (sharedConcertFromUrl) {
+    sharedConcertId.value = sharedConcertFromUrl
+    currentView.value = 'concerts'
   }
 
   try {
@@ -1120,6 +1171,9 @@ watch(favoriteArtistSuggestionConcerts, () => {
     <section v-if="status" class="hero">
       <p class="updated">{{ status }}</p>
     </section>
+    <section v-if="shareStatus" class="hero">
+      <p class="updated">{{ shareStatus }}</p>
+    </section>
 
     <section v-if="!authReady" class="hero">
       <p class="lead">Laddar inloggningsstatus...</p>
@@ -1181,6 +1235,7 @@ watch(favoriteArtistSuggestionConcerts, () => {
                   Var där
                 </button>
                 <button class="mini-action-button" type="button" @click="downloadCalendarEvent(concert)"> Lägg till i kalender </button>
+                <button class="mini-action-button" type="button" @click="shareConcert(concert)">Dela</button>
               </div>
               <button
                 class="heart-button"
@@ -1227,7 +1282,7 @@ watch(favoriteArtistSuggestionConcerts, () => {
           <li>
             <div>
               <strong>Spelningar</strong>
-              <p>Visa kommande/tidigare spelningar, filtrera på källa/månad/genre och sök på artist/scen/stad.</p>
+              <p>Visa kommande/tidigare spelningar, filtrera på källa/månad/genre, sök på artist/scen/stad och dela en spelning med direktlänk.</p>
             </div>
           </li>
           <li>
@@ -1808,6 +1863,27 @@ watch(favoriteArtistSuggestionConcerts, () => {
         />
       </section>
 
+      <section v-if="currentView === 'concerts' && sharedConcert" class="hero shared-concert-cta">
+        <h2>Delad spelning</h2>
+        <p class="lead">Det här är spelningen som delas:</p>
+        <p class="shared-concert-summary">
+          <strong>{{ sharedConcert.artist }}</strong>
+          <span>{{ formatDate(sharedConcert.date) }}</span>
+          <span>{{ sharedConcert.venue }}{{ sharedConcert.city ? `, ${sharedConcert.city}` : '' }}</span>
+        </p>
+        <p class="lead">Kortet är markerat i listan nedanför.</p>
+        <div class="actions">
+          <button class="refresh" type="button" @click="handleSharedConcertCta">
+            {{
+              isFavorite(sharedConcert)
+                ? `Ta bort ${sharedConcert.artist} från favoriter`
+                : `Spara ${sharedConcert.artist} i favoriter`
+            }}
+          </button>
+          <button class="nav-link" type="button" @click="setView('my-concerts')">Öppna Mina Spelningar</button>
+        </div>
+      </section>
+
       <section v-if="currentView === 'concerts' && groupedByYearAndMonth.length" class="list">
         <article v-for="group in groupedByYearAndMonth" :key="group.year" class="year-group">
           <h2>{{ group.year }}</h2>
@@ -1819,6 +1895,7 @@ watch(favoriteArtistSuggestionConcerts, () => {
               v-for="concert in monthGroup.concerts"
               :key="`${concert.artist}-${concert.date}-${concert.venue}`"
               class="card"
+              :class="{ highlighted: getConcertId(concert) === sharedConcertId }"
             >
               <div class="meta">
                 <img
@@ -1860,6 +1937,9 @@ watch(favoriteArtistSuggestionConcerts, () => {
                     type="button"
                     @click="downloadCalendarEvent(concert)"
                   > Lägg till i kalender </button>
+                  <button class="mini-action-button" type="button" @click="shareConcert(concert)">
+                    Dela
+                  </button>
                 </div>
                 <button
                   class="heart-button"
