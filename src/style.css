@@ -140,6 +140,10 @@ h2 {
   cursor: pointer;
 }
 
+.refresh.danger {
+  background: linear-gradient(120deg, #9a1f1f, #bf2f2f);
+}
+
 .refresh:disabled {
   cursor: not-allowed;
   opacity: 0.75;

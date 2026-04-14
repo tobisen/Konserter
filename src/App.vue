@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import {
+  clearStoredConcerts,
   loadStoredConcerts,
   updateConcertsFromSources
 } from './services/concertStore'
@@ -272,6 +273,35 @@ async function updateConcerts() {
   }
 }
 
+async function clearConcerts() {
+  if (!isAuthenticated.value) {
+    status.value = 'Du måste vara inloggad för att tömma listan.'
+    return
+  }
+
+  const shouldClear = window.confirm(
+    'Är du säker på att du vill tömma alla lagrade konserter? Detta kan inte ångras.'
+  )
+
+  if (!shouldClear) {
+    return
+  }
+
+  loading.value = true
+  status.value = ''
+  fetchErrors.value = []
+
+  try {
+    const result = await clearStoredConcerts()
+    concerts.value = result.concerts
+    status.value = `Rensade ${result.clearedCount} konserter från listan.`
+  } catch (error) {
+    status.value = error.message || 'Kunde inte tömma konserter.'
+  } finally {
+    loading.value = false
+  }
+}
+
 async function submitSource() {
   if (!isAuthenticated.value) {
     sourceStatus.value = 'Du måste vara inloggad för att ändra källor.'
@@ -385,6 +415,14 @@ onMounted(async () => {
       <div class="actions">
         <button class="refresh" @click="updateConcerts" :disabled="loading">
           {{ loading ? 'Uppdaterar...' : 'Uppdatera konserter' }}
+        </button>
+        <button
+          v-if="isAuthenticated"
+          class="refresh danger"
+          @click="clearConcerts"
+          :disabled="loading"
+        >
+          Töm konserter
         </button>
         <p v-if="status" class="updated">{{ status }}</p>
       </div>

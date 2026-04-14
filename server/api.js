@@ -237,6 +237,19 @@ async function handleUpdateConcerts(request, response) {
   })
 }
 
+async function handleClearConcerts(request, response) {
+  const user = requireAuth(request, response)
+  if (!user) return
+
+  const currentConcerts = await loadConcertsFromFile()
+  await saveConcertsToFile([])
+
+  sendJson(response, 200, {
+    concerts: [],
+    clearedCount: currentConcerts.length
+  })
+}
+
 export async function handleApiRequest(request, response) {
   const url = toUrl(request)
   const pathname = url.pathname.startsWith('/api')
@@ -300,6 +313,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/concerts/update' && request.method === 'POST') {
     await handleUpdateConcerts(request, response)
+    return
+  }
+
+  if (pathname === '/api/concerts/clear' && request.method === 'POST') {
+    await handleClearConcerts(request, response)
     return
   }
 

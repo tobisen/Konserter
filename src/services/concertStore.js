@@ -25,3 +25,16 @@ export async function updateConcertsFromSources() {
     errors: payload.errors || []
   }
 }
+
+export async function clearStoredConcerts() {
+  const response = await fetch('/api/concerts/clear', {
+    method: 'POST'
+  })
+
+  const payload = await parseJson(response)
+
+  return {
+    concerts: payload.concerts || [],
+    clearedCount: payload.clearedCount || 0
+  }
+}
