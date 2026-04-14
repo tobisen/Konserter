@@ -627,7 +627,7 @@ async function login() {
     loginPassword.value = ''
     await checkAuth()
     closeAuthModal()
-    setView('sources')
+    setView('admin')
   } finally {
     authLoading.value = false
   }
@@ -878,6 +878,13 @@ onMounted(async () => {
         >
           Mina Spelningar
         </button>
+        <button
+          class="nav-link"
+          :class="{ active: currentView === 'admin' }"
+          @click="setView('admin')"
+        >
+          Admin
+        </button>
         <button class="nav-link" @click="handleAuthButton">
           {{ isAuthenticated ? 'Logga ut admin' : 'Admin-inlogg' }}
         </button>
@@ -975,11 +982,29 @@ onMounted(async () => {
 
       <section v-if="currentView === 'sources'" class="hero source-panel">
         <h2>Källor</h2>
+        <ul v-if="sources.length" class="source-list source-name-list">
+          <li v-for="source in sources" :key="source.id">
+            <strong>{{ source.name }}</strong>
+          </li>
+        </ul>
+        <p v-else class="lead">Inga källor tillagda än.</p>
+      </section>
+
+      <section v-if="currentView === 'admin'" class="hero source-panel">
+        <h2>Admin</h2>
 
         <template v-if="isAuthenticated">
+          <div class="actions">
+            <button class="refresh" type="button" @click="updateConcerts" :disabled="loading">
+              {{ loading ? 'Uppdaterar...' : 'Uppdatera konserter' }}
+            </button>
+            <button class="refresh danger" type="button" @click="clearConcerts" :disabled="loading">
+              Töm konserter
+            </button>
+          </div>
+
           <p class="lead">
-            Du kan ange en vanlig webbsida eller en JSON-URL. Appen försöker extrahera event
-            automatiskt.
+            Här hanterar du källor, importkvalitet och admininställningar.
           </p>
 
           <form class="source-form" @submit.prevent="submitSource">
@@ -1032,16 +1057,8 @@ onMounted(async () => {
         </template>
 
         <template v-else>
-          <p class="lead">Logga in som admin för att lägga till eller ta bort källor.</p>
+          <p class="lead">Du behöver logga in som admin för att se denna vy.</p>
           <button class="refresh" @click="openAuthModal">Logga in</button>
-
-          <h2>Aktiva källor</h2>
-          <ul v-if="sources.length" class="source-list source-name-list">
-            <li v-for="source in sources" :key="source.id">
-              <strong>{{ source.name }}</strong>
-            </li>
-          </ul>
-          <p v-else class="lead">Inga källor tillagda än.</p>
         </template>
       </section>
 
@@ -1265,38 +1282,23 @@ onMounted(async () => {
       </section>
 
       <section v-if="currentView === 'concerts'" class="hero concerts-switch">
-        <div class="concerts-submenu-row">
-          <div class="main-nav concerts-submenu">
-            <button
-              class="nav-link"
-              :class="{ active: concertsSubView === 'upcoming' }"
-              type="button"
-              @click="setConcertsSubView('upcoming')"
-            >
-              Framtida
-            </button>
-            <button
-              class="nav-link"
-              :class="{ active: concertsSubView === 'past' }"
-              type="button"
-              @click="setConcertsSubView('past')"
-            >
-              Tidigare
-            </button>
-          </div>
-          <div v-if="isAuthenticated" class="main-nav concerts-submenu concerts-admin-actions">
-            <button class="nav-link nav-action" type="button" @click="updateConcerts" :disabled="loading">
-              {{ loading ? 'Uppdaterar...' : 'Uppdatera' }}
-            </button>
-            <button
-              class="nav-link nav-action nav-danger"
-              type="button"
-              @click="clearConcerts"
-              :disabled="loading"
-            >
-              Töm
-            </button>
-          </div>
+        <div class="main-nav concerts-submenu">
+          <button
+            class="nav-link"
+            :class="{ active: concertsSubView === 'upcoming' }"
+            type="button"
+            @click="setConcertsSubView('upcoming')"
+          >
+            Framtida
+          </button>
+          <button
+            class="nav-link"
+            :class="{ active: concertsSubView === 'past' }"
+            type="button"
+            @click="setConcertsSubView('past')"
+          >
+            Tidigare
+          </button>
         </div>
       </section>
 
