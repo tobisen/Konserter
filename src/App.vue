@@ -28,11 +28,29 @@ const passwordStatus = ref('')
 
 const newSourceName = ref('')
 const newSourceUrl = ref('')
+const deselectedSources = ref([])
+
+function getConcertSourceName(concert) {
+  const sourceName = String(concert?.sourceName || '').trim()
+  return sourceName || 'Okänd källa'
+}
+
+const availableSourceNames = computed(() => {
+  return [...new Set(concerts.value.map((concert) => getConcertSourceName(concert)))].sort((a, b) =>
+    a.localeCompare(b, 'sv-SE')
+  )
+})
+
+const filteredConcerts = computed(() => {
+  return concerts.value.filter(
+    (concert) => !deselectedSources.value.includes(getConcertSourceName(concert))
+  )
+})
 
 const groupedByYear = computed(() => {
   const groups = new Map()
 
-  for (const concert of concerts.value) {
+  for (const concert of filteredConcerts.value) {
     const year = new Date(concert.date).getFullYear()
 
     if (!groups.has(year)) {
@@ -49,6 +67,23 @@ const groupedByYear = computed(() => {
       concerts: items
     }))
 })
+
+function isSourceSelected(sourceName) {
+  return !deselectedSources.value.includes(sourceName)
+}
+
+function toggleSourceFilter(sourceName) {
+  if (isSourceSelected(sourceName)) {
+    deselectedSources.value = [...deselectedSources.value, sourceName]
+    return
+  }
+
+  deselectedSources.value = deselectedSources.value.filter((name) => name !== sourceName)
+}
+
+function selectAllSources() {
+  deselectedSources.value = []
+}
 
 function formatDate(isoDate) {
   return new Intl.DateTimeFormat('sv-SE', {
@@ -353,6 +388,29 @@ onMounted(async () => {
       </ul>
     </section>
 
+    <section v-if="availableSourceNames.length" class="hero source-filter">
+      <div class="filter-header">
+        <h2>Filtrera spelningar</h2>
+        <button class="link-button neutral" @click="selectAllSources">Visa alla</button>
+      </div>
+
+      <div class="filter-options">
+        <label
+          v-for="sourceName in availableSourceNames"
+          :key="sourceName"
+          class="filter-option"
+          :class="{ active: isSourceSelected(sourceName) }"
+        >
+          <input
+            type="checkbox"
+            :checked="isSourceSelected(sourceName)"
+            @change="toggleSourceFilter(sourceName)"
+          />
+          <span>{{ sourceName }}</span>
+        </label>
+      </div>
+    </section>
+
     <section v-if="groupedByYear.length" id="concerts" class="list">
       <article v-for="group in groupedByYear" :key="group.year" class="year-group">
         <h2>{{ group.year }}</h2>
@@ -371,6 +429,7 @@ onMounted(async () => {
             <h3>{{ concert.artist }}</h3>
             <p class="title">{{ concert.title }}</p>
             <p class="venue">{{ concert.venue }}</p>
+            <p class="source">{{ getConcertSourceName(concert) }}</p>
           </div>
         </article>
       </article>
