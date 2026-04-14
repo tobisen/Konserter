@@ -358,6 +358,12 @@ h3 {
   gap: 8px;
 }
 
+.favorites-toolbar {
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+}
+
 .search-label {
   font-size: 0.95rem;
   color: var(--muted);

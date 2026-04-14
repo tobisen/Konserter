@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   clearStoredConcerts,
   loadStoredConcerts,
@@ -58,11 +58,13 @@ const favoriteIds = ref([])
 const bookingIds = ref([])
 const seenIds = ref([])
 const myConcertsSubView = ref('favorites')
+const favoritesSort = ref('date_asc')
 const forgotEmail = ref('')
 const resetToken = ref('')
 const resetNewPassword = ref('')
 const showResetNewPassword = ref(false)
 const showResetForm = ref(false)
+const newFavoriteArtistSuggestionConcerts = ref([])
 
 const passwordCurrent = ref('')
 const passwordNext = ref('')
@@ -337,6 +339,28 @@ const favoriteConcerts = computed(() => {
     .sort((a, b) => getConcertDate(a) - getConcertDate(b))
 })
 
+function sortConcerts(concertList, sortMode) {
+  const list = [...concertList]
+
+  if (sortMode === 'date_desc') {
+    return list.sort((a, b) => getConcertDate(b) - getConcertDate(a))
+  }
+
+  if (sortMode === 'artist_asc') {
+    return list.sort((a, b) => String(a.artist || '').localeCompare(String(b.artist || ''), 'sv-SE'))
+  }
+
+  if (sortMode === 'city_asc') {
+    return list.sort((a, b) => String(a.city || '').localeCompare(String(b.city || ''), 'sv-SE'))
+  }
+
+  return list.sort((a, b) => getConcertDate(a) - getConcertDate(b))
+}
+
+const sortedFavoriteConcerts = computed(() => {
+  return sortConcerts(favoriteConcerts.value, favoritesSort.value)
+})
+
 const bookingConcerts = computed(() => {
   if (!bookingIds.value.length) return []
 
@@ -358,8 +382,66 @@ const seenConcerts = computed(() => {
 const myConcertsBySubView = computed(() => {
   if (myConcertsSubView.value === 'bookings') return bookingConcerts.value
   if (myConcertsSubView.value === 'seen') return seenConcerts.value
-  return favoriteConcerts.value
+  return sortedFavoriteConcerts.value
 })
+
+const favoriteArtistSuggestionConcerts = computed(() => {
+  if (!favoriteConcerts.value.length) return []
+
+  const favoriteArtistSet = new Set(
+    favoriteConcerts.value.map((concert) => normalizeText(concert.artist)).filter(Boolean)
+  )
+
+  const favoriteIdSet = new Set(favoriteIds.value)
+  const upcomingSuggestions = concerts.value.filter((concert) => {
+    const concertId = getConcertId(concert)
+    const date = getConcertDate(concert)
+    if (!concertId || !date) return false
+    if (favoriteIdSet.has(concertId)) return false
+    if (date < getStartOfToday()) return false
+    return favoriteArtistSet.has(normalizeText(concert.artist))
+  })
+
+  return sortConcerts(upcomingSuggestions, 'date_asc')
+})
+
+function syncFavoriteArtistNotifications() {
+  const storageKey = 'konsertnavigator_seen_favorite_artist_concert_ids_v1'
+  let seenIdsFromStorage = new Set()
+
+  try {
+    const raw = localStorage.getItem(storageKey)
+    const parsed = raw ? JSON.parse(raw) : []
+    seenIdsFromStorage = new Set(Array.isArray(parsed) ? parsed : [])
+  } catch {
+    seenIdsFromStorage = new Set()
+  }
+
+  const newConcerts = favoriteArtistSuggestionConcerts.value.filter((concert) => {
+    const id = getConcertId(concert)
+    return id && !seenIdsFromStorage.has(id)
+  })
+
+  newFavoriteArtistSuggestionConcerts.value = newConcerts
+}
+
+function markFavoriteArtistNotificationsSeen() {
+  const storageKey = 'konsertnavigator_seen_favorite_artist_concert_ids_v1'
+  const suggestionIds = favoriteArtistSuggestionConcerts.value
+    .map((concert) => getConcertId(concert))
+    .filter(Boolean)
+
+  try {
+    const raw = localStorage.getItem(storageKey)
+    const parsed = raw ? JSON.parse(raw) : []
+    const merged = new Set([...(Array.isArray(parsed) ? parsed : []), ...suggestionIds])
+    localStorage.setItem(storageKey, JSON.stringify([...merged]))
+  } catch {
+    // Ignore localStorage errors
+  }
+
+  newFavoriteArtistSuggestionConcerts.value = []
+}
 
 function isFavorite(concert) {
   const id = getConcertId(concert)
@@ -976,6 +1058,10 @@ onMounted(async () => {
     authReady.value = true
   }
 })
+
+watch(favoriteArtistSuggestionConcerts, () => {
+  syncFavoriteArtistNotifications()
+}, { immediate: true })
 </script>
 
 <template>
@@ -1010,6 +1096,13 @@ onMounted(async () => {
           @click="setView('my-concerts')"
         >
           Mina Spelningar
+        </button>
+        <button
+          class="nav-link"
+          :class="{ active: currentView === 'help' }"
+          @click="setView('help')"
+        >
+          Hjälp
         </button>
         <button
           class="nav-link"
@@ -1111,6 +1204,51 @@ onMounted(async () => {
         </div>
 
         <p v-else class="lead">Inga spelningar hittades för aktuell månad.</p>
+      </section>
+
+      <section v-if="currentView === 'help'" class="hero source-panel">
+        <h2>Hjälp</h2>
+        <p class="lead">
+          Här ser du vad du kan göra i Konsertnavigator.
+        </p>
+        <ul class="source-list source-status-list">
+          <li>
+            <div>
+              <strong>Hem</strong>
+              <p>Snabb överblick över spelningar för aktuell månad.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Källor</strong>
+              <p>Publik lista med aktiva källnamn.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Spelningar</strong>
+              <p>Visa kommande/tidigare spelningar, filtrera på källa/månad/genre och sök på artist/scen/stad.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Mina Spelningar</strong>
+              <p>Skapa konto, logga in, spara favoriter, markera Ska gå/Var där och lägg till i kalender.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Admin</strong>
+              <p>Hantera källor, kör uppdatering, töm konserter, se importkvalitet och följ användare/besökare.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Lösenordsåterställning</strong>
+              <p>Använd “Glömt lösenord” för återställning. I testläge loggas återställningslänken i serverloggar.</p>
+            </div>
+          </li>
+        </ul>
       </section>
 
       <section v-if="currentView === 'sources'" class="hero source-panel">
@@ -1450,6 +1588,37 @@ onMounted(async () => {
               Var där
             </button>
           </div>
+
+          <div v-if="myConcertsSubView === 'favorites'" class="favorites-toolbar">
+            <label class="search-label" for="favorite-sort">Sortera favoriter</label>
+            <select id="favorite-sort" v-model="favoritesSort" class="search-input">
+              <option value="date_asc">Datum (äldst först)</option>
+              <option value="date_desc">Datum (nyast först)</option>
+              <option value="artist_asc">Artist (A-Ö)</option>
+              <option value="city_asc">Stad (A-Ö)</option>
+            </select>
+          </div>
+
+          <section
+            v-if="myConcertsSubView === 'favorites' && newFavoriteArtistSuggestionConcerts.length"
+            class="hero"
+          >
+            <h3>New concerts from your favorite artists</h3>
+            <p class="lead">
+              {{ newFavoriteArtistSuggestionConcerts.length }} new match(es) found.
+            </p>
+            <ul class="source-list source-name-list">
+              <li
+                v-for="concert in newFavoriteArtistSuggestionConcerts.slice(0, 5)"
+                :key="`fav-artist-alert-${getConcertId(concert)}`"
+              >
+                <strong>{{ concert.artist }}</strong>
+              </li>
+            </ul>
+            <button class="refresh" type="button" @click="markFavoriteArtistNotificationsSeen">
+              Mark as seen
+            </button>
+          </section>
 
           <p v-if="userStatus" class="updated">{{ userStatus }}</p>
 
