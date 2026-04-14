@@ -52,6 +52,10 @@ function getConcertDetailsUrl(concert) {
   return String(concert?.detailsUrl || '').trim()
 }
 
+function getConcertImageUrl(concert) {
+  return String(concert?.imageUrl || '').trim()
+}
+
 const availableSourceNames = computed(() => {
   return [...new Set(concerts.value.map((concert) => getConcertSourceName(concert)))].sort((a, b) =>
     a.localeCompare(b, 'sv-SE')
@@ -578,6 +582,13 @@ onMounted(async () => {
             </div>
 
             <div class="content">
+              <img
+                v-if="getConcertImageUrl(concert)"
+                class="concert-image"
+                :src="getConcertImageUrl(concert)"
+                :alt="`Bild för ${concert.title}`"
+                loading="lazy"
+              />
               <h3>{{ concert.artist }}</h3>
               <p class="title">{{ concert.title }}</p>
               <p class="venue">{{ concert.venue }}</p>

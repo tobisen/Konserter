@@ -28,6 +28,49 @@ function cleanupText(value) {
   return decodeHtmlEntities(value).replace(/\s+/g, ' ').trim()
 }
 
+function normalizeUrlLike(value) {
+  const text = cleanupText(value)
+  if (!text) return ''
+
+  if (text.startsWith('//')) {
+    return `https:${text}`
+  }
+
+  return text
+}
+
+function pickImageUrlFromUnknown(value) {
+  if (!value) return ''
+
+  if (typeof value === 'string') {
+    return normalizeUrlLike(value)
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = pickImageUrlFromUnknown(item)
+      if (found) return found
+    }
+    return ''
+  }
+
+  if (typeof value === 'object') {
+    const candidates = [
+      value.url,
+      value.src,
+      value.secure_url,
+      value.contentUrl
+    ]
+
+    for (const candidate of candidates) {
+      const found = normalizeUrlLike(candidate)
+      if (found) return found
+    }
+  }
+
+  return ''
+}
+
 function parsePossiblyJson(text) {
   try {
     return JSON.parse(text)
@@ -147,7 +190,8 @@ function normalizeEventNode(eventNode) {
     venue: pickVenue(eventNode),
     city: pickCity(eventNode),
     genre: cleanupText(eventNode?.genre),
-    detailsUrl: cleanupText(eventNode?.url)
+    detailsUrl: cleanupText(eventNode?.url),
+    imageUrl: pickImageUrlFromUnknown(eventNode?.image)
   }
 }
 
@@ -161,7 +205,14 @@ function parseConcertsFromJsonPayload(payload) {
       venue: cleanupText(event?.venue),
       city: cleanupText(event?.city),
       genre: cleanupText(event?.genre),
-      detailsUrl: cleanupText(event?.detailsUrl || event?.url || event?.link)
+      detailsUrl: cleanupText(event?.detailsUrl || event?.url || event?.link),
+      imageUrl: normalizeUrlLike(
+        event?.imageUrl ||
+          event?.image ||
+          event?.thumbnail ||
+          event?.thumbnailUrl ||
+          event?.poster
+      )
     }))
     .filter((event) => {
       if (!event.artist || !event.title || !event.venue || !event.city || !event.date) {
@@ -303,6 +354,8 @@ function parseKaliberEventsFromHtml(html, sourceUrl = null) {
       const genre = cleanupText(itemHtml.match(/\sdata-genre="([^"]*)"/i)?.[1])
       const contentAnchorTag = itemHtml.match(/<a[^>]*class="[^"]*item__content[^"]*"[^>]*>/i)?.[0] || ''
       const detailsUrl = cleanupText(contentAnchorTag.match(/href="([^"]+)"/i)?.[1])
+      const imageStyle = cleanupText(itemHtml.match(/<div[^>]*class="[^"]*item__image[^"]*"[^>]*style="([^"]+)"/i)?.[1])
+      const imageUrl = normalizeUrlLike(imageStyle.match(/url\(['"]?([^'")]+)['"]?\)/i)?.[1])
       const isoDate = parseSwedishDateWithRollingYear(dateText)
 
       if (!title || !isoDate) {
@@ -316,7 +369,8 @@ function parseKaliberEventsFromHtml(html, sourceUrl = null) {
         venue: stageLabel || 'Okänd scen',
         city: 'Uppsala',
         genre,
-        detailsUrl
+        detailsUrl,
+        imageUrl
       })
     }
 
@@ -471,7 +525,13 @@ function parseParksResortsConcertsFromPageData(pageData, city) {
         title: cleanupText(item.title) || 'Konsert',
         date: isoDate,
         venue: cleanupText(item.location) || 'Stora Scen',
-        city
+        city,
+        imageUrl: normalizeUrlLike(
+          item?.image?.file?.url ||
+            item?.image?.url ||
+            item?.heroImage?.file?.url ||
+            item?.heroImage?.url
+        )
       }
     })
     .filter(Boolean)

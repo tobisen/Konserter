@@ -349,6 +349,16 @@ h2 {
   padding: 14px;
 }
 
+.concert-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+  background: #ece8df;
+}
+
 h3 {
   margin: 0;
   font-size: 1.1rem;

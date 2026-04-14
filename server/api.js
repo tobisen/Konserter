@@ -83,6 +83,25 @@ function normalizeOptionalUrl(value) {
   }
 }
 
+function normalizeOptionalImageUrl(value) {
+  let text = String(value || '').trim()
+  if (!text) return ''
+
+  if (text.startsWith('//')) {
+    text = `https:${text}`
+  }
+
+  try {
+    const parsed = new URL(text)
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return ''
+    }
+    return parsed.toString()
+  } catch {
+    return ''
+  }
+}
+
 function normalizeIncomingConcert(rawConcert, sourceName) {
   return {
     artist: String(rawConcert.artist || '').trim(),
@@ -92,6 +111,7 @@ function normalizeIncomingConcert(rawConcert, sourceName) {
     city: String(rawConcert.city || '').trim(),
     genre: String(rawConcert.genre || '').trim(),
     detailsUrl: normalizeOptionalUrl(rawConcert.detailsUrl),
+    imageUrl: normalizeOptionalImageUrl(rawConcert.imageUrl),
     sourceName
   }
 }
