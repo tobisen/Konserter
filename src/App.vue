@@ -577,11 +577,6 @@ onMounted(async () => {
             class="card"
           >
             <div class="meta">
-              <p>{{ formatDate(concert.date) }}</p>
-              <p>{{ concert.city }}</p>
-            </div>
-
-            <div class="content">
               <img
                 v-if="getConcertImageUrl(concert)"
                 class="concert-image"
@@ -589,6 +584,11 @@ onMounted(async () => {
                 :alt="`Bild för ${concert.title}`"
                 loading="lazy"
               />
+              <p>{{ formatDate(concert.date) }}</p>
+              <p>{{ concert.city }}</p>
+            </div>
+
+            <div class="content">
               <h3>{{ concert.artist }}</h3>
               <p class="title">{{ concert.title }}</p>
               <p class="venue">{{ concert.venue }}</p>
