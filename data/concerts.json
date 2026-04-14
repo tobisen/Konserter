@@ -5,6 +5,9 @@
     "date": "2026-05-14T16:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/2irJLLfj4K42xGrAqW6QxK/8a4c6229682086c55769fbf8963a9d2c/Dolly_small.png",
     "sourceName": "Furuvik"
   },
   {
@@ -13,6 +16,9 @@
     "date": "2026-05-23T16:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/4FuYklQ9nQKPlPM2EDFsfM/f56f5bd70e7db2cdf71e2cba1876fa52/KAJ_1000x1000.png",
     "sourceName": "Furuvik"
   },
   {
@@ -21,6 +27,9 @@
     "date": "2026-05-30T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/3IhjL3afnuLEWz8BnH0AL1/7782cbdbe58c798a4edad06217ce870e/Lovet_1000x1000.png",
     "sourceName": "Furuvik"
   },
   {
@@ -29,7 +38,32 @@
     "date": "2026-06-05T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/6jvA9JsbBo2iOaQbiOR0OJ/28edce91572fef31e789e8ed83be3637/smashintopieces-small.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Dina Ögon",
+    "title": "Dina Ögon",
+    "date": "2026-06-05T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Bransta City Släckers",
+    "title": "Bransta City Släckers",
+    "date": "2026-06-07T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Korslagda",
@@ -37,7 +71,21 @@
     "date": "2026-06-12T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/4qOJke6ZCeoklsuKClkjCT/3f38d786f4a48cad74396c29e08f2f98/korslagda-small.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Simon Superti",
+    "title": "Simon Superti",
+    "date": "2026-06-12T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Hooja",
@@ -45,7 +93,32 @@
     "date": "2026-06-13T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/6tPxw2Fs4itaiG5mFKkCTc/46f63736d1c1da51995b8a085814ce1e/hooja-small.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "The Poodles & The Night Flight Orchestra",
+    "title": "The Poodles & The Night Flight Orchestra",
+    "date": "2026-06-13T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Sångpiraterna",
+    "title": "Sångpiraterna",
+    "date": "2026-06-14T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Greczula",
@@ -53,7 +126,65 @@
     "date": "2026-06-19T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/hDc79HQ9XvtrommaLv5H9/4fb3d72640ccff05791181eea452bc4b/Greczula_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Satyricon (NO)",
+    "title": "Satyricon (NO)",
+    "date": "2026-06-20T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Jecko",
+    "title": "Jecko",
+    "date": "2026-06-21T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "The High Society – A Rat Pack Celebration",
+    "title": "The High Society – A Rat Pack Celebration",
+    "date": "2026-06-22T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Venom (UK) – Welcome to Hell",
+    "title": "Venom (UK) – Welcome to Hell",
+    "date": "2026-06-23T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "The Primitives (UK)",
+    "title": "The Primitives (UK)",
+    "date": "2026-06-26T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Uno Svenningsson",
@@ -61,7 +192,54 @@
     "date": "2026-06-27T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/H0SWdID7sd8G0qtnLiZyd/2910f1709571782f25d7e8ca309c5a16/unosvenningsson-small.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Tricky (UK)",
+    "title": "Tricky (UK)",
+    "date": "2026-06-27T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Dave Weckl (US) möter Uppsala Storband",
+    "title": "Dave Weckl (US) möter Uppsala Storband",
+    "date": "2026-06-28T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Sanna Nielsen",
+    "title": "Sanna Nielsen",
+    "date": "2026-07-01T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Abba Allsång",
+    "title": "Abba Allsång",
+    "date": "2026-07-02T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Petter",
@@ -69,7 +247,21 @@
     "date": "2026-07-03T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/BSdxjFvoSIIPXD4eKJCG0/fb2a3e446c48c9cf3652fed97898d3c5/petter-small.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Dismember & Vomitory",
+    "title": "Dismember & Vomitory",
+    "date": "2026-07-03T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "The Cardigans",
@@ -77,7 +269,65 @@
     "date": "2026-07-04T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/6f9eA7vafdpOr3hLWiJ8wA/ef4df3764ee15cdf00abbbca5ff44aaa/thecardigans-smll.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Uppsala Rumble – Locals Året",
+    "title": "Uppsala Rumble – Locals Året",
+    "date": "2026-07-04T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Sandi Thom (SCT)",
+    "title": "Sandi Thom (SCT)",
+    "date": "2026-07-05T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Uno Svenningsson",
+    "title": "Uno Svenningsson",
+    "date": "2026-07-08T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Wilmer X",
+    "title": "Wilmer X",
+    "date": "2026-07-09T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Tommy Nilsson – Dina Färger va Blå",
+    "title": "Tommy Nilsson – Dina Färger va Blå",
+    "date": "2026-07-10T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Joakim Lundell",
@@ -85,7 +335,32 @@
     "date": "2026-07-11T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/21vdXVxpFF6ilEfAGMGezT/c1131e01a2198ab9fc659b97489761f4/Joakim_Lundell_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Bamse & Sjöravarskatten",
+    "title": "Bamse & Sjöravarskatten",
+    "date": "2026-07-11T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Medina",
+    "title": "Medina",
+    "date": "2026-07-12T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Orup",
@@ -93,7 +368,21 @@
     "date": "2026-07-17T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/Rl7v7FwPv7SsdJJCnJ44A/9e49b890101c76fb9ae59ca2ea7a2245/Orup_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Pappa kapsyl",
+    "title": "Pappa kapsyl",
+    "date": "2026-07-19T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Dropkick Murphys",
@@ -101,7 +390,32 @@
     "date": "2026-07-21T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/5qWKI2v8ZkwMd7DkHgzAm5/99a6bda024d2e4d397697cbf1a250409/dropkickmurphys-small.jpg",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Terra",
+    "title": "Terra",
+    "date": "2026-07-22T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Arja Saijonmaa",
+    "title": "Arja Saijonmaa",
+    "date": "2026-07-23T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "The Ark",
@@ -109,7 +423,21 @@
     "date": "2026-07-24T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/6IePyWWkM5G9kkuyAmTbAA/9e2aa2a2012c3eafe031ae9c267bdb95/The_ark_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Banna Sona Band",
+    "title": "Banna Sona Band",
+    "date": "2026-07-24T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Søte & Rare",
@@ -117,7 +445,43 @@
     "date": "2026-07-25T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/1OUqEN7eBJCD4XXHyfEF8w/b6c1211b9fd629c8623559afa7229fbc/S%C3%83_te___Rare_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Petra Marklund",
+    "title": "Petra Marklund",
+    "date": "2026-07-25T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Lilla Spöket Laban – Extraföreställning",
+    "title": "Lilla Spöket Laban – Extraföreställning",
+    "date": "2026-07-26T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Lilla Spöket Laban",
+    "title": "Lilla Spöket Laban",
+    "date": "2026-07-26T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Molly Sandén",
@@ -125,7 +489,98 @@
     "date": "2026-07-31T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/42QPDLlBTPMg7bemiNoAgl/d5cada09e5d676be0efe6be07d928275/Molly_ny_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Cleo",
+    "title": "Cleo",
+    "date": "2026-08-01T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Niklas Strömstedt",
+    "title": "Niklas Strömstedt",
+    "date": "2026-08-02T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Världens Band",
+    "title": "Världens Band",
+    "date": "2026-08-03T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Lasse Holm – En Hel Massa Lasse",
+    "title": "Lasse Holm – En Hel Massa Lasse",
+    "date": "2026-08-08T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "KAJ",
+    "title": "KAJ",
+    "date": "2026-08-09T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Einstürzende Neubauten (DE)",
+    "title": "Einstürzende Neubauten (DE)",
+    "date": "2026-08-11T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Danny Saucedo",
+    "title": "Danny Saucedo",
+    "date": "2026-08-13T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Country park – Chris Kläfford, Robin Winther & Ingrid",
+    "title": "Country park – Chris Kläfford, Robin Winther & Ingrid",
+    "date": "2026-08-14T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "D-A-D",
@@ -133,7 +588,76 @@
     "date": "2026-08-15T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/1acsvcSDQn0EtjcAATJvgE/13f232ee8946c497b5d5b3dbf88194a6/D-A-D_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Roffe Wikström",
+    "title": "Roffe Wikström",
+    "date": "2026-08-15T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Dolly Style",
+    "title": "Dolly Style",
+    "date": "2026-08-16T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Electric Banana Band",
+    "title": "Electric Banana Band",
+    "date": "2026-08-18T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Papi Santana",
+    "title": "Papi Santana",
+    "date": "2026-08-19T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Korslagda",
+    "title": "Korslagda",
+    "date": "2026-08-20T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Orup",
+    "title": "Orup",
+    "date": "2026-08-21T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "A*Teens",
@@ -141,7 +665,32 @@
     "date": "2026-08-22T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/3r20dLXsp10VHMkohGicif/ff8d1201ababf79806ec632ef99d5531/A_Teens_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Melody Club",
+    "title": "Melody Club",
+    "date": "2026-08-22T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Silvana Imam",
+    "title": "Silvana Imam",
+    "date": "2026-08-28T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Thomas Stenström",
@@ -149,7 +698,43 @@
     "date": "2026-08-29T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/4z6XLdmM2EfuIW0RzY4sPm/bccaed82afd9f14b847b8e75b9d84009/Thomas_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "AAF – Sara Parkman, Rhys Frank & Mathilda Thor",
+    "title": "AAF – Sara Parkman, Rhys Frank & Mathilda Thor",
+    "date": "2026-08-29T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "AAF – Nektar, Svart Ridå & Siluett",
+    "title": "AAF – Nektar, Svart Ridå & Siluett",
+    "date": "2026-08-30T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Björn & Järv",
+    "title": "Björn & Järv",
+    "date": "2026-09-04T18:00:00.000Z",
+    "venue": "Parksnäckan",
+    "city": "Uppsala",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Parksnäckan"
   },
   {
     "artist": "Felicia",
@@ -157,6 +742,9 @@
     "date": "2026-09-05T18:00:00.000Z",
     "venue": "Stora Scen",
     "city": "Furuvik",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/7mRTuAKnSZjwIziOG0ZN1X/836454f2258e63adce94cda775927074/Felicia_1000x1000.png",
     "sourceName": "Furuvik"
   }
 ]

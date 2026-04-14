@@ -59,6 +59,7 @@ const deselectedGenres = ref([])
 
 const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' })
+const appVersion = __APP_VERSION__
 const updatedAtFormatter = new Intl.DateTimeFormat('sv-SE', {
   dateStyle: 'medium',
   timeStyle: 'short'
@@ -630,7 +631,10 @@ onMounted(async () => {
 <template>
   <main class="page">
     <header class="site-header">
-      <p class="brand">Konsertnavigator</p>
+      <div>
+        <p class="brand">Konsertnavigator</p>
+        <p class="build-version">Version {{ appVersion }}</p>
+      </div>
       <nav class="main-nav" aria-label="Huvudmeny">
         <button class="nav-link" :class="{ active: currentView === 'home' }" @click="setView('home')">
           Hem
