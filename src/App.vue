@@ -503,6 +503,62 @@ function formatDate(isoDate) {
   }).format(new Date(isoDate))
 }
 
+function formatIcsDate(date) {
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+}
+
+function escapeIcsText(value) {
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;')
+}
+
+function downloadCalendarEvent(concert) {
+  const start = getConcertDate(concert)
+  if (!start) return
+
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+  const randomId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
+  const uid = `${getConcertId(concert) || randomId}@konsertnavigator`
+  const title = concert?.title || concert?.artist || 'Spelning'
+  const location = `${concert?.venue || 'Okänd scen'}, ${concert?.city || 'Okänd stad'}`
+  const description = getConcertDetailsUrl(concert)
+    ? `Mer info: ${getConcertDetailsUrl(concert)}`
+    : `Källa: ${getConcertSourceName(concert)}`
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Konsertnavigator//SE',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${escapeIcsText(uid)}`,
+    `DTSTAMP:${formatIcsDate(new Date())}`,
+    `DTSTART:${formatIcsDate(start)}`,
+    `DTEND:${formatIcsDate(end)}`,
+    `SUMMARY:${escapeIcsText(title)}`,
+    `LOCATION:${escapeIcsText(location)}`,
+    `DESCRIPTION:${escapeIcsText(description)}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n')
+
+  const fileName = `${normalizeText(title).replace(/\s+/g, '-') || 'spelning'}.ics`
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+
+  setTimeout(() => URL.revokeObjectURL(url), 500)
+}
+
 async function checkAuth() {
   const response = await fetch('/api/auth/me')
   const payload = await response.json().catch(() => ({ authenticated: false }))
@@ -877,6 +933,9 @@ onMounted(async () => {
                 >
                   Var där
                 </button>
+                <button class="mini-action-button" type="button" @click="downloadCalendarEvent(concert)">
+                  Kalender
+                </button>
               </div>
               <button
                 class="heart-button"
@@ -1059,14 +1118,21 @@ onMounted(async () => {
                 >
                   Ska gå
                 </button>
-                <button
-                  class="mini-action-button"
-                  :class="{ active: isSeen(concert) }"
-                  type="button"
-                  @click="toggleSeen(concert)"
-                >
-                  Var där
-                </button>
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isSeen(concert) }"
+                    type="button"
+                    @click="toggleSeen(concert)"
+                  >
+                    Var där
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    type="button"
+                    @click="downloadCalendarEvent(concert)"
+                  >
+                    Kalender
+                  </button>
                 </div>
                 <button
                   class="heart-button"
@@ -1250,14 +1316,21 @@ onMounted(async () => {
                 >
                   Ska gå
                 </button>
-                <button
-                  class="mini-action-button"
-                  :class="{ active: isSeen(concert) }"
-                  type="button"
-                  @click="toggleSeen(concert)"
-                >
-                  Var där
-                </button>
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isSeen(concert) }"
+                    type="button"
+                    @click="toggleSeen(concert)"
+                  >
+                    Var där
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    type="button"
+                    @click="downloadCalendarEvent(concert)"
+                  >
+                    Kalender
+                  </button>
                 </div>
                 <button
                   class="heart-button"
