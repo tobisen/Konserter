@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/:route*",
+      "destination": "/api?route=:route*"
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/update-concerts",
