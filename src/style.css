@@ -377,6 +377,8 @@ h2 {
 
 .content {
   padding: 14px;
+  position: relative;
+  padding-right: 58px;
 }
 
 .concert-image {
@@ -427,6 +429,31 @@ h3 {
 
 .favorite {
   color: #0c5f6f;
+}
+
+.heart-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #7b7b7b;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.heart-button.active {
+  border-color: #cf2d2d;
+  color: #cf2d2d;
+  background: #fff5f5;
 }
 
 .user-auth-grid {
