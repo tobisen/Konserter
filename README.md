@@ -1,58 +1,104 @@
-# Konserter - Samlad Konsertvy
+# Konsertnavigator
 
-En Vue-app där endast inloggad admin kan hantera källor och uppdatera konsertdata.
+A Vue + Vite app that aggregates concert events from multiple sources into one searchable view.
 
-## Lokal start
+## What the App Does
+
+- Public concert browsing with:
+  - Upcoming and past views
+  - Filters (source, month, genre)
+  - Search by artist, venue, or city
+  - Event images, genre, source name, and details link
+  - "Add to calendar" (`.ics`) export per concert
+- User area (`My Concerts`) with:
+  - Registration and login
+  - Personal lists: Favorites, Going, Been There
+  - Forgot-password and reset-password flow
+- Admin area with:
+  - Source management (add/remove)
+  - Manual update and clear actions
+  - Per-source import quality status (fetched count / error / last run)
+  - Unique registered users view
+  - Unique visitors view
+  - Admin password change
+
+## Tech Stack
+
+- Frontend: Vue 3 + Vite
+- Backend: Serverless API handlers on Vercel
+- Storage:
+  - Production: Vercel KV (recommended)
+  - Local fallback: JSON files in `data/`
+
+## Local Development
 
 ```bash
 npm install
-ADMIN_USERNAME=admin ADMIN_PASSWORD=hemligt npm run dev
+ADMIN_USERNAME=admin ADMIN_PASSWORD=secret npm run dev
 ```
 
-## Deploy på Vercel
+App URL (default): `http://localhost:5173`
 
-1. Importera repo i Vercel.
-2. Build: `npm run build`, output: `dist` (Vite auto-detekteras normalt).
-3. Lägg miljövariabler:
-   - `ADMIN_USERNAME`
-   - `ADMIN_PASSWORD` eller `ADMIN_PASSWORD_HASH`
-4. Lägg till Vercel KV och sätt:
-   - `KV_REST_API_URL`
-   - `KV_REST_API_TOKEN`
-5. Deploya.
+## Environment Variables
 
-Appen använder serverless API via `api/[...route].js`.
+### Required for admin login
 
-## Inloggning
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH`
 
-- Inloggning använder server-side session-cookie (`HttpOnly`, `SameSite=Lax`).
-- Endast inloggad admin kan:
-  - lägga till källor,
-  - ta bort källor,
-  - köra uppdatering av konserter,
-  - byta lösenord.
-- Konsertlistan är läsbar utan inloggning.
+### Recommended for production storage
 
-## Lösenordsbyte
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
 
-- Byt lösenord i admin-vyn med:
-  - nuvarande lösenord,
-  - nytt lösenord,
-  - bekräftelse.
-- Nytt lösenord måste vara minst 10 tecken.
-- Vid lyckat byte sparas hashat lösenord i lagring.
-- Sparat admin-lösenord används före env-lösenord.
+### Optional (security/session)
 
-## Lagring
+- `SESSION_SECRET`
+- `USER_SESSION_SECRET`
 
-- I Vercel-produktion: Vercel KV (rekommenderat).
-- Lokalt i dev: filer under `data/` används som fallback.
+### Optional (password reset email)
 
-## Vilka källor fungerar
+- `APP_BASE_URL` (for reset links, e.g. `https://konsertnavigator.vercel.app`)
+- `RESEND_API_KEY`
+- `RESET_EMAIL_FROM` (e.g. `Konsertnavigator <noreply@yourdomain.com>`)
 
-Appen försöker läsa konserter från:
+If mail variables are missing, reset links are logged on the server as a fallback.
 
-- vanlig webbsida (HTML), genom att extrahera JSON-LD med `Event`, eller
-- JSON-URL med array av konserter, alternativt objekt med `events` eller `concerts`.
+## Vercel Deployment
 
-Dessutom finns en fallback för Furuvik (`/konserter`) via deras `page-data`.
+1. Import the GitHub repo in Vercel.
+2. Keep build command as `npm run build`.
+3. Ensure output is `dist` (auto-detected by Vite in most cases).
+4. Configure the environment variables above.
+5. Deploy.
+
+## API Routing Notes
+
+- API is served through a single endpoint in `api/index.js`.
+- `vercel.json` rewrites `/api/:route*` to `/api?route=:route*`.
+- This keeps function count low and avoids hobby-plan function limits.
+
+## Data Sources
+
+The app tries to parse concerts from:
+
+- Standard web pages (HTML), including JSON-LD event data
+- JSON feeds (`events`, `concerts`, `items`, or array payloads)
+- Source-specific fallbacks currently included for some venues/pages used in this project
+
+## Security Notes
+
+- Admin and user sessions use server-side signed cookies (`HttpOnly`, `SameSite=Lax`).
+- Admin endpoints are protected by admin auth.
+- User login includes rate-limiting.
+- Password reset uses time-limited hashed reset tokens.
+
+## Release Checklist (Required on Every Commit)
+
+Before pushing commits, always verify:
+
+1. README matches the current feature set and routing/deploy setup.
+2. Version in `package.json` is correct.
+3. Build succeeds locally (`npm run build`).
+
+This checklist is part of the project workflow and should be followed on every check-in.
