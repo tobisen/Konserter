@@ -5,7 +5,6 @@ import {
 } from './adminCredentials.js'
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000
-const sessions = new Map()
 const loginAttempts = new Map()
 
 function parseCookies(cookieHeader = '') {
@@ -18,10 +17,6 @@ function parseCookies(cookieHeader = '') {
   }
 
   return cookies
-}
-
-function createSessionId() {
-  return crypto.randomBytes(24).toString('hex')
 }
 
 function getClientIp(request) {
@@ -60,10 +55,92 @@ function clearFailedAttempts(ip) {
   loginAttempts.delete(ip)
 }
 
-function buildSessionCookie(sessionId, ttlSeconds) {
+function getSessionSecret() {
+  return (
+    process.env.SESSION_SECRET ||
+    process.env.ADMIN_PASSWORD_HASH ||
+    process.env.ADMIN_PASSWORD ||
+    'dev-fallback-secret-change-me'
+  )
+}
+
+function encodeBase64Url(value) {
+  return Buffer.from(value)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+}
+
+function decodeBase64Url(value) {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/')
+  const missing = padded.length % 4
+  const finalValue = missing ? padded + '='.repeat(4 - missing) : padded
+  return Buffer.from(finalValue, 'base64').toString('utf8')
+}
+
+function signPayload(payloadString) {
+  return crypto
+    .createHmac('sha256', getSessionSecret())
+    .update(payloadString)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+}
+
+function createSessionToken(username) {
+  const payload = {
+    username,
+    exp: Date.now() + SESSION_TTL_MS
+  }
+
+  const payloadPart = encodeBase64Url(JSON.stringify(payload))
+  const signaturePart = signPayload(payloadPart)
+  return `${payloadPart}.${signaturePart}`
+}
+
+function verifySessionToken(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) {
+    return null
+  }
+
+  const [payloadPart, signaturePart] = token.split('.')
+  if (!payloadPart || !signaturePart) {
+    return null
+  }
+
+  const expected = signPayload(payloadPart)
+  const a = Buffer.from(signaturePart)
+  const b = Buffer.from(expected)
+
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return null
+  }
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(payloadPart))
+    if (!payload?.username || !payload?.exp) {
+      return null
+    }
+
+    if (payload.exp < Date.now()) {
+      return null
+    }
+
+    return {
+      username: payload.username,
+      expiresAt: payload.exp
+    }
+  } catch {
+    return null
+  }
+}
+
+function buildSessionCookie(token, ttlSeconds) {
   const secure = process.env.NODE_ENV === 'production'
   const cookieParts = [
-    `admin_session=${encodeURIComponent(sessionId)}`,
+    `admin_session=${encodeURIComponent(token)}`,
     'Path=/',
     'HttpOnly',
     'SameSite=Lax',
@@ -79,19 +156,16 @@ function buildSessionCookie(sessionId, ttlSeconds) {
 
 export function getAuthenticatedUser(request) {
   const cookies = parseCookies(request.headers.cookie)
-  const sessionId = cookies.admin_session
+  const token = cookies.admin_session
+  const session = verifySessionToken(token)
 
-  if (!sessionId) return null
-
-  const session = sessions.get(sessionId)
-  if (!session) return null
-
-  if (session.expiresAt < Date.now()) {
-    sessions.delete(sessionId)
+  if (!session) {
     return null
   }
 
-  return { username: session.username, sessionId }
+  return {
+    username: session.username
+  }
 }
 
 export function sendUnauthorized(response) {
@@ -143,13 +217,9 @@ export async function handleLogin(request, response, body) {
 
   clearFailedAttempts(ip)
 
-  const sessionId = createSessionId()
-  sessions.set(sessionId, {
-    username,
-    expiresAt: Date.now() + SESSION_TTL_MS
-  })
+  const token = createSessionToken(username)
 
-  response.setHeader('Set-Cookie', buildSessionCookie(sessionId, Math.floor(SESSION_TTL_MS / 1000)))
+  response.setHeader('Set-Cookie', buildSessionCookie(token, Math.floor(SESSION_TTL_MS / 1000)))
   response.statusCode = 200
   response.setHeader('Content-Type', 'application/json')
   response.end(JSON.stringify({ ok: true }))
@@ -192,13 +262,6 @@ export async function handleChangePassword(request, response, user, body) {
 }
 
 export function handleLogout(request, response) {
-  const cookies = parseCookies(request.headers.cookie)
-  const sessionId = cookies.admin_session
-
-  if (sessionId) {
-    sessions.delete(sessionId)
-  }
-
   response.setHeader('Set-Cookie', buildSessionCookie('', 0))
   response.statusCode = 200
   response.setHeader('Content-Type', 'application/json')
