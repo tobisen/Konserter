@@ -38,6 +38,7 @@ const authReady = ref(false)
 const authError = ref('')
 const loginUsername = ref('')
 const loginPassword = ref('')
+const showAdminLoginPassword = ref(false)
 const authLoading = ref(false)
 
 const appUser = ref(null)
@@ -49,6 +50,8 @@ const userLoginPassword = ref('')
 const userRegisterUsername = ref('')
 const userRegisterEmail = ref('')
 const userRegisterPassword = ref('')
+const showUserRegisterPassword = ref(false)
+const showUserLoginPassword = ref(false)
 const userLoading = ref(false)
 const favoriteIds = ref([])
 const bookingIds = ref([])
@@ -57,11 +60,15 @@ const myConcertsSubView = ref('favorites')
 const forgotEmail = ref('')
 const resetToken = ref('')
 const resetNewPassword = ref('')
+const showResetNewPassword = ref(false)
 const showResetForm = ref(false)
 
 const passwordCurrent = ref('')
 const passwordNext = ref('')
 const passwordConfirm = ref('')
+const showPasswordCurrent = ref(false)
+const showPasswordNext = ref(false)
+const showPasswordConfirm = ref(false)
 const passwordLoading = ref(false)
 const passwordStatus = ref('')
 
@@ -1194,9 +1201,36 @@ onMounted(async () => {
 
             <h2>Byt lösenord</h2>
             <form class="login-form" @submit.prevent="submitPasswordChange">
-              <input v-model="passwordCurrent" type="password" placeholder="Nuvarande lösenord" />
-              <input v-model="passwordNext" type="password" placeholder="Nytt lösenord" />
-              <input v-model="passwordConfirm" type="password" placeholder="Bekräfta nytt lösenord" />
+              <div class="password-field">
+                <input
+                  v-model="passwordCurrent"
+                  :type="showPasswordCurrent ? 'text' : 'password'"
+                  placeholder="Nuvarande lösenord"
+                />
+                <button class="toggle-password" type="button" @click="showPasswordCurrent = !showPasswordCurrent">
+                  {{ showPasswordCurrent ? 'Dölj' : 'Visa' }}
+                </button>
+              </div>
+              <div class="password-field">
+                <input
+                  v-model="passwordNext"
+                  :type="showPasswordNext ? 'text' : 'password'"
+                  placeholder="Nytt lösenord"
+                />
+                <button class="toggle-password" type="button" @click="showPasswordNext = !showPasswordNext">
+                  {{ showPasswordNext ? 'Dölj' : 'Visa' }}
+                </button>
+              </div>
+              <div class="password-field">
+                <input
+                  v-model="passwordConfirm"
+                  :type="showPasswordConfirm ? 'text' : 'password'"
+                  placeholder="Bekräfta nytt lösenord"
+                />
+                <button class="toggle-password" type="button" @click="showPasswordConfirm = !showPasswordConfirm">
+                  {{ showPasswordConfirm ? 'Dölj' : 'Visa' }}
+                </button>
+              </div>
               <button class="refresh" type="submit" :disabled="passwordLoading">
                 {{ passwordLoading ? 'Sparar...' : 'Byt lösenord' }}
               </button>
@@ -1268,12 +1302,21 @@ onMounted(async () => {
               </label>
               <label class="field-group">
                 <span>Lösenord</span>
-                <input
-                  v-model="userRegisterPassword"
-                  type="password"
-                  placeholder="Minst 8 tecken"
-                  autocomplete="new-password"
-                />
+                <div class="password-field">
+                  <input
+                    v-model="userRegisterPassword"
+                    :type="showUserRegisterPassword ? 'text' : 'password'"
+                    placeholder="Minst 8 tecken"
+                    autocomplete="new-password"
+                  />
+                  <button
+                    class="toggle-password"
+                    type="button"
+                    @click="showUserRegisterPassword = !showUserRegisterPassword"
+                  >
+                    {{ showUserRegisterPassword ? 'Dölj' : 'Visa' }}
+                  </button>
+                </div>
               </label>
               <button class="refresh" type="submit" :disabled="userLoading">Registrera</button>
             </form>
@@ -1291,12 +1334,17 @@ onMounted(async () => {
               </label>
               <label class="field-group">
                 <span>Lösenord</span>
-                <input
-                  v-model="userLoginPassword"
-                  type="password"
-                  placeholder="Ditt lösenord"
-                  autocomplete="current-password"
-                />
+                <div class="password-field">
+                  <input
+                    v-model="userLoginPassword"
+                    :type="showUserLoginPassword ? 'text' : 'password'"
+                    placeholder="Ditt lösenord"
+                    autocomplete="current-password"
+                  />
+                  <button class="toggle-password" type="button" @click="showUserLoginPassword = !showUserLoginPassword">
+                    {{ showUserLoginPassword ? 'Dölj' : 'Visa' }}
+                  </button>
+                </div>
               </label>
               <button class="refresh" type="submit" :disabled="userLoading">Logga in</button>
             </form>
@@ -1332,12 +1380,17 @@ onMounted(async () => {
             </label>
             <label class="field-group">
               <span>Nytt lösenord</span>
-              <input
-                v-model="resetNewPassword"
-                type="password"
-                placeholder="Minst 8 tecken"
-                autocomplete="new-password"
-              />
+              <div class="password-field">
+                <input
+                  v-model="resetNewPassword"
+                  :type="showResetNewPassword ? 'text' : 'password'"
+                  placeholder="Minst 8 tecken"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-password" type="button" @click="showResetNewPassword = !showResetNewPassword">
+                  {{ showResetNewPassword ? 'Dölj' : 'Visa' }}
+                </button>
+              </div>
             </label>
             <button class="refresh" type="submit" :disabled="userLoading">Spara lösenord</button>
           </form>
@@ -1671,7 +1724,12 @@ onMounted(async () => {
 
         <form class="login-form modal-login" @submit.prevent="login">
           <input v-model="loginUsername" type="text" placeholder="Användarnamn" />
-          <input v-model="loginPassword" type="password" placeholder="Lösenord" />
+          <div class="password-field">
+            <input v-model="loginPassword" :type="showAdminLoginPassword ? 'text' : 'password'" placeholder="Lösenord" />
+            <button class="toggle-password" type="button" @click="showAdminLoginPassword = !showAdminLoginPassword">
+              {{ showAdminLoginPassword ? 'Dölj' : 'Visa' }}
+            </button>
+          </div>
           <button class="refresh" type="submit" :disabled="authLoading">
             {{ authLoading ? 'Loggar in...' : 'Logga in' }}
           </button>

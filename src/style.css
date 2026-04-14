@@ -641,6 +641,64 @@ h3 {
   background: #11141b;
 }
 
+.stacked-form {
+  display: grid;
+  gap: 10px;
+}
+
+.field-group {
+  display: grid;
+  gap: 6px;
+}
+
+.field-group span {
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.stacked-form input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #0f131b;
+  color: var(--text);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 72px;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  border: 1px solid var(--line);
+  background: #171c25;
+  color: var(--muted);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toggle-password:hover {
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
