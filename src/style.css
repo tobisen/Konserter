@@ -298,6 +298,10 @@ h3 {
   text-transform: uppercase;
 }
 
+.link-button.active {
+  color: #ffd57a;
+}
+
 .errors ul {
   margin: 0;
   padding-inline-start: 18px;
@@ -475,6 +479,13 @@ h3 {
 .content {
   padding: 14px 58px 14px 14px;
   position: relative;
+}
+
+.mini-actions {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .concert-image {

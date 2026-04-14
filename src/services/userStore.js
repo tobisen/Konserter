@@ -50,6 +50,16 @@ export async function loadFavorites() {
   return payload.favorites || []
 }
 
+export async function loadUserLists() {
+  const response = await fetch('/api/users/lists')
+  const payload = await parseJson(response)
+  return {
+    favorites: payload.favorites || [],
+    bookings: payload.bookings || [],
+    seen: payload.seen || []
+  }
+}
+
 export async function addFavorite(concertId) {
   const response = await fetch('/api/users/favorites', {
     method: 'POST',
@@ -70,4 +80,37 @@ export async function removeFavorite(concertId) {
 
   const payload = await parseJson(response)
   return payload.favorites || []
+}
+
+export async function addToUserList(listType, concertId) {
+  const response = await fetch('/api/users/lists', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ listType, concertId })
+  })
+
+  const payload = await parseJson(response)
+  return {
+    favorites: payload.favorites || [],
+    bookings: payload.bookings || [],
+    seen: payload.seen || []
+  }
+}
+
+export async function removeFromUserList(listType, concertId) {
+  const response = await fetch(
+    `/api/users/lists/${encodeURIComponent(listType)}/${encodeURIComponent(concertId)}`,
+    {
+      method: 'DELETE'
+    }
+  )
+
+  const payload = await parseJson(response)
+  return {
+    favorites: payload.favorites || [],
+    bookings: payload.bookings || [],
+    seen: payload.seen || []
+  }
 }

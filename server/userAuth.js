@@ -208,7 +208,9 @@ export async function handleUserRegister(request, response, body) {
     username,
     usernameLower,
     passwordHash: hashPassword(password),
-    favorites: []
+    favorites: [],
+    bookings: [],
+    seen: []
   }
 
   await saveUsersToStore([...users, newUser])

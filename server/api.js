@@ -329,74 +329,119 @@ async function handleClearConcerts(request, response) {
   })
 }
 
-async function handleGetUserFavorites(request, response) {
-  const user = await requireAppUser(request, response)
-  if (!user) return
-
-  sendJson(response, 200, {
-    favorites: Array.isArray(user.favorites) ? user.favorites : []
-  })
+const USER_LISTS = {
+  favorites: 'favorites',
+  bookings: 'bookings',
+  seen: 'seen'
 }
 
-async function handleAddUserFavorite(request, response, concertId) {
+function normalizeUserLists(user) {
+  return {
+    favorites: Array.isArray(user?.favorites) ? user.favorites : [],
+    bookings: Array.isArray(user?.bookings) ? user.bookings : [],
+    seen: Array.isArray(user?.seen) ? user.seen : []
+  }
+}
+
+function normalizeUserListType(value) {
+  const type = String(value || '').toLowerCase()
+  return Object.values(USER_LISTS).includes(type) ? type : null
+}
+
+function assertValidConcertId(concertId, validConcertIds) {
+  if (!concertId) {
+    return 'Ogiltigt konsert-id.'
+  }
+
+  if (!validConcertIds.has(concertId)) {
+    return 'Kunde inte hitta spelningen.'
+  }
+
+  return null
+}
+
+async function handleGetUserLists(request, response) {
   const user = await requireAppUser(request, response)
   if (!user) return
 
-  if (!concertId) {
-    sendJson(response, 400, { error: 'Ogiltigt konsert-id.' })
+  sendJson(response, 200, normalizeUserLists(user))
+}
+
+async function handleAddToUserList(request, response, listType, concertId) {
+  const user = await requireAppUser(request, response)
+  if (!user) return
+
+  const type = normalizeUserListType(listType)
+  if (!type) {
+    sendJson(response, 400, { error: 'Ogiltig listtyp.' })
     return
   }
 
   const users = await loadUsersFromStore()
   const concerts = await loadConcertsFromFile()
   const validConcertIds = new Set(concerts.map(createStableId))
+  const validationError = assertValidConcertId(concertId, validConcertIds)
 
-  if (!validConcertIds.has(concertId)) {
-    sendJson(response, 404, { error: 'Kunde inte hitta spelningen.' })
+  if (validationError) {
+    sendJson(response, validationError.includes('hitta') ? 404 : 400, { error: validationError })
     return
   }
 
   const nextUsers = users.map((entry) => {
     if (entry.id !== user.id) return entry
 
-    const favorites = Array.isArray(entry.favorites) ? entry.favorites : []
-    if (favorites.includes(concertId)) return entry
+    const currentList = Array.isArray(entry[type]) ? entry[type] : []
+    if (currentList.includes(concertId)) return entry
 
     return {
       ...entry,
-      favorites: [...favorites, concertId]
+      [type]: [...currentList, concertId]
     }
   })
 
   await saveUsersToStore(nextUsers)
-
   const updatedUser = nextUsers.find((entry) => entry.id === user.id)
-  sendJson(response, 200, {
-    favorites: updatedUser?.favorites || []
-  })
+  sendJson(response, 200, normalizeUserLists(updatedUser))
 }
 
-async function handleDeleteUserFavorite(request, response, concertId) {
+async function handleRemoveFromUserList(request, response, listType, concertId) {
   const user = await requireAppUser(request, response)
   if (!user) return
 
-  const users = await loadUsersFromStore()
+  const type = normalizeUserListType(listType)
+  if (!type) {
+    sendJson(response, 400, { error: 'Ogiltig listtyp.' })
+    return
+  }
 
+  const users = await loadUsersFromStore()
   const nextUsers = users.map((entry) => {
     if (entry.id !== user.id) return entry
-
     return {
       ...entry,
-      favorites: (entry.favorites || []).filter((id) => id !== concertId)
+      [type]: (entry[type] || []).filter((id) => id !== concertId)
     }
   })
 
   await saveUsersToStore(nextUsers)
-
   const updatedUser = nextUsers.find((entry) => entry.id === user.id)
-  sendJson(response, 200, {
-    favorites: updatedUser?.favorites || []
-  })
+  sendJson(response, 200, normalizeUserLists(updatedUser))
+}
+
+async function handleGetUserFavorites(request, response) {
+  const user = await requireAppUser(request, response)
+  if (!user) return
+
+  const lists = normalizeUserLists(user)
+  sendJson(response, 200, { favorites: lists.favorites })
+}
+
+async function handleAddUserFavorite(request, response, concertId) {
+  await handleAddToUserList(request, response, USER_LISTS.favorites, concertId)
+}
+
+async function handleDeleteUserFavorite(request, response, concertId) {
+  await handleRemoveFromUserList(request, response, USER_LISTS.favorites, concertId)
 }
 
 export async function handleApiRequest(request, response) {
@@ -542,6 +587,44 @@ export async function handleApiRequest(request, response) {
   if (pathname.startsWith('/api/users/favorites/') && request.method === 'DELETE') {
     const concertId = decodeURIComponent(pathname.slice('/api/users/favorites/'.length))
     await handleDeleteUserFavorite(request, response, concertId)
+    return
+  }
+
+  if (pathname === '/api/users/lists' && request.method === 'GET') {
+    await handleGetUserLists(request, response)
+    return
+  }
+
+  if (pathname === '/api/users/lists' && request.method === 'POST') {
+    let body
+    try {
+      body = await readJsonBody(request)
+    } catch (error) {
+      sendJson(response, 400, { error: error.message })
+      return
+    }
+
+    await handleAddToUserList(
+      request,
+      response,
+      String(body?.listType || ''),
+      String(body?.concertId || '')
+    )
+    return
+  }
+
+  if (pathname.startsWith('/api/users/lists/') && request.method === 'DELETE') {
+    const pathPart = pathname.slice('/api/users/lists/'.length)
+    const firstSlash = pathPart.indexOf('/')
+
+    if (firstSlash <= 0) {
+      sendJson(response, 400, { error: 'Ogiltig listväg.' })
+      return
+    }
+
+    const listType = decodeURIComponent(pathPart.slice(0, firstSlash))
+    const concertId = decodeURIComponent(pathPart.slice(firstSlash + 1))
+    await handleRemoveFromUserList(request, response, listType, concertId)
     return
   }
 

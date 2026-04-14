@@ -7,13 +7,13 @@ import {
 } from './services/concertStore'
 import { addSource, loadSources, removeSource } from './services/sourceStore'
 import {
-  addFavorite,
+  addToUserList,
   getUserSession,
-  loadFavorites,
+  loadUserLists,
   loginUser,
   logoutUser,
   registerUser,
-  removeFavorite
+  removeFromUserList
 } from './services/userStore'
 
 const concerts = ref([])
@@ -44,6 +44,9 @@ const userRegisterUsername = ref('')
 const userRegisterPassword = ref('')
 const userLoading = ref(false)
 const favoriteIds = ref([])
+const bookingIds = ref([])
+const seenIds = ref([])
+const myConcertsSubView = ref('favorites')
 
 const passwordCurrent = ref('')
 const passwordNext = ref('')
@@ -303,9 +306,49 @@ const favoriteConcerts = computed(() => {
     .sort((a, b) => getConcertDate(a) - getConcertDate(b))
 })
 
+const bookingConcerts = computed(() => {
+  if (!bookingIds.value.length) return []
+
+  const bookingSet = new Set(bookingIds.value)
+  return concerts.value
+    .filter((concert) => bookingSet.has(getConcertId(concert)))
+    .sort((a, b) => getConcertDate(a) - getConcertDate(b))
+})
+
+const seenConcerts = computed(() => {
+  if (!seenIds.value.length) return []
+
+  const seenSet = new Set(seenIds.value)
+  return concerts.value
+    .filter((concert) => seenSet.has(getConcertId(concert)))
+    .sort((a, b) => getConcertDate(b) - getConcertDate(a))
+})
+
+const myConcertsBySubView = computed(() => {
+  if (myConcertsSubView.value === 'bookings') return bookingConcerts.value
+  if (myConcertsSubView.value === 'seen') return seenConcerts.value
+  return favoriteConcerts.value
+})
+
 function isFavorite(concert) {
   const id = getConcertId(concert)
   return Boolean(id) && favoriteIds.value.includes(id)
+}
+
+function isBooked(concert) {
+  const id = getConcertId(concert)
+  return Boolean(id) && bookingIds.value.includes(id)
+}
+
+function isSeen(concert) {
+  const id = getConcertId(concert)
+  return Boolean(id) && seenIds.value.includes(id)
+}
+
+function applyUserLists(lists) {
+  favoriteIds.value = lists.favorites || []
+  bookingIds.value = lists.bookings || []
+  seenIds.value = lists.seen || []
 }
 
 async function toggleFavorite(concert) {
@@ -313,7 +356,7 @@ async function toggleFavorite(concert) {
     const message = 'Du behöver logga in eller registrera dig för att spara favoriter.'
     userStatus.value = message
     window.alert(message)
-    setView('favorites')
+    setView('my-concerts')
     return
   }
 
@@ -322,15 +365,69 @@ async function toggleFavorite(concert) {
 
   try {
     if (isFavorite(concert)) {
-      favoriteIds.value = await removeFavorite(concertId)
+      const lists = await removeFromUserList('favorites', concertId)
+      applyUserLists(lists)
       userStatus.value = 'Tog bort spelning från favoriter.'
       return
     }
 
-    favoriteIds.value = await addFavorite(concertId)
+    const lists = await addToUserList('favorites', concertId)
+    applyUserLists(lists)
     userStatus.value = 'Spelning sparad i favoriter.'
   } catch (error) {
     userStatus.value = error.message || 'Kunde inte uppdatera favoriter.'
+  }
+}
+
+async function toggleBooking(concert) {
+  if (!userAuthenticated.value) {
+    const message = 'Du behöver logga in eller registrera dig för att hantera bokningar.'
+    userStatus.value = message
+    window.alert(message)
+    setView('my-concerts')
+    return
+  }
+
+  const concertId = getConcertId(concert)
+  if (!concertId) return
+
+  try {
+    const wasBooked = isBooked(concert)
+    const lists = wasBooked
+      ? await removeFromUserList('bookings', concertId)
+      : await addToUserList('bookings', concertId)
+    applyUserLists(lists)
+    userStatus.value = wasBooked
+      ? 'Tog bort spelning från bokningar.'
+      : 'Spelning lagd i bokningar.'
+  } catch (error) {
+    userStatus.value = error.message || 'Kunde inte uppdatera bokningar.'
+  }
+}
+
+async function toggleSeen(concert) {
+  if (!userAuthenticated.value) {
+    const message = 'Du behöver logga in eller registrera dig för att hantera sedda spelningar.'
+    userStatus.value = message
+    window.alert(message)
+    setView('my-concerts')
+    return
+  }
+
+  const concertId = getConcertId(concert)
+  if (!concertId) return
+
+  try {
+    const wasSeen = isSeen(concert)
+    const lists = wasSeen
+      ? await removeFromUserList('seen', concertId)
+      : await addToUserList('seen', concertId)
+    applyUserLists(lists)
+    userStatus.value = wasSeen
+      ? 'Tog bort spelning från sedda.'
+      : 'Spelning lagd i sedda.'
+  } catch (error) {
+    userStatus.value = error.message || 'Kunde inte uppdatera sedda spelningar.'
   }
 }
 
@@ -425,13 +522,13 @@ async function checkUserAuth() {
     appUser.value = payload.authenticated ? payload.user : null
 
     if (payload.authenticated) {
-      favoriteIds.value = await loadFavorites()
+      applyUserLists(await loadUserLists())
     } else {
-      favoriteIds.value = []
+      applyUserLists({ favorites: [], bookings: [], seen: [] })
     }
   } catch {
     appUser.value = null
-    favoriteIds.value = []
+    applyUserLists({ favorites: [], bookings: [], seen: [] })
   } finally {
     userAuthReady.value = true
   }
@@ -482,7 +579,7 @@ async function loginRegularUser() {
 
     appUser.value = payload.user
     userLoginPassword.value = ''
-    favoriteIds.value = await loadFavorites()
+    applyUserLists(await loadUserLists())
     userStatus.value = `Inloggad som ${payload.user.username}.`
   } catch (error) {
     userError.value = error.message || 'Kunde inte logga in.'
@@ -504,7 +601,7 @@ async function registerRegularUser() {
 
     appUser.value = payload.user
     userRegisterPassword.value = ''
-    favoriteIds.value = await loadFavorites()
+    applyUserLists(await loadUserLists())
     userStatus.value = `Konto skapat och inloggat som ${payload.user.username}.`
   } catch (error) {
     userError.value = error.message || 'Kunde inte skapa konto.'
@@ -516,7 +613,7 @@ async function registerRegularUser() {
 async function logoutRegularUser() {
   await logoutUser()
   appUser.value = null
-  favoriteIds.value = []
+  applyUserLists({ favorites: [], bookings: [], seen: [] })
   userStatus.value = 'Du är utloggad från användarkontot.'
 }
 
@@ -706,10 +803,10 @@ onMounted(async () => {
         </button>
         <button
           class="nav-link"
-          :class="{ active: currentView === 'favorites' }"
-          @click="setView('favorites')"
+          :class="{ active: currentView === 'my-concerts' }"
+          @click="setView('my-concerts')"
         >
-          Favoriter
+          Mina Spelningar
         </button>
         <button class="nav-link" @click="handleAuthButton">
           {{ isAuthenticated ? 'Logga ut admin' : 'Admin-inlogg' }}
@@ -731,8 +828,8 @@ onMounted(async () => {
         <h1>Välkommen</h1>
         <p class="lead">
           Här samlar vi konserter från flera källor på ett ställe. Gå till Spelningar för hela
-          listan och filtrering, till Källor för datakällor och till Favoriter för att spara dina
-          personliga spelningar.
+          listan och filtrering, till Källor för datakällor och till Mina Spelningar för dina
+          personliga listor.
         </p>
       </section>
 
@@ -763,6 +860,24 @@ onMounted(async () => {
               <p class="venue">{{ concert.venue }}</p>
               <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
               <p class="source">{{ getConcertSourceName(concert) }}</p>
+              <div class="mini-actions">
+                <button
+                  class="link-button neutral"
+                  :class="{ active: isBooked(concert) }"
+                  type="button"
+                  @click="toggleBooking(concert)"
+                >
+                  {{ isBooked(concert) ? 'Bokad' : 'Boka' }}
+                </button>
+                <button
+                  class="link-button neutral"
+                  :class="{ active: isSeen(concert) }"
+                  type="button"
+                  @click="toggleSeen(concert)"
+                >
+                  {{ isSeen(concert) ? 'Sedd' : 'Markera sedd' }}
+                </button>
+              </div>
               <button
                 class="heart-button"
                 :class="{ active: isFavorite(concert) }"
@@ -846,15 +961,15 @@ onMounted(async () => {
         </template>
       </section>
 
-      <section v-if="currentView === 'favorites'" class="hero source-panel">
-        <h2>Favoriter</h2>
+      <section v-if="currentView === 'my-concerts'" class="hero source-panel">
+        <h2>Mina Spelningar</h2>
 
         <template v-if="!userAuthReady">
           <p class="lead">Laddar användarstatus...</p>
         </template>
 
         <template v-else-if="!userAuthenticated">
-          <p class="lead">Registrera dig eller logga in för att spara favoritspelningar.</p>
+          <p class="lead">Registrera dig eller logga in för att hantera dina personliga spelningslistor.</p>
 
           <div class="user-auth-grid">
             <form class="login-form user-auth-form" @submit.prevent="registerRegularUser">
@@ -882,11 +997,38 @@ onMounted(async () => {
             <button class="link-button" @click="logoutRegularUser">Logga ut användare</button>
           </div>
 
+          <div class="main-nav concerts-submenu">
+            <button
+              class="nav-link"
+              :class="{ active: myConcertsSubView === 'favorites' }"
+              type="button"
+              @click="myConcertsSubView = 'favorites'"
+            >
+              Mina favoriter
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: myConcertsSubView === 'bookings' }"
+              type="button"
+              @click="myConcertsSubView = 'bookings'"
+            >
+              Mina bokningar
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: myConcertsSubView === 'seen' }"
+              type="button"
+              @click="myConcertsSubView = 'seen'"
+            >
+              Sedda spelningar
+            </button>
+          </div>
+
           <p v-if="userStatus" class="updated">{{ userStatus }}</p>
 
-          <div v-if="favoriteConcerts.length" class="list compact-list">
+          <div v-if="myConcertsBySubView.length" class="list compact-list">
             <article
-              v-for="concert in favoriteConcerts"
+              v-for="concert in myConcertsBySubView"
               :key="`fav-${concert.artist}-${concert.date}-${concert.venue}`"
               class="card"
             >
@@ -908,12 +1050,31 @@ onMounted(async () => {
                 <p class="venue">{{ concert.venue }}</p>
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
+                <div class="mini-actions">
+                  <button
+                    class="link-button neutral"
+                    :class="{ active: isBooked(concert) }"
+                    type="button"
+                    @click="toggleBooking(concert)"
+                  >
+                    {{ isBooked(concert) ? 'Bokad' : 'Boka' }}
+                  </button>
+                  <button
+                    class="link-button neutral"
+                    :class="{ active: isSeen(concert) }"
+                    type="button"
+                    @click="toggleSeen(concert)"
+                  >
+                    {{ isSeen(concert) ? 'Sedd' : 'Markera sedd' }}
+                  </button>
+                </div>
                 <button
-                  class="heart-button active"
+                  class="heart-button"
+                  :class="{ active: isFavorite(concert) }"
                   aria-label="Ta bort favorit"
                   @click="toggleFavorite(concert)"
                 >
-                  ♥
+                  {{ isFavorite(concert) ? '♥' : '♡' }}
                 </button>
                 <a
                   v-if="getConcertDetailsUrl(concert)"
@@ -928,7 +1089,7 @@ onMounted(async () => {
             </article>
           </div>
 
-          <p v-else class="lead">Du har inga sparade favoriter än.</p>
+          <p v-else class="lead">Inga spelningar i vald kategori ännu.</p>
         </template>
       </section>
 
@@ -1080,6 +1241,24 @@ onMounted(async () => {
                 <p class="venue">{{ concert.venue }}</p>
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
+                <div class="mini-actions">
+                  <button
+                    class="link-button neutral"
+                    :class="{ active: isBooked(concert) }"
+                    type="button"
+                    @click="toggleBooking(concert)"
+                  >
+                    {{ isBooked(concert) ? 'Bokad' : 'Boka' }}
+                  </button>
+                  <button
+                    class="link-button neutral"
+                    :class="{ active: isSeen(concert) }"
+                    type="button"
+                    @click="toggleSeen(concert)"
+                  >
+                    {{ isSeen(concert) ? 'Sedd' : 'Markera sedd' }}
+                  </button>
+                </div>
                 <button
                   class="heart-button"
                   :class="{ active: isFavorite(concert) }"
