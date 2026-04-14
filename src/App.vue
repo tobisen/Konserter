@@ -130,6 +130,10 @@ function selectAllSources() {
   deselectedSources.value = []
 }
 
+function deselectAllSources() {
+  deselectedSources.value = [...availableSourceNames.value]
+}
+
 function isMonthSelected(monthNumber) {
   return !deselectedMonths.value.includes(monthNumber)
 }
@@ -145,6 +149,10 @@ function toggleMonthFilter(monthNumber) {
 
 function selectAllMonths() {
   deselectedMonths.value = []
+}
+
+function deselectAllMonths() {
+  deselectedMonths.value = [...availableMonthNumbers.value]
 }
 
 function formatDate(isoDate) {
@@ -457,7 +465,8 @@ onMounted(async () => {
 
       <p class="filter-title">Källor</p>
       <div class="filter-actions">
-        <button class="link-button neutral" @click="selectAllSources">Visa alla källor</button>
+        <button class="link-button neutral" @click="selectAllSources">Välj alla källor</button>
+        <button class="link-button neutral" @click="deselectAllSources">Välj inga källor</button>
       </div>
       <div class="filter-options">
         <label
@@ -477,7 +486,8 @@ onMounted(async () => {
 
       <p v-if="availableMonthNumbers.length" class="filter-title">Månader</p>
       <div v-if="availableMonthNumbers.length" class="filter-actions">
-        <button class="link-button neutral" @click="selectAllMonths">Visa alla månader</button>
+        <button class="link-button neutral" @click="selectAllMonths">Välj alla månader</button>
+        <button class="link-button neutral" @click="deselectAllMonths">Välj inga månader</button>
       </div>
       <div v-if="availableMonthNumbers.length" class="filter-options">
         <label
