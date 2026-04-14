@@ -32,6 +32,9 @@ import {
   saveUsersToStore,
 } from "./storage.js";
 
+// Spotify cache
+let spotifyTokenCache = { token: null, expiresAt: 0 };
+
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json");
@@ -857,6 +860,105 @@ async function handleDeleteUserFavorite(request, response, concertId) {
   );
 }
 
+async function getSpotifyAccessToken() {
+  const now = Date.now();
+  if (spotifyTokenCache.token && spotifyTokenCache.expiresAt > now) {
+    return spotifyTokenCache.token;
+  }
+
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Spotify credentials not configured");
+  }
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const response = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  const data = await response.json();
+  spotifyTokenCache = {
+    token: data.access_token,
+    expiresAt: now + data.expires_in * 1000,
+  };
+
+  return data.access_token;
+}
+
+async function handleSpotifySearch(request, response) {
+  try {
+    const url = new URL(request.url || "", "http://localhost");
+    const artist = decodeURIComponent(url.searchParams.get("artist") || "");
+
+    if (!artist || artist.length < 2) {
+      sendJson(response, 400, { error: "Artist name required" });
+      return;
+    }
+
+    const token = await getSpotifyAccessToken();
+    const searchUrl = new URL("https://api.spotify.com/v1/search");
+    searchUrl.searchParams.set("q", `artist:${artist}`);
+    searchUrl.searchParams.set("type", "artist");
+    searchUrl.searchParams.set("limit", "1");
+
+    const searchResponse = await fetch(searchUrl.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const searchData = await searchResponse.json();
+
+    if (!searchData.artists?.items?.[0]) {
+      sendJson(response, 200, { tracks: [] });
+      return;
+    }
+
+    const artistId = searchData.artists.items[0].id;
+    const artistName = searchData.artists.items[0].name;
+    const artistImage = searchData.artists.items[0].images?.[0]?.url || null;
+    const spotifyUrl =
+      searchData.artists.items[0].external_urls?.spotify || null;
+
+    // Get top tracks
+    const tracksUrl = new URL(
+      `https://api.spotify.com/v1/artists/${artistId}/top-tracks`,
+    );
+    tracksUrl.searchParams.set("market", "SE");
+
+    const tracksResponse = await fetch(tracksUrl.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const tracksData = await tracksResponse.json();
+
+    const tracks = (tracksData.tracks || []).slice(0, 5).map((track) => ({
+      name: track.name,
+      url: track.external_urls?.spotify || null,
+      preview: track.preview_url || null,
+      image: track.album?.images?.[0]?.url || null,
+      popularity: track.popularity,
+    }));
+
+    sendJson(response, 200, {
+      artist: artistName,
+      artistImage,
+      spotifyUrl,
+      tracks,
+    });
+  } catch (error) {
+    console.error("Spotify search error:", error);
+    sendJson(response, 500, {
+      error: error.message || "Failed to search Spotify",
+    });
+  }
+}
+
 export async function handleApiRequest(request, response) {
   const url = toUrl(request);
   const pathname = url.pathname.startsWith("/api")
@@ -881,6 +983,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === "/api/visitors/ping" && request.method === "POST") {
     await handleTrackVisitor(request, response);
+    return;
+  }
+
+  if (pathname === "/api/spotify/search" && request.method === "GET") {
+    await handleSpotifySearch(request, response);
     return;
   }
 

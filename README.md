@@ -65,10 +65,24 @@ App URL (default): `http://localhost:5173`
 - `RESEND_API_KEY`
 - `RESET_EMAIL_FROM` (e.g. `Konsertnavigator <noreply@yourdomain.com>`)
 
+### Optional (Spotify integration)
+
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+
+To enable Spotify artist lookup with top tracks:
+
+1. Create a Spotify app at https://developer.spotify.com/dashboard
+2. Get your Client ID and Client Secret
+3. Add them as environment variables
+
+If Spotify credentials are missing, the feature gracefully degrades (users see an error).
+
 If mail variables are missing, reset links are logged on the server as a fallback.
 The same mail config is also used for concert reminder emails.
 When mail is not configured, the app runs in a logs-only test mode for reset/reminder messages.
 
+```
 ## Vercel Deployment
 
 1. Import the GitHub repo in Vercel.
@@ -118,3 +132,4 @@ Before pushing commits, always verify:
 3. Build succeeds locally (`npm run build`).
 
 This checklist is part of the project workflow and should be followed on every check-in.
+```
