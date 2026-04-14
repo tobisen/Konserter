@@ -288,7 +288,7 @@ function parseKaliberEventsFromHtml(html) {
   return concerts
 }
 
-function inferFuruvikYear(pageData) {
+function inferConcertYearFromPageData(pageData) {
   const markdownBlock = pageData?.result?.data?.contentfulContentPage?.blocks
     ?.flatMap((block) => block.blocks || [])
     ?.find((block) => block?.text?.childMarkdownRemark?.html)
@@ -302,14 +302,16 @@ function inferFuruvikYear(pageData) {
   return new Date().getFullYear()
 }
 
-function parseFuruvikConcertsFromPageData(pageData) {
+function parseParksResortsConcertsFromPageData(pageData, city) {
   const blocks = pageData?.result?.data?.contentfulContentPage?.blocks || []
   const nestedBlocks = blocks.flatMap((block) => block.blocks || [])
-  const filterBlock = nestedBlocks.find(
-    (block) => block.__typename === 'ContentfulFilterListBlock'
+  const filterBlock = nestedBlocks.find((block) =>
+    ['ContentfulFilterListBlock', 'ContentfulListBlock'].includes(
+      block.__typename
+    )
   )
   const listObjects = filterBlock?.lists?.[0]?.listObjects || []
-  const fallbackYear = inferFuruvikYear(pageData)
+  const fallbackYear = inferConcertYearFromPageData(pageData)
 
   return listObjects
     .map((item) => {
@@ -331,14 +333,21 @@ function parseFuruvikConcertsFromPageData(pageData) {
         title: cleanupText(item.title) || 'Konsert',
         date: isoDate,
         venue: cleanupText(item.location) || 'Stora Scen',
-        city: 'Furuvik'
+        city
       }
     })
     .filter(Boolean)
 }
 
-async function fetchFuruvikPageDataConcerts(sourceUrl) {
-  if (!sourceUrl.hostname.includes('furuvik.se')) {
+function getParksResortsPageDataCity(hostname) {
+  if (hostname.includes('furuvik.se')) return 'Furuvik'
+  if (hostname.includes('gronalund.com')) return 'Stockholm'
+  return null
+}
+
+async function fetchParksResortsPageDataConcerts(sourceUrl) {
+  const city = getParksResortsPageDataCity(sourceUrl.hostname)
+  if (!city) {
     return []
   }
 
@@ -361,7 +370,7 @@ async function fetchFuruvikPageDataConcerts(sourceUrl) {
   }
 
   const payload = await response.json()
-  return parseFuruvikConcertsFromPageData(payload)
+  return parseParksResortsConcertsFromPageData(payload, city)
 }
 
 export async function fetchConcertsFromUrl(sourceUrlRaw) {
@@ -404,7 +413,7 @@ export async function fetchConcertsFromUrl(sourceUrlRaw) {
   }
 
   if (concerts.length === 0) {
-    const fallbackConcerts = await fetchFuruvikPageDataConcerts(sourceUrl)
+    const fallbackConcerts = await fetchParksResortsPageDataConcerts(sourceUrl)
     if (fallbackConcerts.length > 0) {
       concerts = fallbackConcerts
     }
