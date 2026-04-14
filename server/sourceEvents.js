@@ -345,6 +345,111 @@ function parseConcertsFromEmbeddedJson(html, sourceUrl = null) {
   return concerts
 }
 
+const ENGLISH_MONTHS = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11
+}
+
+function parseEnglishDateFromParts(monthText, dayText, yearText, hourText, minuteText) {
+  const month = ENGLISH_MONTHS[String(monthText || '').slice(0, 3).toLowerCase()]
+  const day = Number(dayText)
+  const year = Number(yearText)
+  const hour = Number.isInteger(Number(hourText)) ? Number(hourText) : 20
+  const minute = Number.isInteger(Number(minuteText)) ? Number(minuteText) : 0
+
+  if (month == null || !Number.isInteger(day) || !Number.isInteger(year)) {
+    return null
+  }
+
+  const date = new Date(Date.UTC(year, month, day, hour - 2, minute))
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return date.toISOString()
+}
+
+function parseFallanEventsFromHtml(html, sourceUrl = null) {
+  if (!sourceUrl?.hostname?.includes('fallan.nu')) {
+    return []
+  }
+
+  const anchors = [
+    ...html.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)
+  ]
+
+  const concerts = []
+
+  for (const [, hrefRaw, anchorInner] of anchors) {
+    const text = cleanupText(stripHtmlTags(anchorInner))
+    if (!text) continue
+    if (!/(Concert|Club|Festival|Market)/i.test(text)) continue
+    if (!/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i.test(text)) continue
+
+    const dateMatch = text.match(
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s*(20\d{2})\b/i
+    )
+    if (!dateMatch) continue
+
+    const doorsTimeMatch = text.match(/DOORS:\s*(\d{1,2})[:.](\d{2})/i)
+    const isoDate = parseEnglishDateFromParts(
+      dateMatch[1],
+      dateMatch[2],
+      dateMatch[3],
+      doorsTimeMatch?.[1],
+      doorsTimeMatch?.[2]
+    )
+    if (!isoDate) continue
+
+    const withoutPrefix = text.replace(/^(Concert|Club|Festival|Market|Club XL)\s*/i, '')
+    const afterDate = withoutPrefix.replace(
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s*20\d{2}\s*/i,
+      ''
+    )
+
+    const beforeAge = afterDate.split(/\bAge:/i)[0].trim()
+    const venueMatch = beforeAge.match(/\b(Fållan|Lilla Fållan|Förbindelsehallen|BAR15)\b/i)
+    const venue = cleanupText(venueMatch?.[1]) || 'Fållan'
+    const artist = cleanupText(
+      venueMatch ? beforeAge.replace(venueMatch[0], '').trim() : beforeAge
+    )
+    if (!artist) continue
+
+    const detailsUrl = normalizeUrlLike(hrefRaw)
+    concerts.push({
+      artist,
+      title: artist,
+      date: isoDate,
+      venue,
+      city: 'Stockholm',
+      genre: '',
+      detailsUrl,
+      imageUrl: ''
+    })
+  }
+
+  const deduped = []
+  const seen = new Set()
+  for (const concert of concerts) {
+    const key = `${concert.artist}|${concert.venue}|${concert.date}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(concert)
+  }
+
+  return deduped
+}
+
 function parseConcertsFromJsonPayload(payload) {
   const rawEvents = pickEventsPayload(payload)
   return rawEvents
@@ -391,6 +496,11 @@ function parseConcertsFromHtml(html, sourceUrl = null) {
   const fromEmbeddedJson = parseConcertsFromEmbeddedJson(html, sourceUrl)
   if (fromEmbeddedJson.length > 0) {
     return fromEmbeddedJson
+  }
+
+  const fromFallanHtml = parseFallanEventsFromHtml(html, sourceUrl)
+  if (fromFallanHtml.length > 0) {
+    return fromFallanHtml
   }
 
   return parseKaliberEventsFromHtml(html, sourceUrl)
