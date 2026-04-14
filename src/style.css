@@ -524,6 +524,10 @@ h3 {
   color: #ffd57a;
 }
 
+.admin-counter {
+  margin-top: 0;
+}
+
 .concert-image {
   width: 100%;
   max-width: 122px;

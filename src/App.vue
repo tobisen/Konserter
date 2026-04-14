@@ -130,6 +130,7 @@ function setView(view) {
   currentView.value = view
 
   if (view === 'admin' && isAuthenticated.value) {
+    loadAdminCounters()
     setAdminSubView(adminSubView.value)
   }
 }
@@ -540,12 +541,23 @@ async function loadAdminVisitors() {
   adminVisitors.value = payload.visitors || []
 }
 
+async function loadAdminCounters() {
+  try {
+    await Promise.all([loadAdminUsers(), loadAdminVisitors()])
+  } catch (error) {
+    sourceStatus.value = error.message || 'Kunde inte läsa adminstatistik.'
+  }
+}
+
 async function setAdminSubView(view) {
   adminSubView.value = view
 
   if (!isAuthenticated.value) return
 
   try {
+    if (view === 'sources') {
+      await loadAdminCounters()
+    }
     if (view === 'users') {
       await loadAdminUsers()
     }
@@ -1076,6 +1088,12 @@ onMounted(async () => {
               Töm konserter
             </button>
           </div>
+
+          <p class="lead admin-counter">
+            Unika användare: <strong>{{ adminUsers.length }}</strong>
+            |
+            Unika besökare: <strong>{{ adminVisitors.length }}</strong>
+          </p>
 
           <template v-if="adminSubView === 'sources'">
             <p class="lead">
