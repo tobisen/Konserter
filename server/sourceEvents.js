@@ -168,7 +168,7 @@ function parseConcertsFromJsonPayload(payload) {
     })
 }
 
-function parseConcertsFromHtml(html) {
+function parseConcertsFromHtml(html, sourceUrl = null) {
   const jsonLdBlocks = extractJsonLdBlocks(html)
   const eventNodes = []
 
@@ -183,7 +183,7 @@ function parseConcertsFromHtml(html) {
     return fromJsonLd
   }
 
-  return parseKaliberEventsFromHtml(html)
+  return parseKaliberEventsFromHtml(html, sourceUrl)
 }
 
 function stripHtmlTags(value) {
@@ -252,7 +252,70 @@ function parseSwedishDateWithRollingYear(dateText) {
   return currentYearIso
 }
 
-function parseKaliberEventsFromHtml(html) {
+function stageLabelToSlug(value) {
+  return cleanupText(value)
+    .toLowerCase()
+    .replace(/&/g, ' och ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function parseKaliberEventsFromHtml(html, sourceUrl = null) {
+  const stageFilter = cleanupText(sourceUrl?.searchParams?.get('stage')).toLowerCase()
+  const stageSlugFilter = cleanupText(sourceUrl?.searchParams?.get('stageSlug')).toLowerCase()
+  const stageFilters = [stageFilter, stageSlugFilter].filter(Boolean)
+  const hasStageFilter = stageFilters.length > 0
+
+  const kaliberLiveItems = [...html.matchAll(/<div[^>]*class="[^"]*events__list-item[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi)]
+
+  if (kaliberLiveItems.length > 0) {
+    const concerts = []
+
+    for (const itemMatch of kaliberLiveItems) {
+      const itemHtml = itemMatch[0]
+      const stageAttr = cleanupText(itemHtml.match(/\sdata-stage="([^"]+)"/i)?.[1]).toLowerCase()
+      const stageLabel = cleanupText(itemHtml.match(/<span[^>]*class="[^"]*info__stage[^"]*"[^>]*>([\s\S]*?)<\/span>/i)?.[1])
+      const stageLabelSlug = stageLabelToSlug(stageLabel)
+
+      if (hasStageFilter) {
+        const matched = stageFilters.some((filter) => {
+          const normalizedFilter = stageLabelToSlug(filter)
+          return (
+            stageAttr === filter ||
+            stageAttr === normalizedFilter ||
+            stageLabelSlug === normalizedFilter
+          )
+        })
+
+        if (!matched) {
+          continue
+        }
+      }
+
+      const dateText = cleanupText(itemHtml.match(/<span[^>]*class="[^"]*info__date[^"]*"[^>]*>([\s\S]*?)<\/span>/i)?.[1])
+      const title = cleanupText(itemHtml.match(/<h2[^>]*class="[^"]*item__content-title[^"]*"[^>]*>([\s\S]*?)<\/h2>/i)?.[1])
+      const isoDate = parseSwedishDateWithRollingYear(dateText)
+
+      if (!title || !isoDate) {
+        continue
+      }
+
+      concerts.push({
+        artist: title,
+        title,
+        date: isoDate,
+        venue: stageLabel || 'Okänd scen',
+        city: 'Uppsala'
+      })
+    }
+
+    if (concerts.length > 0) {
+      return concerts
+    }
+  }
+
   const kaliberRootMatch = html.match(
     /<div id="kaliber-events">([\s\S]*?)<\/div>\s*<\/div>/i
   )
@@ -273,19 +336,85 @@ function parseKaliberEventsFromHtml(html) {
     const isoDate = parseSwedishDateWithRollingYear(dateText)
 
     if (artist && isoDate) {
-      concerts.push({
+      const event = {
         artist,
         title: artist,
         date: isoDate,
         venue: 'Parksnäckan',
         city: 'Uppsala'
-      })
+      }
+
+      if (!hasStageFilter) {
+        concerts.push(event)
+      } else {
+        const eventVenueSlug = stageLabelToSlug(event.venue)
+        const matches = stageFilters.some((filter) => eventVenueSlug === stageLabelToSlug(filter))
+        if (matches) concerts.push(event)
+      }
     }
 
     itemMatch = itemPattern.exec(scope)
   }
 
   return concerts
+}
+
+function isKaliberEventsUrl(sourceUrl) {
+  return (
+    sourceUrl.hostname.includes('kaliberlive.com') &&
+    sourceUrl.pathname.replace(/\/$/, '') === '/events'
+  )
+}
+
+function getKaliberStageFilter(sourceUrl) {
+  const stage = cleanupText(sourceUrl.searchParams.get('stage')).toLowerCase()
+  if (stage) return stage
+
+  const stageSlug = cleanupText(sourceUrl.searchParams.get('stageSlug')).toLowerCase()
+  if (stageSlug) return stageSlug
+
+  return ''
+}
+
+async function fetchKaliberFilteredConcerts(sourceUrl) {
+  if (!isKaliberEventsUrl(sourceUrl)) {
+    return []
+  }
+
+  const stage = getKaliberStageFilter(sourceUrl)
+  if (!stage) {
+    return []
+  }
+
+  const body = new URLSearchParams({
+    action: 'filter_events',
+    is_archive: '0',
+    tab: '',
+    'filter[stage]': stage,
+    'filter[genre]': '',
+    'filter[q]': ''
+  })
+
+  const response = await fetch('https://kaliberlive.com/wp-admin/admin-ajax.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'User-Agent': 'KonserterBot/1.0 (+https://local.app)'
+    },
+    body: body.toString()
+  })
+
+  if (!response.ok) {
+    return []
+  }
+
+  const payload = await response.json().catch(() => null)
+  const listHtml = payload?.data?.list_items
+  if (!listHtml) {
+    return []
+  }
+
+  return parseKaliberEventsFromHtml(String(listHtml), sourceUrl)
 }
 
 function inferConcertYearFromPageData(pageData) {
@@ -385,6 +514,11 @@ export async function fetchConcertsFromUrl(sourceUrlRaw) {
     throw new Error('Ogiltig käll-URL')
   }
 
+  const kaliberFilteredConcerts = await fetchKaliberFilteredConcerts(sourceUrl)
+  if (kaliberFilteredConcerts.length > 0) {
+    return kaliberFilteredConcerts
+  }
+
   const upstream = await fetch(sourceUrl.toString(), {
     headers: {
       'User-Agent': 'KonserterBot/1.0 (+https://local.app)'
@@ -408,7 +542,7 @@ export async function fetchConcertsFromUrl(sourceUrlRaw) {
     if (maybeJson) {
       concerts = parseConcertsFromJsonPayload(maybeJson)
     } else {
-      concerts = parseConcertsFromHtml(body)
+      concerts = parseConcertsFromHtml(body, sourceUrl)
     }
   }
 
