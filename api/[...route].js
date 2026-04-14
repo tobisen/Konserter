@@ -1,12 +1,26 @@
 import { handleApiRequest } from '../server/api.js'
 
-export default async function handler(request, response) {
-  const routeValue = request.query?.route
-  let routeParts = Array.isArray(routeValue)
-    ? routeValue
-    : routeValue
-      ? [routeValue]
+function normalizeRouteParts(value) {
+  const rawParts = Array.isArray(value)
+    ? value
+    : value
+      ? [value]
       : []
+
+  const expanded = rawParts
+    .flatMap((part) => String(part).split('/'))
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  if (expanded[0] === 'api') {
+    return expanded.slice(1)
+  }
+
+  return expanded
+}
+
+export default async function handler(request, response) {
+  let routeParts = normalizeRouteParts(request.query?.route)
 
   // Fallback for runtimes where req.query.route is missing in catch-all handlers.
   if (routeParts.length === 0 && typeof request.url === 'string') {
@@ -14,6 +28,7 @@ export default async function handler(request, response) {
     routeParts = parsed.pathname
       .replace(/^\/api\/?/, '')
       .split('/')
+      .map((part) => part.trim())
       .filter(Boolean)
   }
 
