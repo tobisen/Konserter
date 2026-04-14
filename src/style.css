@@ -218,6 +218,10 @@ h2 {
   word-break: break-all;
 }
 
+.source-name-list li {
+  justify-content: flex-start;
+}
+
 .link-button {
   border: 0;
   background: transparent;

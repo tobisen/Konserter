@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import {
+  getAuthenticatedUser,
   handleAuthMe,
   handleChangePassword,
   handleLogin,
@@ -109,11 +110,20 @@ async function handleGetConcerts(response) {
 }
 
 async function handleGetSources(request, response) {
-  const user = requireAuth(request, response)
-  if (!user) return
-
+  const user = getAuthenticatedUser(request)
   const sources = await loadSourcesFromFile()
-  sendJson(response, 200, { sources })
+
+  if (user) {
+    sendJson(response, 200, { sources })
+    return
+  }
+
+  const publicSources = sources.map((source) => ({
+    id: source.id,
+    name: source.name
+  }))
+
+  sendJson(response, 200, { sources: publicSources })
 }
 
 async function handleAddSource(request, response) {

@@ -178,9 +178,9 @@ async function checkAuth() {
 
   isAuthenticated.value = Boolean(payload.authenticated)
 
-  if (isAuthenticated.value) {
+  try {
     sources.value = await loadSources()
-  } else {
+  } catch {
     sources.value = []
   }
 }
@@ -221,9 +221,9 @@ async function logout() {
   })
 
   isAuthenticated.value = false
-  sources.value = []
   sourceStatus.value = ''
   passwordStatus.value = ''
+  await checkAuth()
 }
 
 function scrollToSection(sectionId) {
@@ -457,6 +457,14 @@ onMounted(async () => {
       </form>
 
       <p v-if="authError" class="updated">{{ authError }}</p>
+
+      <h2>Aktiva källor</h2>
+      <ul v-if="sources.length" class="source-list source-name-list">
+        <li v-for="source in sources" :key="source.id">
+          <strong>{{ source.name }}</strong>
+        </li>
+      </ul>
+      <p v-else class="lead">Inga källor tillagda än.</p>
     </section>
 
     <section v-if="fetchErrors.length" class="hero errors">
