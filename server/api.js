@@ -159,9 +159,6 @@ async function handleDeleteSource(request, response, sourceId) {
 }
 
 async function handleUpdateConcerts(request, response) {
-  const user = requireAuth(request, response)
-  if (!user) return
-
   const sources = await loadSourcesFromFile()
 
   if (sources.length === 0) {

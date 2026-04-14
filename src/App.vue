@@ -118,11 +118,6 @@ async function refreshConcerts() {
 }
 
 async function updateConcerts() {
-  if (!isAuthenticated.value) {
-    status.value = 'Du måste vara inloggad för att uppdatera.'
-    return
-  }
-
   loading.value = true
   status.value = ''
   fetchErrors.value = []
@@ -244,7 +239,7 @@ onMounted(async () => {
       </p>
 
       <div class="actions">
-        <button class="refresh" @click="updateConcerts" :disabled="loading || !isAuthenticated">
+        <button class="refresh" @click="updateConcerts" :disabled="loading">
           {{ loading ? 'Uppdaterar...' : 'Uppdatera konserter' }}
         </button>
         <p v-if="status" class="updated">{{ status }}</p>
@@ -307,7 +302,7 @@ onMounted(async () => {
 
     <section v-else class="hero source-panel">
       <h2>Admin-inloggning</h2>
-      <p class="lead">Endast inloggad admin kan lägga till/ta bort källor och uppdatera data.</p>
+      <p class="lead">Endast inloggad admin kan lägga till och ta bort källor.</p>
 
       <form class="login-form" @submit.prevent="login">
         <input v-model="loginUsername" type="text" placeholder="Användarnamn" />
