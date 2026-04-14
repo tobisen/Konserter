@@ -862,20 +862,20 @@ onMounted(async () => {
               <p class="source">{{ getConcertSourceName(concert) }}</p>
               <div class="mini-actions">
                 <button
-                  class="link-button neutral"
+                  class="mini-action-button"
                   :class="{ active: isBooked(concert) }"
                   type="button"
                   @click="toggleBooking(concert)"
                 >
-                  {{ isBooked(concert) ? 'Bokad' : 'Boka' }}
+                  Ska gå
                 </button>
                 <button
-                  class="link-button neutral"
+                  class="mini-action-button"
                   :class="{ active: isSeen(concert) }"
                   type="button"
                   @click="toggleSeen(concert)"
                 >
-                  {{ isSeen(concert) ? 'Sedd' : 'Markera sedd' }}
+                  Var där
                 </button>
               </div>
               <button
@@ -1012,7 +1012,7 @@ onMounted(async () => {
               type="button"
               @click="myConcertsSubView = 'bookings'"
             >
-              Mina bokningar
+              Ska gå
             </button>
             <button
               class="nav-link"
@@ -1020,7 +1020,7 @@ onMounted(async () => {
               type="button"
               @click="myConcertsSubView = 'seen'"
             >
-              Sedda spelningar
+              Var där
             </button>
           </div>
 
@@ -1051,22 +1051,22 @@ onMounted(async () => {
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
                 <div class="mini-actions">
-                  <button
-                    class="link-button neutral"
-                    :class="{ active: isBooked(concert) }"
-                    type="button"
-                    @click="toggleBooking(concert)"
-                  >
-                    {{ isBooked(concert) ? 'Bokad' : 'Boka' }}
-                  </button>
-                  <button
-                    class="link-button neutral"
-                    :class="{ active: isSeen(concert) }"
-                    type="button"
-                    @click="toggleSeen(concert)"
-                  >
-                    {{ isSeen(concert) ? 'Sedd' : 'Markera sedd' }}
-                  </button>
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isBooked(concert) }"
+                  type="button"
+                  @click="toggleBooking(concert)"
+                >
+                  Ska gå
+                </button>
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isSeen(concert) }"
+                  type="button"
+                  @click="toggleSeen(concert)"
+                >
+                  Var där
+                </button>
                 </div>
                 <button
                   class="heart-button"
@@ -1242,22 +1242,22 @@ onMounted(async () => {
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
                 <div class="mini-actions">
-                  <button
-                    class="link-button neutral"
-                    :class="{ active: isBooked(concert) }"
-                    type="button"
-                    @click="toggleBooking(concert)"
-                  >
-                    {{ isBooked(concert) ? 'Bokad' : 'Boka' }}
-                  </button>
-                  <button
-                    class="link-button neutral"
-                    :class="{ active: isSeen(concert) }"
-                    type="button"
-                    @click="toggleSeen(concert)"
-                  >
-                    {{ isSeen(concert) ? 'Sedd' : 'Markera sedd' }}
-                  </button>
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isBooked(concert) }"
+                  type="button"
+                  @click="toggleBooking(concert)"
+                >
+                  Ska gå
+                </button>
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isSeen(concert) }"
+                  type="button"
+                  @click="toggleSeen(concert)"
+                >
+                  Var där
+                </button>
                 </div>
                 <button
                   class="heart-button"
