@@ -243,6 +243,16 @@ h2 {
   gap: 12px;
 }
 
+.filter-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.filter-actions {
+  margin-top: -6px;
+}
+
 .filter-options {
   display: flex;
   flex-wrap: wrap;
@@ -282,6 +292,18 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
+}
+
+.month-group + .month-group {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+
+.month-heading {
+  margin: 0 0 10px;
+  text-transform: capitalize;
+  color: var(--accent);
 }
 
 .card {

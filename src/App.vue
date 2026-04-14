@@ -29,6 +29,14 @@ const passwordStatus = ref('')
 const newSourceName = ref('')
 const newSourceUrl = ref('')
 const deselectedSources = ref([])
+const deselectedMonths = ref([])
+
+const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
+
+function getConcertDate(concert) {
+  const date = new Date(concert?.date)
+  return Number.isNaN(date.getTime()) ? null : date
+}
 
 function getConcertSourceName(concert) {
   const sourceName = String(concert?.sourceName || '').trim()
@@ -41,30 +49,67 @@ const availableSourceNames = computed(() => {
   )
 })
 
-const filteredConcerts = computed(() => {
-  return concerts.value.filter(
-    (concert) => !deselectedSources.value.includes(getConcertSourceName(concert))
-  )
+function getConcertMonth(concert) {
+  const date = getConcertDate(concert)
+  return date ? date.getMonth() : null
+}
+
+function getMonthLabel(monthNumber) {
+  return monthFormatter.format(new Date(Date.UTC(2024, monthNumber, 1)))
+}
+
+const availableMonthNumbers = computed(() => {
+  const months = concerts.value
+    .map((concert) => getConcertMonth(concert))
+    .filter((month) => month !== null)
+
+  return [...new Set(months)].sort((a, b) => a - b)
 })
 
-const groupedByYear = computed(() => {
-  const groups = new Map()
+const filteredConcerts = computed(() => {
+  return concerts.value.filter((concert) => {
+    const sourceIncluded = !deselectedSources.value.includes(getConcertSourceName(concert))
+    const month = getConcertMonth(concert)
+    const monthIncluded = month === null || !deselectedMonths.value.includes(month)
+
+    return sourceIncluded && monthIncluded
+  })
+})
+
+const groupedByYearAndMonth = computed(() => {
+  const yearGroups = new Map()
 
   for (const concert of filteredConcerts.value) {
-    const year = new Date(concert.date).getFullYear()
+    const date = getConcertDate(concert)
+    if (!date) continue
 
-    if (!groups.has(year)) {
-      groups.set(year, [])
+    const year = date.getFullYear()
+    const month = date.getMonth()
+
+    if (!yearGroups.has(year)) {
+      yearGroups.set(year, new Map())
     }
 
-    groups.get(year).push(concert)
+    const monthGroups = yearGroups.get(year)
+
+    if (!monthGroups.has(month)) {
+      monthGroups.set(month, [])
+    }
+
+    monthGroups.get(month).push(concert)
   }
 
-  return [...groups.entries()]
+  return [...yearGroups.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([year, items]) => ({
+    .map(([year, monthGroups]) => ({
       year,
-      concerts: items
+      months: [...monthGroups.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([month, items]) => ({
+          month,
+          label: getMonthLabel(month),
+          concerts: items
+        }))
     }))
 })
 
@@ -83,6 +128,23 @@ function toggleSourceFilter(sourceName) {
 
 function selectAllSources() {
   deselectedSources.value = []
+}
+
+function isMonthSelected(monthNumber) {
+  return !deselectedMonths.value.includes(monthNumber)
+}
+
+function toggleMonthFilter(monthNumber) {
+  if (isMonthSelected(monthNumber)) {
+    deselectedMonths.value = [...deselectedMonths.value, monthNumber]
+    return
+  }
+
+  deselectedMonths.value = deselectedMonths.value.filter((value) => value !== monthNumber)
+}
+
+function selectAllMonths() {
+  deselectedMonths.value = []
 }
 
 function formatDate(isoDate) {
@@ -391,9 +453,12 @@ onMounted(async () => {
     <section v-if="availableSourceNames.length" class="hero source-filter">
       <div class="filter-header">
         <h2>Filtrera spelningar</h2>
-        <button class="link-button neutral" @click="selectAllSources">Visa alla</button>
       </div>
 
+      <p class="filter-title">Källor</p>
+      <div class="filter-actions">
+        <button class="link-button neutral" @click="selectAllSources">Visa alla källor</button>
+      </div>
       <div class="filter-options">
         <label
           v-for="sourceName in availableSourceNames"
@@ -409,29 +474,53 @@ onMounted(async () => {
           <span>{{ sourceName }}</span>
         </label>
       </div>
+
+      <p v-if="availableMonthNumbers.length" class="filter-title">Månader</p>
+      <div v-if="availableMonthNumbers.length" class="filter-actions">
+        <button class="link-button neutral" @click="selectAllMonths">Visa alla månader</button>
+      </div>
+      <div v-if="availableMonthNumbers.length" class="filter-options">
+        <label
+          v-for="monthNumber in availableMonthNumbers"
+          :key="monthNumber"
+          class="filter-option"
+          :class="{ active: isMonthSelected(monthNumber) }"
+        >
+          <input
+            type="checkbox"
+            :checked="isMonthSelected(monthNumber)"
+            @change="toggleMonthFilter(monthNumber)"
+          />
+          <span>{{ getMonthLabel(monthNumber) }}</span>
+        </label>
+      </div>
     </section>
 
-    <section v-if="groupedByYear.length" id="concerts" class="list">
-      <article v-for="group in groupedByYear" :key="group.year" class="year-group">
+    <section v-if="groupedByYearAndMonth.length" id="concerts" class="list">
+      <article v-for="group in groupedByYearAndMonth" :key="group.year" class="year-group">
         <h2>{{ group.year }}</h2>
 
-        <article
-          v-for="concert in group.concerts"
-          :key="`${concert.artist}-${concert.date}-${concert.venue}`"
-          class="card"
-        >
-          <div class="meta">
-            <p>{{ formatDate(concert.date) }}</p>
-            <p>{{ concert.city }}</p>
-          </div>
+        <section v-for="monthGroup in group.months" :key="monthGroup.month" class="month-group">
+          <h3 class="month-heading">{{ monthGroup.label }}</h3>
 
-          <div class="content">
-            <h3>{{ concert.artist }}</h3>
-            <p class="title">{{ concert.title }}</p>
-            <p class="venue">{{ concert.venue }}</p>
-            <p class="source">{{ getConcertSourceName(concert) }}</p>
-          </div>
-        </article>
+          <article
+            v-for="concert in monthGroup.concerts"
+            :key="`${concert.artist}-${concert.date}-${concert.venue}`"
+            class="card"
+          >
+            <div class="meta">
+              <p>{{ formatDate(concert.date) }}</p>
+              <p>{{ concert.city }}</p>
+            </div>
+
+            <div class="content">
+              <h3>{{ concert.artist }}</h3>
+              <p class="title">{{ concert.title }}</p>
+              <p class="venue">{{ concert.venue }}</p>
+              <p class="source">{{ getConcertSourceName(concert) }}</p>
+            </div>
+          </article>
+        </section>
       </article>
     </section>
 
