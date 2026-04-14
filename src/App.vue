@@ -160,6 +160,8 @@ const formattedLastUpdatedAt = computed(() => {
   return updatedAtFormatter.format(date)
 })
 
+const displayVersion = computed(() => `v.${String(appVersion).replace('+build.', '-')}`)
+
 function getConcertMonth(concert) {
   const date = getConcertDate(concert)
   return date ? date.getMonth() : null
@@ -681,7 +683,8 @@ onMounted(async () => {
     <header class="site-header">
       <div>
         <p class="brand">Konsertnavigator</p>
-        <p class="build-version">Version {{ appVersion }}</p>
+        <p class="build-version">{{ displayVersion }}</p>
+        <p class="build-version">Senast uppdaterad: {{ formattedLastUpdatedAt }}</p>
       </div>
       <nav class="main-nav" aria-label="Huvudmeny">
         <button class="nav-link" :class="{ active: currentView === 'home' }" @click="setView('home')">
@@ -727,10 +730,6 @@ onMounted(async () => {
 
     <section v-if="status" class="hero">
       <p class="updated">{{ status }}</p>
-    </section>
-
-    <section class="hero">
-      <p class="lead">Senast uppdaterad: {{ formattedLastUpdatedAt }}</p>
     </section>
 
     <section v-if="!authReady" class="hero">
