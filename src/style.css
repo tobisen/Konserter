@@ -289,6 +289,16 @@ h3 {
   justify-content: flex-start;
 }
 
+.source-status-list li {
+  justify-content: flex-start;
+}
+
+.source-status-list p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .link-button {
   border: 0;
   background: transparent;

@@ -12,6 +12,15 @@ export async function loadSources() {
   return payload.sources || []
 }
 
+export async function loadSourcesDetailed() {
+  const response = await fetch('/api/sources')
+  const payload = await parseJson(response)
+  return {
+    sources: payload.sources || [],
+    sourceStatus: payload.sourceStatus || []
+  }
+}
+
 export async function addSource(sourceInput) {
   const response = await fetch('/api/sources', {
     method: 'POST',

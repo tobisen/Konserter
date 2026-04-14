@@ -5,7 +5,7 @@ import {
   loadStoredConcerts,
   updateConcertsFromSources
 } from './services/concertStore'
-import { addSource, loadSources, removeSource } from './services/sourceStore'
+import { addSource, loadSourcesDetailed, removeSource } from './services/sourceStore'
 import {
   addToUserList,
   getUserSession,
@@ -22,6 +22,7 @@ const sources = ref([])
 const loading = ref(false)
 const status = ref('')
 const sourceStatus = ref('')
+const sourceImportStatus = ref([])
 const fetchErrors = ref([])
 
 const currentView = ref('home')
@@ -503,6 +504,13 @@ function formatDate(isoDate) {
   }).format(new Date(isoDate))
 }
 
+function formatStatusDate(value) {
+  if (!value) return 'Aldrig'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Okänd'
+  return updatedAtFormatter.format(date)
+}
+
 function formatIcsDate(date) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 }
@@ -566,9 +574,12 @@ async function checkAuth() {
   isAuthenticated.value = Boolean(payload.authenticated)
 
   try {
-    sources.value = await loadSources()
+    const sourcePayload = await loadSourcesDetailed()
+    sources.value = sourcePayload.sources
+    sourceImportStatus.value = sourcePayload.sourceStatus
   } catch {
     sources.value = []
+    sourceImportStatus.value = []
   }
 }
 
@@ -700,6 +711,7 @@ async function updateConcerts() {
     concerts.value = result.concerts
     fetchErrors.value = result.errors
     lastUpdatedAt.value = result.lastUpdatedAt || lastUpdatedAt.value
+    sourceImportStatus.value = result.sourceStatus || sourceImportStatus.value
 
     if (result.addedCount > 0) {
       status.value = `Lade till ${result.addedCount} nya konserter.`
@@ -760,6 +772,7 @@ async function submitSource() {
     newSourceName.value = ''
     newSourceUrl.value = ''
     sourceStatus.value = 'Källa tillagd.'
+    await checkAuth()
   } catch (error) {
     sourceStatus.value = error.message || 'Kunde inte lägga till källa.'
   }
@@ -774,6 +787,7 @@ async function deleteSource(id) {
   try {
     sources.value = await removeSource(id)
     sourceStatus.value = 'Källa borttagen.'
+    await checkAuth()
   } catch (error) {
     sourceStatus.value = error.message || 'Kunde inte ta bort källa.'
   }
@@ -990,6 +1004,19 @@ onMounted(async () => {
             </li>
           </ul>
           <p v-else class="lead">Inga källor tillagda än.</p>
+
+          <h2>Importkvalitet</h2>
+          <ul v-if="sourceImportStatus.length" class="source-list source-status-list">
+            <li v-for="item in sourceImportStatus" :key="item.sourceId">
+              <div>
+                <strong>{{ item.sourceName }}</strong>
+                <p>Antal hämtade: {{ item.fetchedCount }}</p>
+                <p>Fel: {{ item.error || 'Inget' }}</p>
+                <p>Senaste körning: {{ formatStatusDate(item.lastRunAt) }}</p>
+              </div>
+            </li>
+          </ul>
+          <p v-else class="lead">Ingen körning ännu. Klicka Uppdatera för att fylla status.</p>
 
           <h2>Byt lösenord</h2>
           <form class="login-form" @submit.prevent="submitPasswordChange">

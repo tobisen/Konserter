@@ -147,9 +147,19 @@ async function handleGetConcerts(response) {
 async function handleGetSources(request, response) {
   const user = getAuthenticatedUser(request)
   const sources = await loadSourcesFromFile()
+  const meta = await loadMetaFromStore()
+  const sourceRuns = meta?.sourceRuns && typeof meta.sourceRuns === 'object' ? meta.sourceRuns : {}
 
   if (user) {
-    sendJson(response, 200, { sources })
+    const sourceStatus = sources.map((source) => ({
+      sourceId: source.id,
+      sourceName: source.name,
+      fetchedCount: Number(sourceRuns[source.id]?.fetchedCount || 0),
+      error: String(sourceRuns[source.id]?.error || ''),
+      lastRunAt: sourceRuns[source.id]?.lastRunAt || null
+    }))
+
+    sendJson(response, 200, { sources, sourceStatus })
     return
   }
 
@@ -244,6 +254,8 @@ async function runConcertUpdate() {
 
   const incomingConcerts = []
   const errors = []
+  const sourceRuns = {}
+  const updateTimestamp = new Date().toISOString()
 
   for (let i = 0; i < sourceResults.length; i += 1) {
     const result = sourceResults[i]
@@ -251,9 +263,19 @@ async function runConcertUpdate() {
 
     if (result.status === 'fulfilled') {
       incomingConcerts.push(...result.value)
+      sourceRuns[source.id] = {
+        fetchedCount: result.value.length,
+        error: '',
+        lastRunAt: updateTimestamp
+      }
       continue
     }
 
+    sourceRuns[source.id] = {
+      fetchedCount: 0,
+      error: String(result.reason?.message || 'okänt fel'),
+      lastRunAt: updateTimestamp
+    }
     errors.push(`${source.name}: ${result.reason?.message || 'okänt fel'}`)
   }
 
@@ -268,11 +290,14 @@ async function runConcertUpdate() {
     await saveConcertsToFile(merged)
   }
 
-  const updateTimestamp = new Date().toISOString()
   const meta = await loadMetaFromStore()
   await saveMetaToStore({
     ...meta,
-    lastUpdatedAt: updateTimestamp
+    lastUpdatedAt: updateTimestamp,
+    sourceRuns: {
+      ...(meta?.sourceRuns && typeof meta.sourceRuns === 'object' ? meta.sourceRuns : {}),
+      ...sourceRuns
+    }
   })
 
   return {
@@ -282,7 +307,14 @@ async function runConcertUpdate() {
       concerts: additions.length > 0 ? merged : currentConcerts,
       addedCount: additions.length,
       errors,
-      lastUpdatedAt: updateTimestamp
+      lastUpdatedAt: updateTimestamp,
+      sourceStatus: sources.map((source) => ({
+        sourceId: source.id,
+        sourceName: source.name,
+        fetchedCount: Number(sourceRuns[source.id]?.fetchedCount || 0),
+        error: String(sourceRuns[source.id]?.error || ''),
+        lastRunAt: sourceRuns[source.id]?.lastRunAt || null
+      }))
     }
   }
 }

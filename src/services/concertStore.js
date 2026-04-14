@@ -26,7 +26,8 @@ export async function updateConcertsFromSources() {
     concerts: payload.concerts || [],
     addedCount: payload.addedCount || 0,
     errors: payload.errors || [],
-    lastUpdatedAt: payload.lastUpdatedAt || null
+    lastUpdatedAt: payload.lastUpdatedAt || null,
+    sourceStatus: payload.sourceStatus || []
   }
 }
 
