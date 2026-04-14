@@ -711,17 +711,6 @@ onMounted(async () => {
         >
           Favoriter
         </button>
-        <button class="nav-link nav-action" @click="updateConcerts" :disabled="loading">
-          {{ loading ? 'Uppdaterar...' : 'Uppdatera' }}
-        </button>
-        <button
-          v-if="isAuthenticated"
-          class="nav-link nav-action nav-danger"
-          @click="clearConcerts"
-          :disabled="loading"
-        >
-          Töm
-        </button>
         <button class="nav-link" @click="handleAuthButton">
           {{ isAuthenticated ? 'Logga ut admin' : 'Admin-inlogg' }}
         </button>
@@ -1026,23 +1015,38 @@ onMounted(async () => {
       </section>
 
       <section v-if="currentView === 'concerts'" class="hero concerts-switch">
-        <div class="main-nav concerts-submenu">
-          <button
-            class="nav-link"
-            :class="{ active: concertsSubView === 'upcoming' }"
-            type="button"
-            @click="setConcertsSubView('upcoming')"
-          >
-            Framtida
-          </button>
-          <button
-            class="nav-link"
-            :class="{ active: concertsSubView === 'past' }"
-            type="button"
-            @click="setConcertsSubView('past')"
-          >
-            Tidigare
-          </button>
+        <div class="concerts-submenu-row">
+          <div class="main-nav concerts-submenu">
+            <button
+              class="nav-link"
+              :class="{ active: concertsSubView === 'upcoming' }"
+              type="button"
+              @click="setConcertsSubView('upcoming')"
+            >
+              Framtida
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: concertsSubView === 'past' }"
+              type="button"
+              @click="setConcertsSubView('past')"
+            >
+              Tidigare
+            </button>
+          </div>
+          <div v-if="isAuthenticated" class="main-nav concerts-submenu concerts-admin-actions">
+            <button class="nav-link nav-action" type="button" @click="updateConcerts" :disabled="loading">
+              {{ loading ? 'Uppdaterar...' : 'Uppdatera' }}
+            </button>
+            <button
+              class="nav-link nav-action nav-danger"
+              type="button"
+              @click="clearConcerts"
+              :disabled="loading"
+            >
+              Töm
+            </button>
+          </div>
         </div>
       </section>
 
