@@ -65,6 +65,7 @@ App URL (default): `http://localhost:5173`
 
 If mail variables are missing, reset links are logged on the server as a fallback.
 The same mail config is also used for concert reminder emails.
+When mail is not configured, the app runs in a logs-only test mode for reset/reminder messages.
 
 ## Vercel Deployment
 

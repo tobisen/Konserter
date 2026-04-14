@@ -29,6 +29,7 @@ const fetchErrors = ref([])
 const adminSubView = ref('sources')
 const adminUsers = ref([])
 const adminVisitors = ref([])
+const adminMailStatus = ref({ configured: false, mode: 'logs_only' })
 
 const currentView = ref('home')
 const showAuthModal = ref(false)
@@ -562,9 +563,19 @@ async function loadAdminVisitors() {
   adminVisitors.value = payload.visitors || []
 }
 
+async function loadAdminMailStatus() {
+  const response = await fetch('/api/admin/mail-status')
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload.error || 'Kunde inte läsa mail-status.')
+  adminMailStatus.value = {
+    configured: Boolean(payload.configured),
+    mode: payload.mode || 'logs_only'
+  }
+}
+
 async function loadAdminCounters() {
   try {
-    await Promise.all([loadAdminUsers(), loadAdminVisitors()])
+    await Promise.all([loadAdminUsers(), loadAdminVisitors(), loadAdminMailStatus()])
   } catch (error) {
     sourceStatus.value = error.message || 'Kunde inte läsa adminstatistik.'
   }
@@ -1116,6 +1127,11 @@ onMounted(async () => {
         <h2>Admin</h2>
 
         <template v-if="isAuthenticated">
+          <p v-if="!adminMailStatus.configured" class="updated">
+            Testläge: Mail är inte konfigurerat. Återställningslänkar och påminnelser loggas i serverloggar.
+          </p>
+          <p v-else class="updated">Mailutskick är aktivt.</p>
+
           <div class="main-nav concerts-submenu">
             <button
               class="nav-link"
@@ -1278,6 +1294,9 @@ onMounted(async () => {
 
         <template v-else-if="!userAuthenticated">
           <p class="lead">Registrera dig eller logga in för att hantera dina personliga spelningslistor.</p>
+          <p class="updated">
+            Om mail inte är konfigurerat körs lösenordsåterställning i testläge via serverloggar.
+          </p>
 
           <div class="user-auth-grid">
             <form class="user-auth-form stacked-form" @submit.prevent="registerRegularUser">

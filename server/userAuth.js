@@ -350,6 +350,12 @@ function buildResetUrl(token) {
   return `${base.replace(/\/$/, '')}/?resetToken=${encodeURIComponent(token)}`
 }
 
+export function isMailDeliveryConfigured() {
+  const resendApiKey = String(process.env.RESEND_API_KEY || '').trim()
+  const fromEmail = String(process.env.RESET_EMAIL_FROM || '').trim()
+  return Boolean(resendApiKey && fromEmail)
+}
+
 async function sendResetPasswordEmail(email, resetLink) {
   const resendApiKey = String(process.env.RESEND_API_KEY || '').trim()
   const fromEmail = String(process.env.RESET_EMAIL_FROM || '').trim()
@@ -392,6 +398,8 @@ export async function handleUserForgotPassword(request, response, body) {
   const users = await loadUsersFromStore()
   const user = users.find((entry) => normalizeEmail(entry.email) === email)
 
+  const configured = isMailDeliveryConfigured()
+
   if (user) {
     const token = crypto.randomBytes(24).toString('hex')
     const tokenHash = hashResetToken(token)
@@ -411,7 +419,9 @@ export async function handleUserForgotPassword(request, response, body) {
   response.end(
     JSON.stringify({
       ok: true,
-      message: 'Om e-postadressen finns skickas en återställningslänk.'
+      message: configured
+        ? 'Om e-postadressen finns skickas en återställningslänk.'
+        : 'Testläge: återställningslänk loggas i serverloggar.'
     })
   )
 }

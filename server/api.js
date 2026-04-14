@@ -14,6 +14,7 @@ import {
   handleUserMe,
   handleUserResetPassword,
   handleUserRegister,
+  isMailDeliveryConfigured,
   requireAppUser
 } from './userAuth.js'
 import { fetchConcertsFromUrl, handleSourceEventsRequest } from './sourceEvents.js'
@@ -625,6 +626,17 @@ async function handleGetAdminVisitors(request, response) {
   })
 }
 
+async function handleGetAdminMailStatus(request, response) {
+  const user = requireAuth(request, response)
+  if (!user) return
+
+  const configured = isMailDeliveryConfigured()
+  sendJson(response, 200, {
+    configured,
+    mode: configured ? 'email' : 'logs_only'
+  })
+}
+
 const USER_LISTS = {
   favorites: 'favorites',
   bookings: 'bookings',
@@ -929,6 +941,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/admin/visitors' && request.method === 'GET') {
     await handleGetAdminVisitors(request, response)
+    return
+  }
+
+  if (pathname === '/api/admin/mail-status' && request.method === 'GET') {
+    await handleGetAdminMailStatus(request, response)
     return
   }
 
