@@ -95,6 +95,22 @@ function extractJsonLdBlocks(html) {
   return blocks
 }
 
+function extractJsonScriptBlocks(html) {
+  const blocks = []
+  const pattern = /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi
+
+  let match = pattern.exec(html)
+  while (match) {
+    const content = String(match[1] || '').trim()
+    if (content) {
+      blocks.push(content)
+    }
+    match = pattern.exec(html)
+  }
+
+  return blocks
+}
+
 function isEventNode(node) {
   const type = node?.['@type']
   if (!type) return false
@@ -195,6 +211,140 @@ function normalizeEventNode(eventNode) {
   }
 }
 
+function pickFirstText(...values) {
+  for (const value of values) {
+    const text = cleanupText(value)
+    if (text) return text
+  }
+
+  return ''
+}
+
+function pickDateTextFromUnknown(event) {
+  const candidates = [
+    event?.startDate,
+    event?.date,
+    event?.eventDate,
+    event?.startsAt,
+    event?.start,
+    event?.datetime,
+    event?.publishedAt
+  ]
+
+  for (const candidate of candidates) {
+    const text = cleanupText(candidate)
+    if (!text) continue
+    const parsed = new Date(text)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString()
+    }
+
+    const swedish = parseSwedishDateWithRollingYear(text)
+    if (swedish) {
+      return swedish
+    }
+  }
+
+  return ''
+}
+
+function normalizeUnknownEventObject(event, sourceUrl = null) {
+  if (!event || typeof event !== 'object') return null
+
+  const title = pickFirstText(event?.title, event?.name, event?.eventName)
+  const artist = pickFirstText(
+    event?.artist,
+    event?.performer?.name,
+    event?.performer,
+    title
+  )
+  const date = pickDateTextFromUnknown(event)
+
+  if (!title || !artist || !date) {
+    return null
+  }
+
+  const detailsUrl = normalizeUrlLike(
+    event?.detailsUrl || event?.url || event?.link || event?.slug
+  )
+
+  const venue = pickFirstText(
+    event?.venue,
+    event?.location?.name,
+    event?.location,
+    sourceUrl?.hostname.includes('fallan.nu') ? 'Fållan' : ''
+  ) || 'Okänd scen'
+
+  const city = pickFirstText(
+    event?.city,
+    event?.location?.address?.addressLocality,
+    sourceUrl?.hostname.includes('fallan.nu') ? 'Stockholm' : ''
+  ) || 'Okänd stad'
+
+  return {
+    artist,
+    title,
+    date,
+    venue,
+    city,
+    genre: pickFirstText(event?.genre, event?.category),
+    detailsUrl,
+    imageUrl: pickImageUrlFromUnknown(event?.image || event?.imageUrl || event?.poster)
+  }
+}
+
+function collectLikelyEventObjects(node, output = []) {
+  if (!node || typeof node !== 'object') {
+    return output
+  }
+
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      collectLikelyEventObjects(item, output)
+    }
+    return output
+  }
+
+  const hasNameLike = Boolean(node?.title || node?.name || node?.eventName)
+  const hasDateLike = Boolean(
+    node?.startDate || node?.date || node?.eventDate || node?.startsAt || node?.start
+  )
+
+  if (hasNameLike && hasDateLike) {
+    output.push(node)
+  }
+
+  for (const value of Object.values(node)) {
+    collectLikelyEventObjects(value, output)
+  }
+
+  return output
+}
+
+function parseConcertsFromEmbeddedJson(html, sourceUrl = null) {
+  const blocks = extractJsonScriptBlocks(html)
+  if (blocks.length === 0) {
+    return []
+  }
+
+  const concerts = []
+
+  for (const block of blocks) {
+    const parsed = parsePossiblyJson(block)
+    if (!parsed) continue
+
+    const candidates = collectLikelyEventObjects(parsed)
+    for (const candidate of candidates) {
+      const normalized = normalizeUnknownEventObject(candidate, sourceUrl)
+      if (normalized) {
+        concerts.push(normalized)
+      }
+    }
+  }
+
+  return concerts
+}
+
 function parseConcertsFromJsonPayload(payload) {
   const rawEvents = pickEventsPayload(payload)
   return rawEvents
@@ -236,6 +386,11 @@ function parseConcertsFromHtml(html, sourceUrl = null) {
   const fromJsonLd = eventNodes.map(normalizeEventNode).filter(Boolean)
   if (fromJsonLd.length > 0) {
     return fromJsonLd
+  }
+
+  const fromEmbeddedJson = parseConcertsFromEmbeddedJson(html, sourceUrl)
+  if (fromEmbeddedJson.length > 0) {
+    return fromEmbeddedJson
   }
 
   return parseKaliberEventsFromHtml(html, sourceUrl)
