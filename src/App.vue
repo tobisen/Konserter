@@ -155,38 +155,32 @@ const formattedLastUpdatedAt = computed(() => {
   return updatedAtFormatter.format(date)
 })
 
-const availableSourceNames = computed(() => {
-  return [...new Set(concerts.value.map((concert) => getConcertSourceName(concert)))].sort((a, b) =>
-    a.localeCompare(b, 'sv-SE')
-  )
-})
-
 function getConcertMonth(concert) {
   const date = getConcertDate(concert)
   return date ? date.getMonth() : null
 }
 
-const availableMonthNumbers = computed(() => {
-  const months = concerts.value
-    .map((concert) => getConcertMonth(concert))
-    .filter((month) => month !== null)
-
-  return [...new Set(months)].sort((a, b) => a - b)
-})
-
-const availableGenreLabels = computed(() => {
-  const genres = [...new Set(concerts.value.map((concert) => getConcertGenreLabel(concert)))]
-
-  return genres.sort((a, b) => {
-    if (a === 'Övrigt' && b !== 'Övrigt') return 1
-    if (b === 'Övrigt' && a !== 'Övrigt') return -1
-    return a.localeCompare(b, 'sv-SE')
-  })
-})
-
 const currentMonthLabel = computed(() => {
   return monthYearFormatter.format(new Date())
 })
+
+function getStartOfToday() {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  return now
+}
+
+function isPastConcert(concert) {
+  const date = getConcertDate(concert)
+  if (!date) return false
+  return date < getStartOfToday()
+}
+
+function isUpcomingConcert(concert) {
+  const date = getConcertDate(concert)
+  if (!date) return false
+  return date >= getStartOfToday()
+}
 
 const currentMonthConcerts = computed(() => {
   const now = new Date()
@@ -201,8 +195,40 @@ const currentMonthConcerts = computed(() => {
     .sort((a, b) => getConcertDate(a) - getConcertDate(b))
 })
 
+const concertsForCurrentView = computed(() => {
+  if (currentView.value === 'past-concerts') {
+    return concerts.value.filter((concert) => isPastConcert(concert))
+  }
+
+  return concerts.value.filter((concert) => isUpcomingConcert(concert))
+})
+
+const availableSourceNames = computed(() => {
+  return [...new Set(concertsForCurrentView.value.map((concert) => getConcertSourceName(concert)))].sort(
+    (a, b) => a.localeCompare(b, 'sv-SE')
+  )
+})
+
+const availableMonthNumbers = computed(() => {
+  const months = concertsForCurrentView.value
+    .map((concert) => getConcertMonth(concert))
+    .filter((month) => month !== null)
+
+  return [...new Set(months)].sort((a, b) => a - b)
+})
+
+const availableGenreLabels = computed(() => {
+  const genres = [...new Set(concertsForCurrentView.value.map((concert) => getConcertGenreLabel(concert)))]
+
+  return genres.sort((a, b) => {
+    if (a === 'Övrigt' && b !== 'Övrigt') return 1
+    if (b === 'Övrigt' && a !== 'Övrigt') return -1
+    return a.localeCompare(b, 'sv-SE')
+  })
+})
+
 const filteredConcerts = computed(() => {
-  return concerts.value.filter((concert) => {
+  return concertsForCurrentView.value.filter((concert) => {
     const sourceIncluded = !deselectedSources.value.includes(getConcertSourceName(concert))
     const month = getConcertMonth(concert)
     const monthIncluded = month === null || !deselectedMonths.value.includes(month)
@@ -236,15 +262,27 @@ const groupedByYearAndMonth = computed(() => {
   }
 
   return [...yearGroups.entries()]
-    .sort((a, b) => a[0] - b[0])
+    .sort((a, b) =>
+      currentView.value === 'past-concerts'
+        ? b[0] - a[0]
+        : a[0] - b[0]
+    )
     .map(([year, monthGroups]) => ({
       year,
       months: [...monthGroups.entries()]
-        .sort((a, b) => a[0] - b[0])
+        .sort((a, b) =>
+          currentView.value === 'past-concerts'
+            ? b[0] - a[0]
+            : a[0] - b[0]
+        )
         .map(([month, items]) => ({
           month,
           label: getMonthLabel(month),
-          concerts: items
+          concerts: [...items].sort((a, b) =>
+            currentView.value === 'past-concerts'
+              ? getConcertDate(b) - getConcertDate(a)
+              : getConcertDate(a) - getConcertDate(b)
+          )
         }))
     }))
 })
@@ -660,6 +698,13 @@ onMounted(async () => {
         </button>
         <button
           class="nav-link"
+          :class="{ active: currentView === 'past-concerts' }"
+          @click="setView('past-concerts')"
+        >
+          Tidigare
+        </button>
+        <button
+          class="nav-link"
           :class="{ active: currentView === 'favorites' }"
           @click="setView('favorites')"
         >
@@ -902,12 +947,18 @@ onMounted(async () => {
       </section>
 
       <section
-        v-if="currentView === 'concerts'"
+        v-if="currentView === 'concerts' || currentView === 'past-concerts'"
         class="hero source-filter"
         :class="{ collapsed: !filtersExpanded }"
       >
         <div class="filter-header">
-          <h2>Filtrera spelningar</h2>
+          <h2>
+            {{
+              currentView === 'past-concerts'
+                ? 'Filtrera tidigare spelningar'
+                : 'Filtrera kommande spelningar'
+            }}
+          </h2>
           <button class="nav-link filter-toggle" type="button" @click="toggleFiltersExpanded">
             {{ filtersExpanded ? 'Fäll ihop filter' : 'Visa filter' }}
           </button>
@@ -981,7 +1032,10 @@ onMounted(async () => {
         </transition>
       </section>
 
-      <section v-if="currentView === 'concerts' && groupedByYearAndMonth.length" class="list">
+      <section
+        v-if="(currentView === 'concerts' || currentView === 'past-concerts') && groupedByYearAndMonth.length"
+        class="list"
+      >
         <article v-for="group in groupedByYearAndMonth" :key="group.year" class="year-group">
           <h2>{{ group.year }}</h2>
 
@@ -1034,8 +1088,17 @@ onMounted(async () => {
         </article>
       </section>
 
-      <section v-if="currentView === 'concerts' && !groupedByYearAndMonth.length" class="hero">
-        <p class="lead">Inga konserter lagrade än.</p>
+      <section
+        v-if="(currentView === 'concerts' || currentView === 'past-concerts') && !groupedByYearAndMonth.length"
+        class="hero"
+      >
+        <p class="lead">
+          {{
+            currentView === 'past-concerts'
+              ? 'Inga passerade spelningar hittades.'
+              : 'Inga kommande spelningar hittades.'
+          }}
+        </p>
       </section>
 
       <section v-if="fetchErrors.length && currentView !== 'sources'" class="hero errors">
