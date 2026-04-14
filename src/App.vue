@@ -172,11 +172,9 @@ function closeAuthModal() {
   showAuthModal.value = false
 }
 
-async function handleAuthButton() {
+async function handleAdminButton() {
   if (isAuthenticated.value) {
-    await logout()
-    status.value = 'Du är utloggad.'
-    setView('home')
+    setView('admin')
     return
   }
 
@@ -1007,6 +1005,36 @@ async function clearConcerts() {
   }
 }
 
+async function clearVisitors() {
+  if (!isAuthenticated.value) {
+    sourceStatus.value = 'Du måste vara inloggad för att rensa besökare.'
+    return
+  }
+
+  const shouldClear = window.confirm(
+    'Är du säker på att du vill rensa alla registrerade besökare? Detta kan inte ångras.'
+  )
+
+  if (!shouldClear) {
+    return
+  }
+
+  loading.value = true
+  sourceStatus.value = ''
+
+  try {
+    const response = await fetch('/api/admin/visitors', { method: 'DELETE' })
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(payload.error || 'Kunde inte rensa besökare.')
+    adminVisitors.value = []
+    sourceStatus.value = 'Alla besökare har rensats.'
+  } catch (error) {
+    sourceStatus.value = error.message || 'Kunde inte rensa besökare.'
+  } finally {
+    loading.value = false
+  }
+}
+
 async function submitSource() {
   if (!isAuthenticated.value) {
     sourceStatus.value = 'Du måste vara inloggad för att ändra källor.'
@@ -1158,12 +1186,9 @@ watch(favoriteArtistSuggestionConcerts, () => {
         <button
           class="nav-link"
           :class="{ active: currentView === 'admin' }"
-          @click="setView('admin')"
+          @click="handleAdminButton"
         >
           Admin
-        </button>
-        <button class="nav-link" @click="handleAuthButton">
-          {{ isAuthenticated ? 'Logga ut admin' : 'Admin-inlogg' }}
         </button>
       </nav>
     </header>
@@ -1359,6 +1384,9 @@ watch(favoriteArtistSuggestionConcerts, () => {
             <button class="refresh danger" type="button" @click="clearConcerts" :disabled="loading">
               Töm konserter
             </button>
+            <button class="refresh" type="button" @click="logout">
+              Logga ut
+            </button>
           </div>
 
           <p class="lead admin-counter">
@@ -1469,6 +1497,12 @@ watch(favoriteArtistSuggestionConcerts, () => {
               </li>
             </ul>
             <p v-else class="lead">Inga besökare registrerade ännu.</p>
+            
+            <div class="actions">
+              <button class="refresh danger" type="button" @click="clearVisitors" :disabled="loading">
+                {{ loading ? 'Rensar...' : 'Rensa alla besökare' }}
+              </button>
+            </div>
           </template>
         </template>
 
