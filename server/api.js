@@ -32,6 +32,18 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload))
 }
 
+function parseCookies(cookieHeader = '') {
+  const cookies = {}
+
+  for (const part of cookieHeader.split(';')) {
+    const [key, ...rest] = part.trim().split('=')
+    if (!key) continue
+    cookies[key] = decodeURIComponent(rest.join('='))
+  }
+
+  return cookies
+}
+
 function toUrl(request) {
   return new URL(request.url || '/', 'http://localhost')
 }
@@ -361,6 +373,86 @@ async function handleClearConcerts(request, response) {
   })
 }
 
+function buildVisitorCookie(visitorId) {
+  const secure = process.env.NODE_ENV === 'production'
+  const parts = [
+    `visitor_id=${encodeURIComponent(visitorId)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${60 * 60 * 24 * 365}`
+  ]
+
+  if (secure) {
+    parts.push('Secure')
+  }
+
+  return parts.join('; ')
+}
+
+async function handleTrackVisitor(request, response) {
+  const cookies = parseCookies(request.headers.cookie)
+  const existingVisitorId = String(cookies.visitor_id || '').trim()
+  const visitorId = existingVisitorId || crypto.randomUUID()
+  const now = new Date().toISOString()
+
+  const meta = await loadMetaFromStore()
+  const currentVisitors = meta?.visitors && typeof meta.visitors === 'object' ? meta.visitors : {}
+  const previous = currentVisitors[visitorId] || {}
+
+  await saveMetaToStore({
+    ...meta,
+    visitors: {
+      ...currentVisitors,
+      [visitorId]: {
+        firstSeenAt: previous.firstSeenAt || now,
+        lastSeenAt: now
+      }
+    }
+  })
+
+  if (!existingVisitorId) {
+    response.setHeader('Set-Cookie', buildVisitorCookie(visitorId))
+  }
+
+  sendJson(response, 200, { ok: true })
+}
+
+async function handleGetAdminUsers(request, response) {
+  const user = requireAuth(request, response)
+  if (!user) return
+
+  const users = await loadUsersFromStore()
+  const uniqueUsernames = [...new Set(users.map((entry) => String(entry.username || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'sv-SE'))
+
+  sendJson(response, 200, {
+    users: uniqueUsernames,
+    count: uniqueUsernames.length
+  })
+}
+
+async function handleGetAdminVisitors(request, response) {
+  const user = requireAuth(request, response)
+  if (!user) return
+
+  const meta = await loadMetaFromStore()
+  const visitors = meta?.visitors && typeof meta.visitors === 'object' ? meta.visitors : {}
+
+  const items = Object.entries(visitors)
+    .map(([id, value]) => ({
+      id,
+      firstSeenAt: value?.firstSeenAt || null,
+      lastSeenAt: value?.lastSeenAt || null
+    }))
+    .sort((a, b) => String(b.lastSeenAt || '').localeCompare(String(a.lastSeenAt || '')))
+
+  sendJson(response, 200, {
+    visitors: items,
+    count: items.length
+  })
+}
+
 const USER_LISTS = {
   favorites: 'favorites',
   bookings: 'bookings',
@@ -498,6 +590,11 @@ export async function handleApiRequest(request, response) {
     return
   }
 
+  if (pathname === '/api/visitors/ping' && request.method === 'POST') {
+    await handleTrackVisitor(request, response)
+    return
+  }
+
   if (pathname === '/api/source-events') {
     await handleSourceEventsRequest(request, response)
     return
@@ -624,6 +721,16 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/users/lists' && request.method === 'GET') {
     await handleGetUserLists(request, response)
+    return
+  }
+
+  if (pathname === '/api/admin/users' && request.method === 'GET') {
+    await handleGetAdminUsers(request, response)
+    return
+  }
+
+  if (pathname === '/api/admin/visitors' && request.method === 'GET') {
+    await handleGetAdminVisitors(request, response)
     return
   }
 

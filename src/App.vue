@@ -24,6 +24,9 @@ const status = ref('')
 const sourceStatus = ref('')
 const sourceImportStatus = ref([])
 const fetchErrors = ref([])
+const adminSubView = ref('sources')
+const adminUsers = ref([])
+const adminVisitors = ref([])
 
 const currentView = ref('home')
 const showAuthModal = ref(false)
@@ -125,6 +128,10 @@ function getMonthLabel(monthNumber) {
 
 function setView(view) {
   currentView.value = view
+
+  if (view === 'admin' && isAuthenticated.value) {
+    setAdminSubView(adminSubView.value)
+  }
 }
 
 function setConcertsSubView(view) {
@@ -511,6 +518,45 @@ function formatStatusDate(value) {
   return updatedAtFormatter.format(date)
 }
 
+async function trackVisitor() {
+  try {
+    await fetch('/api/visitors/ping', { method: 'POST' })
+  } catch {
+    // Ignore visitor tracking errors in UI.
+  }
+}
+
+async function loadAdminUsers() {
+  const response = await fetch('/api/admin/users')
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload.error || 'Kunde inte läsa användare.')
+  adminUsers.value = payload.users || []
+}
+
+async function loadAdminVisitors() {
+  const response = await fetch('/api/admin/visitors')
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload.error || 'Kunde inte läsa besökare.')
+  adminVisitors.value = payload.visitors || []
+}
+
+async function setAdminSubView(view) {
+  adminSubView.value = view
+
+  if (!isAuthenticated.value) return
+
+  try {
+    if (view === 'users') {
+      await loadAdminUsers()
+    }
+    if (view === 'visitors') {
+      await loadAdminVisitors()
+    }
+  } catch (error) {
+    sourceStatus.value = error.message || 'Kunde inte läsa adminstatistik.'
+  }
+}
+
 function formatIcsDate(date) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 }
@@ -838,6 +884,7 @@ async function submitPasswordChange() {
 
 onMounted(async () => {
   try {
+    await trackVisitor()
     await Promise.all([checkAuth(), checkUserAuth(), refreshConcerts()])
   } finally {
     authReady.value = true
@@ -994,6 +1041,33 @@ onMounted(async () => {
         <h2>Admin</h2>
 
         <template v-if="isAuthenticated">
+          <div class="main-nav concerts-submenu">
+            <button
+              class="nav-link"
+              :class="{ active: adminSubView === 'sources' }"
+              type="button"
+              @click="setAdminSubView('sources')"
+            >
+              Källor
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: adminSubView === 'users' }"
+              type="button"
+              @click="setAdminSubView('users')"
+            >
+              Unika användare
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: adminSubView === 'visitors' }"
+              type="button"
+              @click="setAdminSubView('visitors')"
+            >
+              Unika besökare
+            </button>
+          </div>
+
           <div class="actions">
             <button class="refresh" type="button" @click="updateConcerts" :disabled="loading">
               {{ loading ? 'Uppdaterar...' : 'Uppdatera konserter' }}
@@ -1003,57 +1077,82 @@ onMounted(async () => {
             </button>
           </div>
 
-          <p class="lead">
-            Här hanterar du källor, importkvalitet och admininställningar.
-          </p>
+          <template v-if="adminSubView === 'sources'">
+            <p class="lead">
+              Här hanterar du källor, importkvalitet och admininställningar.
+            </p>
 
-          <form class="source-form" @submit.prevent="submitSource">
-            <input v-model="newSourceName" type="text" placeholder="Namn, t.ex. Ticketmaster" />
-            <input
-              v-model="newSourceUrl"
-              type="url"
-              placeholder="URL till eventsida, t.ex. https://www.furuvik.se/konserter"
-            />
-            <button class="refresh" type="submit">Lägg till källa</button>
-          </form>
+            <form class="source-form" @submit.prevent="submitSource">
+              <input v-model="newSourceName" type="text" placeholder="Namn, t.ex. Ticketmaster" />
+              <input
+                v-model="newSourceUrl"
+                type="url"
+                placeholder="URL till eventsida, t.ex. https://www.furuvik.se/konserter"
+              />
+              <button class="refresh" type="submit">Lägg till källa</button>
+            </form>
 
-          <p v-if="sourceStatus" class="updated">{{ sourceStatus }}</p>
+            <p v-if="sourceStatus" class="updated">{{ sourceStatus }}</p>
 
-          <ul v-if="sources.length" class="source-list">
-            <li v-for="source in sources" :key="source.id">
-              <div>
-                <strong>{{ source.name }}</strong>
-                <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.url }}</a>
-              </div>
-              <button class="link-button" @click="deleteSource(source.id)">Ta bort</button>
-            </li>
-          </ul>
-          <p v-else class="lead">Inga källor tillagda än.</p>
+            <ul v-if="sources.length" class="source-list">
+              <li v-for="source in sources" :key="source.id">
+                <div>
+                  <strong>{{ source.name }}</strong>
+                  <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.url }}</a>
+                </div>
+                <button class="link-button" @click="deleteSource(source.id)">Ta bort</button>
+              </li>
+            </ul>
+            <p v-else class="lead">Inga källor tillagda än.</p>
 
-          <h2>Importkvalitet</h2>
-          <ul v-if="sourceImportStatus.length" class="source-list source-status-list">
-            <li v-for="item in sourceImportStatus" :key="item.sourceId">
-              <div>
-                <strong>{{ item.sourceName }}</strong>
-                <p>Antal hämtade: {{ item.fetchedCount }}</p>
-                <p>Fel: {{ item.error || 'Inget' }}</p>
-                <p>Senaste körning: {{ formatStatusDate(item.lastRunAt) }}</p>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="lead">Ingen körning ännu. Klicka Uppdatera för att fylla status.</p>
+            <h2>Importkvalitet</h2>
+            <ul v-if="sourceImportStatus.length" class="source-list source-status-list">
+              <li v-for="item in sourceImportStatus" :key="item.sourceId">
+                <div>
+                  <strong>{{ item.sourceName }}</strong>
+                  <p>Antal hämtade: {{ item.fetchedCount }}</p>
+                  <p>Fel: {{ item.error || 'Inget' }}</p>
+                  <p>Senaste körning: {{ formatStatusDate(item.lastRunAt) }}</p>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="lead">Ingen körning ännu. Klicka Uppdatera för att fylla status.</p>
 
-          <h2>Byt lösenord</h2>
-          <form class="login-form" @submit.prevent="submitPasswordChange">
-            <input v-model="passwordCurrent" type="password" placeholder="Nuvarande lösenord" />
-            <input v-model="passwordNext" type="password" placeholder="Nytt lösenord" />
-            <input v-model="passwordConfirm" type="password" placeholder="Bekräfta nytt lösenord" />
-            <button class="refresh" type="submit" :disabled="passwordLoading">
-              {{ passwordLoading ? 'Sparar...' : 'Byt lösenord' }}
-            </button>
-          </form>
+            <h2>Byt lösenord</h2>
+            <form class="login-form" @submit.prevent="submitPasswordChange">
+              <input v-model="passwordCurrent" type="password" placeholder="Nuvarande lösenord" />
+              <input v-model="passwordNext" type="password" placeholder="Nytt lösenord" />
+              <input v-model="passwordConfirm" type="password" placeholder="Bekräfta nytt lösenord" />
+              <button class="refresh" type="submit" :disabled="passwordLoading">
+                {{ passwordLoading ? 'Sparar...' : 'Byt lösenord' }}
+              </button>
+            </form>
+            <p v-if="passwordStatus" class="updated">{{ passwordStatus }}</p>
+          </template>
 
-          <p v-if="passwordStatus" class="updated">{{ passwordStatus }}</p>
+          <template v-else-if="adminSubView === 'users'">
+            <h2>Unika användare</h2>
+            <ul v-if="adminUsers.length" class="source-list source-name-list">
+              <li v-for="username in adminUsers" :key="username">
+                <strong>{{ username }}</strong>
+              </li>
+            </ul>
+            <p v-else class="lead">Inga användare registrerade ännu.</p>
+          </template>
+
+          <template v-else-if="adminSubView === 'visitors'">
+            <h2>Unika besökare</h2>
+            <ul v-if="adminVisitors.length" class="source-list source-status-list">
+              <li v-for="visitor in adminVisitors" :key="visitor.id">
+                <div>
+                  <strong>{{ visitor.id }}</strong>
+                  <p>Först sedd: {{ formatStatusDate(visitor.firstSeenAt) }}</p>
+                  <p>Senast sedd: {{ formatStatusDate(visitor.lastSeenAt) }}</p>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="lead">Inga besökare registrerade ännu.</p>
+          </template>
         </template>
 
         <template v-else>
