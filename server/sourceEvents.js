@@ -11,8 +11,21 @@ function pickEventsPayload(data) {
   return []
 }
 
+function decodeHtmlEntities(value) {
+  return String(value || '')
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+      String.fromCharCode(parseInt(code, 16))
+    )
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
 function cleanupText(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim()
+  return decodeHtmlEntities(value).replace(/\s+/g, ' ').trim()
 }
 
 function parsePossiblyJson(text) {
@@ -165,7 +178,12 @@ function parseConcertsFromHtml(html) {
     collectEventNodes(parsed, eventNodes)
   }
 
-  return eventNodes.map(normalizeEventNode).filter(Boolean)
+  const fromJsonLd = eventNodes.map(normalizeEventNode).filter(Boolean)
+  if (fromJsonLd.length > 0) {
+    return fromJsonLd
+  }
+
+  return parseKaliberEventsFromHtml(html)
 }
 
 function stripHtmlTags(value) {
@@ -213,6 +231,61 @@ function parseSwedishDateFromText(text, fallbackYear) {
   }
 
   return date.toISOString()
+}
+
+function parseSwedishDateWithRollingYear(dateText) {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentYearIso = parseSwedishDateFromText(dateText, currentYear)
+  if (!currentYearIso) {
+    return null
+  }
+
+  const candidate = new Date(currentYearIso)
+  const ninetyDaysAgo = new Date(now)
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+
+  if (candidate < ninetyDaysAgo) {
+    return parseSwedishDateFromText(dateText, currentYear + 1)
+  }
+
+  return currentYearIso
+}
+
+function parseKaliberEventsFromHtml(html) {
+  const kaliberRootMatch = html.match(
+    /<div id="kaliber-events">([\s\S]*?)<\/div>\s*<\/div>/i
+  )
+  const scope = kaliberRootMatch ? kaliberRootMatch[1] : html
+
+  const itemPattern = /<li[^>]*>([\s\S]*?)<\/li>/gi
+  const concerts = []
+  let itemMatch = itemPattern.exec(scope)
+
+  while (itemMatch) {
+    const itemHtml = itemMatch[1]
+
+    const dateMatch = itemHtml.match(/<strong>([^<]+)<\/strong>/i)
+    const artistMatch = itemHtml.match(/<h3>([^<]+)<\/h3>/i)
+
+    const dateText = cleanupText(dateMatch?.[1])
+    const artist = cleanupText(artistMatch?.[1])
+    const isoDate = parseSwedishDateWithRollingYear(dateText)
+
+    if (artist && isoDate) {
+      concerts.push({
+        artist,
+        title: artist,
+        date: isoDate,
+        venue: 'Parksnäckan',
+        city: 'Uppsala'
+      })
+    }
+
+    itemMatch = itemPattern.exec(scope)
+  }
+
+  return concerts
 }
 
 function inferFuruvikYear(pageData) {
