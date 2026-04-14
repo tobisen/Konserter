@@ -319,6 +319,15 @@ h3 {
   gap: 12px;
 }
 
+.concerts-submenu {
+  justify-content: flex-start;
+}
+
+.concerts-switch {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
 .filter-toggle {
   min-width: 154px;
   text-align: center;

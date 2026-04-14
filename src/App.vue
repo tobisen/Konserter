@@ -56,7 +56,8 @@ const newSourceUrl = ref('')
 const deselectedSources = ref([])
 const deselectedMonths = ref([])
 const deselectedGenres = ref([])
-const filtersExpanded = ref(true)
+const filtersExpanded = ref(false)
+const concertsSubView = ref('upcoming')
 
 const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' })
@@ -120,6 +121,10 @@ function getMonthLabel(monthNumber) {
 
 function setView(view) {
   currentView.value = view
+}
+
+function setConcertsSubView(view) {
+  concertsSubView.value = view
 }
 
 function toggleFiltersExpanded() {
@@ -196,7 +201,7 @@ const currentMonthConcerts = computed(() => {
 })
 
 const concertsForCurrentView = computed(() => {
-  if (currentView.value === 'past-concerts') {
+  if (concertsSubView.value === 'past') {
     return concerts.value.filter((concert) => isPastConcert(concert))
   }
 
@@ -263,7 +268,7 @@ const groupedByYearAndMonth = computed(() => {
 
   return [...yearGroups.entries()]
     .sort((a, b) =>
-      currentView.value === 'past-concerts'
+      concertsSubView.value === 'past'
         ? b[0] - a[0]
         : a[0] - b[0]
     )
@@ -271,7 +276,7 @@ const groupedByYearAndMonth = computed(() => {
       year,
       months: [...monthGroups.entries()]
         .sort((a, b) =>
-          currentView.value === 'past-concerts'
+          concertsSubView.value === 'past'
             ? b[0] - a[0]
             : a[0] - b[0]
         )
@@ -279,7 +284,7 @@ const groupedByYearAndMonth = computed(() => {
           month,
           label: getMonthLabel(month),
           concerts: [...items].sort((a, b) =>
-            currentView.value === 'past-concerts'
+            concertsSubView.value === 'past'
               ? getConcertDate(b) - getConcertDate(a)
               : getConcertDate(a) - getConcertDate(b)
           )
@@ -698,13 +703,6 @@ onMounted(async () => {
         </button>
         <button
           class="nav-link"
-          :class="{ active: currentView === 'past-concerts' }"
-          @click="setView('past-concerts')"
-        >
-          Tidigare
-        </button>
-        <button
-          class="nav-link"
           :class="{ active: currentView === 'favorites' }"
           @click="setView('favorites')"
         >
@@ -946,15 +944,11 @@ onMounted(async () => {
         </template>
       </section>
 
-      <section
-        v-if="currentView === 'concerts' || currentView === 'past-concerts'"
-        class="hero source-filter"
-        :class="{ collapsed: !filtersExpanded }"
-      >
+      <section v-if="currentView === 'concerts'" class="hero source-filter" :class="{ collapsed: !filtersExpanded }">
         <div class="filter-header">
           <h2>
             {{
-              currentView === 'past-concerts'
+              concertsSubView === 'past'
                 ? 'Filtrera tidigare spelningar'
                 : 'Filtrera kommande spelningar'
             }}
@@ -1032,10 +1026,28 @@ onMounted(async () => {
         </transition>
       </section>
 
-      <section
-        v-if="(currentView === 'concerts' || currentView === 'past-concerts') && groupedByYearAndMonth.length"
-        class="list"
-      >
+      <section v-if="currentView === 'concerts'" class="hero concerts-switch">
+        <div class="main-nav concerts-submenu">
+          <button
+            class="nav-link"
+            :class="{ active: concertsSubView === 'upcoming' }"
+            type="button"
+            @click="setConcertsSubView('upcoming')"
+          >
+            Framtida
+          </button>
+          <button
+            class="nav-link"
+            :class="{ active: concertsSubView === 'past' }"
+            type="button"
+            @click="setConcertsSubView('past')"
+          >
+            Tidigare
+          </button>
+        </div>
+      </section>
+
+      <section v-if="currentView === 'concerts' && groupedByYearAndMonth.length" class="list">
         <article v-for="group in groupedByYearAndMonth" :key="group.year" class="year-group">
           <h2>{{ group.year }}</h2>
 
@@ -1088,13 +1100,10 @@ onMounted(async () => {
         </article>
       </section>
 
-      <section
-        v-if="(currentView === 'concerts' || currentView === 'past-concerts') && !groupedByYearAndMonth.length"
-        class="hero"
-      >
+      <section v-if="currentView === 'concerts' && !groupedByYearAndMonth.length" class="hero">
         <p class="lead">
           {{
-            currentView === 'past-concerts'
+            concertsSubView === 'past'
               ? 'Inga passerade spelningar hittades.'
               : 'Inga kommande spelningar hittades.'
           }}
