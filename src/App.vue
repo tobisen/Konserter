@@ -933,9 +933,7 @@ onMounted(async () => {
                 >
                   Var där
                 </button>
-                <button class="mini-action-button" type="button" @click="downloadCalendarEvent(concert)">
-                  Kalender
-                </button>
+                <button class="mini-action-button" type="button" @click="downloadCalendarEvent(concert)"> Lägg till i kalender </button>
               </div>
               <button
                 class="heart-button"
@@ -1130,9 +1128,7 @@ onMounted(async () => {
                     class="mini-action-button"
                     type="button"
                     @click="downloadCalendarEvent(concert)"
-                  >
-                    Kalender
-                  </button>
+                  > Lägg till i kalender </button>
                 </div>
                 <button
                   class="heart-button"
@@ -1328,9 +1324,7 @@ onMounted(async () => {
                     class="mini-action-button"
                     type="button"
                     @click="downloadCalendarEvent(concert)"
-                  >
-                    Kalender
-                  </button>
+                  > Lägg till i kalender </button>
                 </div>
                 <button
                   class="heart-button"
