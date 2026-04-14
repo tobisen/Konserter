@@ -88,6 +88,12 @@ body {
   transform: translateY(-1px);
 }
 
+.nav-link.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #eef7f9;
+}
+
 .hero {
   background: var(--paper);
   border: 1px solid var(--line);
@@ -396,6 +402,35 @@ h3 {
   margin-top: 8px;
   color: var(--accent);
   font-weight: 700;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 16, 18, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 60;
+}
+
+.modal-card {
+  width: min(640px, 100%);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  display: grid;
+  gap: 12px;
+}
+
+.modal-login {
+  grid-template-columns: 1fr;
+}
+
+.compact-list {
+  margin-top: 12px;
 }
 
 @media (max-width: 1000px) {
