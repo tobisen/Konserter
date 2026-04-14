@@ -34,6 +34,7 @@ const newSourceName = ref('')
 const newSourceUrl = ref('')
 const deselectedSources = ref([])
 const deselectedMonths = ref([])
+const deselectedGenres = ref([])
 
 const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' })
@@ -50,6 +51,11 @@ function getConcertSourceName(concert) {
 
 function getConcertGenre(concert) {
   return String(concert?.genre || '').trim()
+}
+
+function getConcertGenreLabel(concert) {
+  const genre = getConcertGenre(concert)
+  return genre || 'Övrigt'
 }
 
 function getConcertDetailsUrl(concert) {
@@ -107,6 +113,16 @@ const availableMonthNumbers = computed(() => {
   return [...new Set(months)].sort((a, b) => a - b)
 })
 
+const availableGenreLabels = computed(() => {
+  const genres = [...new Set(concerts.value.map((concert) => getConcertGenreLabel(concert)))]
+
+  return genres.sort((a, b) => {
+    if (a === 'Övrigt' && b !== 'Övrigt') return 1
+    if (b === 'Övrigt' && a !== 'Övrigt') return -1
+    return a.localeCompare(b, 'sv-SE')
+  })
+})
+
 const currentMonthLabel = computed(() => {
   return monthYearFormatter.format(new Date())
 })
@@ -129,8 +145,9 @@ const filteredConcerts = computed(() => {
     const sourceIncluded = !deselectedSources.value.includes(getConcertSourceName(concert))
     const month = getConcertMonth(concert)
     const monthIncluded = month === null || !deselectedMonths.value.includes(month)
+    const genreIncluded = !deselectedGenres.value.includes(getConcertGenreLabel(concert))
 
-    return sourceIncluded && monthIncluded
+    return sourceIncluded && monthIncluded && genreIncluded
   })
 })
 
@@ -211,6 +228,27 @@ function selectAllMonths() {
 
 function deselectAllMonths() {
   deselectedMonths.value = [...availableMonthNumbers.value]
+}
+
+function isGenreSelected(genreLabel) {
+  return !deselectedGenres.value.includes(genreLabel)
+}
+
+function toggleGenreFilter(genreLabel) {
+  if (isGenreSelected(genreLabel)) {
+    deselectedGenres.value = [...deselectedGenres.value, genreLabel]
+    return
+  }
+
+  deselectedGenres.value = deselectedGenres.value.filter((value) => value !== genreLabel)
+}
+
+function selectAllGenres() {
+  deselectedGenres.value = []
+}
+
+function deselectAllGenres() {
+  deselectedGenres.value = [...availableGenreLabels.value]
 }
 
 function formatDate(isoDate) {
@@ -625,6 +663,27 @@ onMounted(async () => {
               @change="toggleMonthFilter(monthNumber)"
             />
             <span>{{ getMonthLabel(monthNumber) }}</span>
+          </label>
+        </div>
+
+        <p v-if="availableGenreLabels.length" class="filter-title">Genrer</p>
+        <div v-if="availableGenreLabels.length" class="filter-actions">
+          <button class="link-button neutral" @click="selectAllGenres">Välj alla genrer</button>
+          <button class="link-button neutral" @click="deselectAllGenres">Välj inga genrer</button>
+        </div>
+        <div v-if="availableGenreLabels.length" class="filter-options">
+          <label
+            v-for="genreLabel in availableGenreLabels"
+            :key="genreLabel"
+            class="filter-option"
+            :class="{ active: isGenreSelected(genreLabel) }"
+          >
+            <input
+              type="checkbox"
+              :checked="isGenreSelected(genreLabel)"
+              @change="toggleGenreFilter(genreLabel)"
+            />
+            <span>{{ genreLabel }}</span>
           </label>
         </div>
       </section>
