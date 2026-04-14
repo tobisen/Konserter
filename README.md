@@ -75,6 +75,17 @@ When mail is not configured, the app runs in a logs-only test mode for reset/rem
 4. Configure the environment variables above.
 5. Deploy.
 
+## Automated E2E Tests (Playwright)
+
+- Smoke tests are defined in `tests/e2e/smoke.spec.ts`.
+- Workflow file: `.github/workflows/daily-playwright.yml`.
+- Runs:
+  - On every push to `main`
+  - Daily (scheduled)
+  - Manually (`workflow_dispatch`)
+- Optional GitHub secret:
+  - `PLAYWRIGHT_BASE_URL` (defaults to `https://konsertnavigator.vercel.app` if not set)
+
 ## API Routing Notes
 
 - API is served through a single endpoint in `api/index.js`.
