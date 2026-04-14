@@ -56,6 +56,7 @@ const newSourceUrl = ref('')
 const deselectedSources = ref([])
 const deselectedMonths = ref([])
 const deselectedGenres = ref([])
+const filtersExpanded = ref(true)
 
 const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' })
@@ -119,6 +120,10 @@ function getMonthLabel(monthNumber) {
 
 function setView(view) {
   currentView.value = view
+}
+
+function toggleFiltersExpanded() {
+  filtersExpanded.value = !filtersExpanded.value
 }
 
 function openAuthModal() {
@@ -896,73 +901,84 @@ onMounted(async () => {
         </template>
       </section>
 
-      <section v-if="currentView === 'concerts'" class="hero source-filter">
+      <section
+        v-if="currentView === 'concerts'"
+        class="hero source-filter"
+        :class="{ collapsed: !filtersExpanded }"
+      >
         <div class="filter-header">
           <h2>Filtrera spelningar</h2>
+          <button class="nav-link filter-toggle" type="button" @click="toggleFiltersExpanded">
+            {{ filtersExpanded ? 'Fäll ihop filter' : 'Visa filter' }}
+          </button>
         </div>
 
-        <p class="filter-title">Källor</p>
-        <div class="filter-actions">
-          <button class="link-button neutral" @click="selectAllSources">Välj alla källor</button>
-          <button class="link-button neutral" @click="deselectAllSources">Välj inga källor</button>
-        </div>
-        <div class="filter-options">
-          <label
-            v-for="sourceName in availableSourceNames"
-            :key="sourceName"
-            class="filter-option"
-            :class="{ active: isSourceSelected(sourceName) }"
-          >
-            <input
-              type="checkbox"
-              :checked="isSourceSelected(sourceName)"
-              @change="toggleSourceFilter(sourceName)"
-            />
-            <span>{{ sourceName }}</span>
-          </label>
-        </div>
+        <transition name="filter-collapse">
+          <div v-show="filtersExpanded" class="filter-body">
+            <p class="filter-title">Källor</p>
+            <div class="filter-actions">
+              <button class="link-button neutral" @click="selectAllSources">Välj alla källor</button>
+              <button class="link-button neutral" @click="deselectAllSources">Välj inga källor</button>
+            </div>
+            <div class="filter-options">
+              <label
+                v-for="sourceName in availableSourceNames"
+                :key="sourceName"
+                class="filter-option"
+                :class="{ active: isSourceSelected(sourceName) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="isSourceSelected(sourceName)"
+                  @change="toggleSourceFilter(sourceName)"
+                />
+                <span>{{ sourceName }}</span>
+              </label>
+            </div>
 
-        <p v-if="availableMonthNumbers.length" class="filter-title">Månader</p>
-        <div v-if="availableMonthNumbers.length" class="filter-actions">
-          <button class="link-button neutral" @click="selectAllMonths">Välj alla månader</button>
-          <button class="link-button neutral" @click="deselectAllMonths">Välj inga månader</button>
-        </div>
-        <div v-if="availableMonthNumbers.length" class="filter-options">
-          <label
-            v-for="monthNumber in availableMonthNumbers"
-            :key="monthNumber"
-            class="filter-option"
-            :class="{ active: isMonthSelected(monthNumber) }"
-          >
-            <input
-              type="checkbox"
-              :checked="isMonthSelected(monthNumber)"
-              @change="toggleMonthFilter(monthNumber)"
-            />
-            <span>{{ getMonthLabel(monthNumber) }}</span>
-          </label>
-        </div>
+            <p v-if="availableMonthNumbers.length" class="filter-title">Månader</p>
+            <div v-if="availableMonthNumbers.length" class="filter-actions">
+              <button class="link-button neutral" @click="selectAllMonths">Välj alla månader</button>
+              <button class="link-button neutral" @click="deselectAllMonths">Välj inga månader</button>
+            </div>
+            <div v-if="availableMonthNumbers.length" class="filter-options">
+              <label
+                v-for="monthNumber in availableMonthNumbers"
+                :key="monthNumber"
+                class="filter-option"
+                :class="{ active: isMonthSelected(monthNumber) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="isMonthSelected(monthNumber)"
+                  @change="toggleMonthFilter(monthNumber)"
+                />
+                <span>{{ getMonthLabel(monthNumber) }}</span>
+              </label>
+            </div>
 
-        <p v-if="availableGenreLabels.length" class="filter-title">Genrer</p>
-        <div v-if="availableGenreLabels.length" class="filter-actions">
-          <button class="link-button neutral" @click="selectAllGenres">Välj alla genrer</button>
-          <button class="link-button neutral" @click="deselectAllGenres">Välj inga genrer</button>
-        </div>
-        <div v-if="availableGenreLabels.length" class="filter-options">
-          <label
-            v-for="genreLabel in availableGenreLabels"
-            :key="genreLabel"
-            class="filter-option"
-            :class="{ active: isGenreSelected(genreLabel) }"
-          >
-            <input
-              type="checkbox"
-              :checked="isGenreSelected(genreLabel)"
-              @change="toggleGenreFilter(genreLabel)"
-            />
-            <span>{{ genreLabel }}</span>
-          </label>
-        </div>
+            <p v-if="availableGenreLabels.length" class="filter-title">Genrer</p>
+            <div v-if="availableGenreLabels.length" class="filter-actions">
+              <button class="link-button neutral" @click="selectAllGenres">Välj alla genrer</button>
+              <button class="link-button neutral" @click="deselectAllGenres">Välj inga genrer</button>
+            </div>
+            <div v-if="availableGenreLabels.length" class="filter-options">
+              <label
+                v-for="genreLabel in availableGenreLabels"
+                :key="genreLabel"
+                class="filter-option"
+                :class="{ active: isGenreSelected(genreLabel) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="isGenreSelected(genreLabel)"
+                  @change="toggleGenreFilter(genreLabel)"
+                />
+                <span>{{ genreLabel }}</span>
+              </label>
+            </div>
+          </div>
+        </transition>
       </section>
 
       <section v-if="currentView === 'concerts' && groupedByYearAndMonth.length" class="list">

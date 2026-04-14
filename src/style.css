@@ -308,10 +308,24 @@ h3 {
   gap: 12px;
 }
 
+.source-filter.collapsed {
+  gap: 0;
+}
+
 .filter-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.filter-toggle {
+  min-width: 154px;
+  text-align: center;
+}
+
+.filter-body {
+  display: grid;
   gap: 12px;
 }
 
@@ -358,6 +372,18 @@ h3 {
 
 .neutral {
   color: #ffb356;
+}
+
+.filter-collapse-enter-active,
+.filter-collapse-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform-origin: top;
+}
+
+.filter-collapse-enter-from,
+.filter-collapse-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scaleY(0.98);
 }
 
 .list {
