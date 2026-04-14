@@ -63,6 +63,7 @@ const newSourceUrl = ref('')
 const deselectedSources = ref([])
 const deselectedMonths = ref([])
 const deselectedGenres = ref([])
+const concertsSearch = ref('')
 const filtersExpanded = ref(false)
 const concertsSubView = ref('upcoming')
 
@@ -247,13 +248,19 @@ const availableGenreLabels = computed(() => {
 })
 
 const filteredConcerts = computed(() => {
+  const query = normalizeText(concertsSearch.value)
+
   return concertsForCurrentView.value.filter((concert) => {
     const sourceIncluded = !deselectedSources.value.includes(getConcertSourceName(concert))
     const month = getConcertMonth(concert)
     const monthIncluded = month === null || !deselectedMonths.value.includes(month)
     const genreIncluded = !deselectedGenres.value.includes(getConcertGenreLabel(concert))
+    const searchable = normalizeText(
+      `${concert?.artist || ''} ${concert?.venue || ''} ${concert?.city || ''}`
+    )
+    const searchIncluded = !query || searchable.includes(query)
 
-    return sourceIncluded && monthIncluded && genreIncluded
+    return sourceIncluded && monthIncluded && genreIncluded && searchIncluded
   })
 })
 
@@ -1417,6 +1424,17 @@ onMounted(async () => {
             Tidigare
           </button>
         </div>
+      </section>
+
+      <section v-if="currentView === 'concerts'" class="hero search-panel">
+        <label class="search-label" for="concert-search">Sök spelning</label>
+        <input
+          id="concert-search"
+          v-model="concertsSearch"
+          class="search-input"
+          type="search"
+          placeholder="Sök på artist, scen eller stad..."
+        />
       </section>
 
       <section v-if="currentView === 'concerts' && groupedByYearAndMonth.length" class="list">
