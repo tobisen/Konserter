@@ -43,6 +43,14 @@ function getConcertSourceName(concert) {
   return sourceName || 'Okänd källa'
 }
 
+function getConcertGenre(concert) {
+  return String(concert?.genre || '').trim()
+}
+
+function getConcertDetailsUrl(concert) {
+  return String(concert?.detailsUrl || '').trim()
+}
+
 const availableSourceNames = computed(() => {
   return [...new Set(concerts.value.map((concert) => getConcertSourceName(concert)))].sort((a, b) =>
     a.localeCompare(b, 'sv-SE')
@@ -527,7 +535,17 @@ onMounted(async () => {
               <h3>{{ concert.artist }}</h3>
               <p class="title">{{ concert.title }}</p>
               <p class="venue">{{ concert.venue }}</p>
+              <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
               <p class="source">{{ getConcertSourceName(concert) }}</p>
+              <a
+                v-if="getConcertDetailsUrl(concert)"
+                class="readmore"
+                :href="getConcertDetailsUrl(concert)"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Läs mer
+              </a>
             </div>
           </article>
         </section>

@@ -67,6 +67,21 @@ function parseConcertDate(value) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+function normalizeOptionalUrl(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+
+  try {
+    const parsed = new URL(text)
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return ''
+    }
+    return parsed.toString()
+  } catch {
+    return ''
+  }
+}
+
 function normalizeIncomingConcert(rawConcert, sourceName) {
   return {
     artist: String(rawConcert.artist || '').trim(),
@@ -74,6 +89,8 @@ function normalizeIncomingConcert(rawConcert, sourceName) {
     date: String(rawConcert.date || '').trim(),
     venue: String(rawConcert.venue || '').trim(),
     city: String(rawConcert.city || '').trim(),
+    genre: String(rawConcert.genre || '').trim(),
+    detailsUrl: normalizeOptionalUrl(rawConcert.detailsUrl),
     sourceName
   }
 }

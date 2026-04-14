@@ -355,10 +355,24 @@ h3 {
   color: var(--muted);
 }
 
+.genre {
+  margin: 6px 0 0;
+  color: #395b64;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .source {
   margin: 7px 0 0;
   color: var(--accent);
   font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.readmore {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--accent);
   font-weight: 700;
 }
 

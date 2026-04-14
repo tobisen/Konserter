@@ -145,7 +145,9 @@ function normalizeEventNode(eventNode) {
     title: title || artist || 'Konsert',
     date: asDate.toISOString(),
     venue: pickVenue(eventNode),
-    city: pickCity(eventNode)
+    city: pickCity(eventNode),
+    genre: cleanupText(eventNode?.genre),
+    detailsUrl: cleanupText(eventNode?.url)
   }
 }
 
@@ -157,7 +159,9 @@ function parseConcertsFromJsonPayload(payload) {
       title: cleanupText(event?.title),
       date: cleanupText(event?.date),
       venue: cleanupText(event?.venue),
-      city: cleanupText(event?.city)
+      city: cleanupText(event?.city),
+      genre: cleanupText(event?.genre),
+      detailsUrl: cleanupText(event?.detailsUrl || event?.url || event?.link)
     }))
     .filter((event) => {
       if (!event.artist || !event.title || !event.venue || !event.city || !event.date) {
@@ -296,6 +300,9 @@ function parseKaliberEventsFromHtml(html, sourceUrl = null) {
 
       const dateText = cleanupText(itemHtml.match(/<span[^>]*class="[^"]*info__date[^"]*"[^>]*>([\s\S]*?)<\/span>/i)?.[1])
       const title = cleanupText(itemHtml.match(/<h2[^>]*class="[^"]*item__content-title[^"]*"[^>]*>([\s\S]*?)<\/h2>/i)?.[1])
+      const genre = cleanupText(itemHtml.match(/\sdata-genre="([^"]*)"/i)?.[1])
+      const contentAnchorTag = itemHtml.match(/<a[^>]*class="[^"]*item__content[^"]*"[^>]*>/i)?.[0] || ''
+      const detailsUrl = cleanupText(contentAnchorTag.match(/href="([^"]+)"/i)?.[1])
       const isoDate = parseSwedishDateWithRollingYear(dateText)
 
       if (!title || !isoDate) {
@@ -307,7 +314,9 @@ function parseKaliberEventsFromHtml(html, sourceUrl = null) {
         title,
         date: isoDate,
         venue: stageLabel || 'Okänd scen',
-        city: 'Uppsala'
+        city: 'Uppsala',
+        genre,
+        detailsUrl
       })
     }
 
