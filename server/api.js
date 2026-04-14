@@ -352,14 +352,184 @@ function isCronAuthorized(request, url) {
   return url.searchParams.get('secret') === configuredSecret
 }
 
+function getStockholmDateKey(date) {
+  const parts = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date)
+
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+  return `${year}-${month}-${day}`
+}
+
+function getTomorrowStockholmDateKey() {
+  const stockholmNow = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'Europe/Stockholm' })
+  )
+  stockholmNow.setDate(stockholmNow.getDate() + 1)
+  return getStockholmDateKey(stockholmNow)
+}
+
+function buildConcertReminderLine(concert, listTags) {
+  const dateText = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm',
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(concert.date))
+
+  const tags = listTags.join(', ')
+  return `- ${concert.artist} (${dateText}) på ${concert.venue}, ${concert.city} [${tags}]`
+}
+
+async function sendReminderEmail(email, subject, textBody, htmlBody) {
+  const resendApiKey = String(process.env.RESEND_API_KEY || '').trim()
+  const fromEmail = String(process.env.RESET_EMAIL_FROM || '').trim()
+
+  if (resendApiKey && fromEmail) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [email],
+        subject,
+        html: htmlBody,
+        text: textBody
+      })
+    })
+
+    if (!response.ok) {
+      const payload = await response.text().catch(() => '')
+      throw new Error(`Kunde inte skicka påminnelsemail (${response.status}): ${payload}`)
+    }
+
+    return
+  }
+
+  console.info(`[ReminderEmail] ${email}\n${textBody}`)
+}
+
+async function sendTomorrowConcertReminders() {
+  const users = await loadUsersFromStore()
+  const concerts = await loadConcertsFromFile()
+  const concertsById = new Map(concerts.map((concert) => [createStableId(concert), concert]))
+  const tomorrowKey = getTomorrowStockholmDateKey()
+  const sentAt = new Date().toISOString()
+
+  const meta = await loadMetaFromStore()
+  const reminderLog = meta?.reminderLog && typeof meta.reminderLog === 'object' ? meta.reminderLog : {}
+  const nextReminderLog = { ...reminderLog }
+
+  let emailsSent = 0
+  let usersNotified = 0
+
+  for (const user of users) {
+    const email = String(user?.email || '').trim()
+    if (!email) continue
+
+    const favoriteIds = Array.isArray(user.favorites) ? user.favorites : []
+    const bookingIds = Array.isArray(user.bookings) ? user.bookings : []
+
+    const groupedByConcertId = new Map()
+    for (const concertId of favoriteIds) {
+      if (!groupedByConcertId.has(concertId)) groupedByConcertId.set(concertId, new Set())
+      groupedByConcertId.get(concertId).add('Favorit')
+    }
+    for (const concertId of bookingIds) {
+      if (!groupedByConcertId.has(concertId)) groupedByConcertId.set(concertId, new Set())
+      groupedByConcertId.get(concertId).add('Ska gå')
+    }
+
+    const reminderItems = []
+    for (const [concertId, tags] of groupedByConcertId.entries()) {
+      const dedupeKey = `${tomorrowKey}:${user.id}:${concertId}`
+      if (nextReminderLog[dedupeKey]) continue
+
+      const concert = concertsById.get(concertId)
+      if (!concert) continue
+
+      const concertDate = parseConcertDate(concert.date)
+      if (!concertDate) continue
+      if (getStockholmDateKey(concertDate) !== tomorrowKey) continue
+
+      reminderItems.push({
+        concertId,
+        concert,
+        tags: [...tags]
+      })
+    }
+
+    if (reminderItems.length === 0) {
+      continue
+    }
+
+    const textLines = reminderItems.map((item) => buildConcertReminderLine(item.concert, item.tags))
+    const textBody =
+      `Hej ${user.username || ''},\n\n` +
+      `Du har ${reminderItems.length} spelning(ar) imorgon:\n` +
+      `${textLines.join('\n')}\n\n` +
+      'Ha en grym konsertkväll!'
+
+    const htmlBody =
+      `<p>Hej ${String(user.username || '').replace(/</g, '&lt;')}!</p>` +
+      `<p>Du har <strong>${reminderItems.length}</strong> spelning(ar) imorgon:</p>` +
+      `<ul>${reminderItems
+        .map((item) => `<li>${buildConcertReminderLine(item.concert, item.tags).replace(/</g, '&lt;')}</li>`)
+        .join('')}</ul>` +
+      '<p>Ha en grym konsertkväll!</p>'
+
+    await sendReminderEmail(email, 'Påminnelse: dina spelningar imorgon', textBody, htmlBody)
+    usersNotified += 1
+    emailsSent += 1
+
+    for (const item of reminderItems) {
+      const dedupeKey = `${tomorrowKey}:${user.id}:${item.concertId}`
+      nextReminderLog[dedupeKey] = sentAt
+    }
+  }
+
+  const oldestAllowed = Date.now() - 45 * 24 * 60 * 60 * 1000
+  const prunedReminderLog = Object.fromEntries(
+    Object.entries(nextReminderLog).filter(([, value]) => {
+      const asTime = new Date(value).getTime()
+      return Number.isFinite(asTime) && asTime >= oldestAllowed
+    })
+  )
+
+  await saveMetaToStore({
+    ...meta,
+    reminderLog: prunedReminderLog
+  })
+
+  return {
+    tomorrowDate: tomorrowKey,
+    usersNotified,
+    emailsSent
+  }
+}
+
 async function handleCronUpdateConcerts(request, response, url) {
   if (!isCronAuthorized(request, url)) {
     sendJson(response, 401, { error: 'Unauthorized cron request.' })
     return
   }
 
-  const result = await runConcertUpdate()
-  sendJson(response, result.statusCode, result.payload)
+  const updateResult = await runConcertUpdate()
+  const reminderResult = await sendTomorrowConcertReminders().catch((error) => ({
+    error: error instanceof Error ? error.message : 'Unknown reminder error'
+  }))
+
+  sendJson(response, updateResult.statusCode, {
+    ...updateResult.payload,
+    reminders: reminderResult
+  })
 }
 
 async function handleClearConcerts(request, response) {

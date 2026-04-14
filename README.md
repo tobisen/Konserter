@@ -14,6 +14,7 @@ A Vue + Vite app that aggregates concert events from multiple sources into one s
   - Registration and login
   - Personal lists: Favorites, Going, Been There
   - Forgot-password and reset-password flow
+  - Email reminders for tomorrow's saved concerts (Favorites/Going)
 - Admin area with:
   - Source management (add/remove)
   - Manual update and clear actions
@@ -63,6 +64,7 @@ App URL (default): `http://localhost:5173`
 - `RESET_EMAIL_FROM` (e.g. `Konsertnavigator <noreply@yourdomain.com>`)
 
 If mail variables are missing, reset links are logged on the server as a fallback.
+The same mail config is also used for concert reminder emails.
 
 ## Vercel Deployment
 
