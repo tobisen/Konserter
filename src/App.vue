@@ -6,6 +6,15 @@ import {
   updateConcertsFromSources
 } from './services/concertStore'
 import { addSource, loadSources, removeSource } from './services/sourceStore'
+import {
+  addFavorite,
+  getUserSession,
+  loadFavorites,
+  loginUser,
+  logoutUser,
+  registerUser,
+  removeFavorite
+} from './services/userStore'
 
 const concerts = ref([])
 const sources = ref([])
@@ -23,6 +32,17 @@ const authError = ref('')
 const loginUsername = ref('')
 const loginPassword = ref('')
 const authLoading = ref(false)
+
+const appUser = ref(null)
+const userAuthReady = ref(false)
+const userError = ref('')
+const userStatus = ref('')
+const userLoginUsername = ref('')
+const userLoginPassword = ref('')
+const userRegisterUsername = ref('')
+const userRegisterPassword = ref('')
+const userLoading = ref(false)
+const favoriteIds = ref([])
 
 const passwordCurrent = ref('')
 const passwordNext = ref('')
@@ -42,6 +62,27 @@ const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', yea
 function getConcertDate(concert) {
   const date = new Date(concert?.date)
   return Number.isNaN(date.getTime()) ? null : date
+}
+
+function normalizeText(value) {
+  return (value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function getConcertId(concert) {
+  const date = getConcertDate(concert)
+  if (!date) return ''
+
+  return [
+    normalizeText(concert.artist),
+    normalizeText(concert.venue),
+    normalizeText(concert.city),
+    date.toISOString()
+  ].join('|')
 }
 
 function getConcertSourceName(concert) {
@@ -93,6 +134,8 @@ async function handleAuthButton() {
 
   openAuthModal()
 }
+
+const userAuthenticated = computed(() => Boolean(appUser.value))
 
 const availableSourceNames = computed(() => {
   return [...new Set(concerts.value.map((concert) => getConcertSourceName(concert)))].sort((a, b) =>
@@ -188,6 +231,44 @@ const groupedByYearAndMonth = computed(() => {
     }))
 })
 
+const favoriteConcerts = computed(() => {
+  if (!favoriteIds.value.length) return []
+
+  const favoriteSet = new Set(favoriteIds.value)
+  return concerts.value
+    .filter((concert) => favoriteSet.has(getConcertId(concert)))
+    .sort((a, b) => getConcertDate(a) - getConcertDate(b))
+})
+
+function isFavorite(concert) {
+  const id = getConcertId(concert)
+  return Boolean(id) && favoriteIds.value.includes(id)
+}
+
+async function toggleFavorite(concert) {
+  if (!userAuthenticated.value) {
+    userStatus.value = 'Logga in eller registrera dig för att spara favoriter.'
+    setView('favorites')
+    return
+  }
+
+  const concertId = getConcertId(concert)
+  if (!concertId) return
+
+  try {
+    if (isFavorite(concert)) {
+      favoriteIds.value = await removeFavorite(concertId)
+      userStatus.value = 'Tog bort spelning från favoriter.'
+      return
+    }
+
+    favoriteIds.value = await addFavorite(concertId)
+    userStatus.value = 'Spelning sparad i favoriter.'
+  } catch (error) {
+    userStatus.value = error.message || 'Kunde inte uppdatera favoriter.'
+  }
+}
+
 function isSourceSelected(sourceName) {
   return !deselectedSources.value.includes(sourceName)
 }
@@ -273,6 +354,24 @@ async function checkAuth() {
   }
 }
 
+async function checkUserAuth() {
+  try {
+    const payload = await getUserSession()
+    appUser.value = payload.authenticated ? payload.user : null
+
+    if (payload.authenticated) {
+      favoriteIds.value = await loadFavorites()
+    } else {
+      favoriteIds.value = []
+    }
+  } catch {
+    appUser.value = null
+    favoriteIds.value = []
+  } finally {
+    userAuthReady.value = true
+  }
+}
+
 async function login() {
   authLoading.value = true
   authError.value = ''
@@ -303,6 +402,57 @@ async function login() {
   } finally {
     authLoading.value = false
   }
+}
+
+async function loginRegularUser() {
+  userLoading.value = true
+  userError.value = ''
+  userStatus.value = ''
+
+  try {
+    const payload = await loginUser({
+      username: userLoginUsername.value,
+      password: userLoginPassword.value
+    })
+
+    appUser.value = payload.user
+    userLoginPassword.value = ''
+    favoriteIds.value = await loadFavorites()
+    userStatus.value = `Inloggad som ${payload.user.username}.`
+  } catch (error) {
+    userError.value = error.message || 'Kunde inte logga in.'
+  } finally {
+    userLoading.value = false
+  }
+}
+
+async function registerRegularUser() {
+  userLoading.value = true
+  userError.value = ''
+  userStatus.value = ''
+
+  try {
+    const payload = await registerUser({
+      username: userRegisterUsername.value,
+      password: userRegisterPassword.value
+    })
+
+    appUser.value = payload.user
+    userRegisterPassword.value = ''
+    favoriteIds.value = await loadFavorites()
+    userStatus.value = `Konto skapat och inloggat som ${payload.user.username}.`
+  } catch (error) {
+    userError.value = error.message || 'Kunde inte skapa konto.'
+  } finally {
+    userLoading.value = false
+  }
+}
+
+async function logoutRegularUser() {
+  await logoutUser()
+  appUser.value = null
+  favoriteIds.value = []
+  userStatus.value = 'Du är utloggad från användarkontot.'
 }
 
 async function logout() {
@@ -453,7 +603,7 @@ async function submitPasswordChange() {
 
 onMounted(async () => {
   try {
-    await Promise.all([checkAuth(), refreshConcerts()])
+    await Promise.all([checkAuth(), checkUserAuth(), refreshConcerts()])
   } finally {
     authReady.value = true
   }
@@ -482,6 +632,13 @@ onMounted(async () => {
         >
           Spelningar
         </button>
+        <button
+          class="nav-link"
+          :class="{ active: currentView === 'favorites' }"
+          @click="setView('favorites')"
+        >
+          Favoriter
+        </button>
         <button class="nav-link nav-action" @click="updateConcerts" :disabled="loading">
           {{ loading ? 'Uppdaterar...' : 'Uppdatera' }}
         </button>
@@ -494,7 +651,7 @@ onMounted(async () => {
           Töm
         </button>
         <button class="nav-link" @click="handleAuthButton">
-          {{ isAuthenticated ? 'Logga ut' : 'Logga in' }}
+          {{ isAuthenticated ? 'Logga ut admin' : 'Admin-inlogg' }}
         </button>
       </nav>
     </header>
@@ -513,7 +670,8 @@ onMounted(async () => {
         <h1>Välkommen</h1>
         <p class="lead">
           Här samlar vi konserter från flera källor på ett ställe. Gå till Spelningar för hela
-          listan och filtrering, eller till Källor för att se vilka arrangörer som ingår.
+          listan och filtrering, till Källor för datakällor och till Favoriter för att spara dina
+          personliga spelningar.
         </p>
       </section>
 
@@ -544,6 +702,9 @@ onMounted(async () => {
               <p class="venue">{{ concert.venue }}</p>
               <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
               <p class="source">{{ getConcertSourceName(concert) }}</p>
+              <button class="link-button favorite" @click="toggleFavorite(concert)">
+                {{ isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit' }}
+              </button>
               <a
                 v-if="getConcertDetailsUrl(concert)"
                 class="readmore"
@@ -616,6 +777,88 @@ onMounted(async () => {
             </li>
           </ul>
           <p v-else class="lead">Inga källor tillagda än.</p>
+        </template>
+      </section>
+
+      <section v-if="currentView === 'favorites'" class="hero source-panel">
+        <h2>Favoriter</h2>
+
+        <template v-if="!userAuthReady">
+          <p class="lead">Laddar användarstatus...</p>
+        </template>
+
+        <template v-else-if="!userAuthenticated">
+          <p class="lead">Registrera dig eller logga in för att spara favoritspelningar.</p>
+
+          <div class="user-auth-grid">
+            <form class="login-form user-auth-form" @submit.prevent="registerRegularUser">
+              <h3>Skapa konto</h3>
+              <input v-model="userRegisterUsername" type="text" placeholder="Användarnamn" />
+              <input v-model="userRegisterPassword" type="password" placeholder="Lösenord" />
+              <button class="refresh" type="submit" :disabled="userLoading">Registrera</button>
+            </form>
+
+            <form class="login-form user-auth-form" @submit.prevent="loginRegularUser">
+              <h3>Logga in</h3>
+              <input v-model="userLoginUsername" type="text" placeholder="Användarnamn" />
+              <input v-model="userLoginPassword" type="password" placeholder="Lösenord" />
+              <button class="refresh" type="submit" :disabled="userLoading">Logga in</button>
+            </form>
+          </div>
+
+          <p v-if="userError" class="updated">{{ userError }}</p>
+          <p v-if="userStatus" class="updated">{{ userStatus }}</p>
+        </template>
+
+        <template v-else>
+          <div class="auth-header">
+            <p class="lead">Inloggad som <strong>{{ appUser.username }}</strong></p>
+            <button class="link-button" @click="logoutRegularUser">Logga ut användare</button>
+          </div>
+
+          <p v-if="userStatus" class="updated">{{ userStatus }}</p>
+
+          <div v-if="favoriteConcerts.length" class="list compact-list">
+            <article
+              v-for="concert in favoriteConcerts"
+              :key="`fav-${concert.artist}-${concert.date}-${concert.venue}`"
+              class="card"
+            >
+              <div class="meta">
+                <img
+                  v-if="getConcertImageUrl(concert)"
+                  class="concert-image"
+                  :src="getConcertImageUrl(concert)"
+                  :alt="`Bild för ${concert.title}`"
+                  loading="lazy"
+                />
+                <p>{{ formatDate(concert.date) }}</p>
+                <p>{{ concert.city }}</p>
+              </div>
+
+              <div class="content">
+                <h3>{{ concert.artist }}</h3>
+                <p class="title">{{ concert.title }}</p>
+                <p class="venue">{{ concert.venue }}</p>
+                <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
+                <p class="source">{{ getConcertSourceName(concert) }}</p>
+                <button class="link-button favorite" @click="toggleFavorite(concert)">
+                  Ta bort favorit
+                </button>
+                <a
+                  v-if="getConcertDetailsUrl(concert)"
+                  class="readmore"
+                  :href="getConcertDetailsUrl(concert)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Läs mer
+                </a>
+              </div>
+            </article>
+          </div>
+
+          <p v-else class="lead">Du har inga sparade favoriter än.</p>
         </template>
       </section>
 
@@ -718,6 +961,9 @@ onMounted(async () => {
                 <p class="venue">{{ concert.venue }}</p>
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
+                <button class="link-button favorite" @click="toggleFavorite(concert)">
+                  {{ isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit' }}
+                </button>
                 <a
                   v-if="getConcertDetailsUrl(concert)"
                   class="readmore"

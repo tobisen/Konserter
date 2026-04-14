@@ -5,10 +5,12 @@ const dataDir = path.resolve(process.cwd(), 'data')
 const sourcesFile = path.join(dataDir, 'sources.json')
 const concertsFile = path.join(dataDir, 'concerts.json')
 const adminFile = path.join(dataDir, 'admin.json')
+const usersFile = path.join(dataDir, 'users.json')
 
 const KV_SOURCES_KEY = 'konserter:sources'
 const KV_CONCERTS_KEY = 'konserter:concerts'
 const KV_ADMIN_KEY = 'konserter:admin'
+const KV_USERS_KEY = 'konserter:users'
 
 function hasKvConfig() {
   return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
@@ -63,7 +65,8 @@ async function ensureDataFiles() {
 
   const defaults = [
     { file: sourcesFile, initial: '[]\n' },
-    { file: concertsFile, initial: '[]\n' }
+    { file: concertsFile, initial: '[]\n' },
+    { file: usersFile, initial: '[]\n' }
   ]
 
   for (const { file, initial } of defaults) {
@@ -139,6 +142,23 @@ export async function saveConcertsToFile(concerts) {
   }
 
   await writeJsonArrayToFile(concertsFile, concerts)
+}
+
+export async function loadUsersFromStore() {
+  if (hasKvConfig()) {
+    return kvReadJson(KV_USERS_KEY, [])
+  }
+
+  return readJsonArrayFromFile(usersFile)
+}
+
+export async function saveUsersToStore(users) {
+  if (hasKvConfig()) {
+    await kvWriteJson(KV_USERS_KEY, users)
+    return
+  }
+
+  await writeJsonArrayToFile(usersFile, users)
 }
 
 export async function loadAdminCredentialsFromStore() {

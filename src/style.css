@@ -425,6 +425,22 @@ h3 {
   font-weight: 700;
 }
 
+.favorite {
+  color: #0c5f6f;
+}
+
+.user-auth-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.user-auth-form {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -472,6 +488,10 @@ h3 {
 
   .source-form,
   .login-form {
+    grid-template-columns: 1fr;
+  }
+
+  .user-auth-grid {
     grid-template-columns: 1fr;
   }
 }

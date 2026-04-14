@@ -7,12 +7,21 @@ import {
   handleLogout,
   requireAuth
 } from './auth.js'
+import {
+  handleUserLogin,
+  handleUserLogout,
+  handleUserMe,
+  handleUserRegister,
+  requireAppUser
+} from './userAuth.js'
 import { fetchConcertsFromUrl, handleSourceEventsRequest } from './sourceEvents.js'
 import {
   loadConcertsFromFile,
   loadSourcesFromFile,
+  loadUsersFromStore,
   saveConcertsToFile,
-  saveSourcesToFile
+  saveSourcesToFile,
+  saveUsersToStore
 } from './storage.js'
 
 function sendJson(response, statusCode, payload) {
@@ -270,6 +279,76 @@ async function handleClearConcerts(request, response) {
   })
 }
 
+async function handleGetUserFavorites(request, response) {
+  const user = await requireAppUser(request, response)
+  if (!user) return
+
+  sendJson(response, 200, {
+    favorites: Array.isArray(user.favorites) ? user.favorites : []
+  })
+}
+
+async function handleAddUserFavorite(request, response, concertId) {
+  const user = await requireAppUser(request, response)
+  if (!user) return
+
+  if (!concertId) {
+    sendJson(response, 400, { error: 'Ogiltigt konsert-id.' })
+    return
+  }
+
+  const users = await loadUsersFromStore()
+  const concerts = await loadConcertsFromFile()
+  const validConcertIds = new Set(concerts.map(createStableId))
+
+  if (!validConcertIds.has(concertId)) {
+    sendJson(response, 404, { error: 'Kunde inte hitta spelningen.' })
+    return
+  }
+
+  const nextUsers = users.map((entry) => {
+    if (entry.id !== user.id) return entry
+
+    const favorites = Array.isArray(entry.favorites) ? entry.favorites : []
+    if (favorites.includes(concertId)) return entry
+
+    return {
+      ...entry,
+      favorites: [...favorites, concertId]
+    }
+  })
+
+  await saveUsersToStore(nextUsers)
+
+  const updatedUser = nextUsers.find((entry) => entry.id === user.id)
+  sendJson(response, 200, {
+    favorites: updatedUser?.favorites || []
+  })
+}
+
+async function handleDeleteUserFavorite(request, response, concertId) {
+  const user = await requireAppUser(request, response)
+  if (!user) return
+
+  const users = await loadUsersFromStore()
+
+  const nextUsers = users.map((entry) => {
+    if (entry.id !== user.id) return entry
+
+    return {
+      ...entry,
+      favorites: (entry.favorites || []).filter((id) => id !== concertId)
+    }
+  })
+
+  await saveUsersToStore(nextUsers)
+
+  const updatedUser = nextUsers.find((entry) => entry.id === user.id)
+  sendJson(response, 200, {
+    favorites: updatedUser?.favorites || []
+  })
+}
+
 export async function handleApiRequest(request, response) {
   const url = toUrl(request)
   const pathname = url.pathname.startsWith('/api')
@@ -284,6 +363,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/auth/me' && request.method === 'GET') {
     handleAuthMe(request, response)
+    return
+  }
+
+  if (pathname === '/api/users/me' && request.method === 'GET') {
+    await handleUserMe(request, response)
     return
   }
 
@@ -307,6 +391,37 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/auth/logout' && request.method === 'POST') {
     handleLogout(request, response)
+    return
+  }
+
+  if (pathname === '/api/users/register' && request.method === 'POST') {
+    let body
+    try {
+      body = await readJsonBody(request)
+    } catch (error) {
+      sendJson(response, 400, { error: error.message })
+      return
+    }
+
+    await handleUserRegister(request, response, body)
+    return
+  }
+
+  if (pathname === '/api/users/login' && request.method === 'POST') {
+    let body
+    try {
+      body = await readJsonBody(request)
+    } catch (error) {
+      sendJson(response, 400, { error: error.message })
+      return
+    }
+
+    await handleUserLogin(request, response, body)
+    return
+  }
+
+  if (pathname === '/api/users/logout' && request.method === 'POST') {
+    handleUserLogout(request, response)
     return
   }
 
@@ -348,6 +463,30 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/sources' && request.method === 'POST') {
     await handleAddSource(request, response)
+    return
+  }
+
+  if (pathname === '/api/users/favorites' && request.method === 'GET') {
+    await handleGetUserFavorites(request, response)
+    return
+  }
+
+  if (pathname === '/api/users/favorites' && request.method === 'POST') {
+    let body
+    try {
+      body = await readJsonBody(request)
+    } catch (error) {
+      sendJson(response, 400, { error: error.message })
+      return
+    }
+
+    await handleAddUserFavorite(request, response, String(body?.concertId || ''))
+    return
+  }
+
+  if (pathname.startsWith('/api/users/favorites/') && request.method === 'DELETE') {
+    const concertId = decodeURIComponent(pathname.slice('/api/users/favorites/'.length))
+    await handleDeleteUserFavorite(request, response, concertId)
     return
   }
 
