@@ -6,11 +6,13 @@ const sourcesFile = path.join(dataDir, 'sources.json')
 const concertsFile = path.join(dataDir, 'concerts.json')
 const adminFile = path.join(dataDir, 'admin.json')
 const usersFile = path.join(dataDir, 'users.json')
+const metaFile = path.join(dataDir, 'meta.json')
 
 const KV_SOURCES_KEY = 'konserter:sources'
 const KV_CONCERTS_KEY = 'konserter:concerts'
 const KV_ADMIN_KEY = 'konserter:admin'
 const KV_USERS_KEY = 'konserter:users'
+const KV_META_KEY = 'konserter:meta'
 
 function hasKvConfig() {
   return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
@@ -142,6 +144,25 @@ export async function saveConcertsToFile(concerts) {
   }
 
   await writeJsonArrayToFile(concertsFile, concerts)
+}
+
+export async function loadMetaFromStore() {
+  if (hasKvConfig()) {
+    const stored = await kvReadJson(KV_META_KEY, {})
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}
+  }
+
+  const stored = await readJsonObjectFromFile(metaFile)
+  return stored || {}
+}
+
+export async function saveMetaToStore(payload) {
+  if (hasKvConfig()) {
+    await kvWriteJson(KV_META_KEY, payload)
+    return
+  }
+
+  await writeJsonObjectToFile(metaFile, payload)
 }
 
 export async function loadUsersFromStore() {

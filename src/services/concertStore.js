@@ -9,7 +9,10 @@ async function parseJson(response) {
 export async function loadStoredConcerts() {
   const response = await fetch('/api/concerts')
   const payload = await parseJson(response)
-  return payload.concerts || []
+  return {
+    concerts: payload.concerts || [],
+    lastUpdatedAt: payload.lastUpdatedAt || null
+  }
 }
 
 export async function updateConcertsFromSources() {
@@ -22,7 +25,8 @@ export async function updateConcertsFromSources() {
   return {
     concerts: payload.concerts || [],
     addedCount: payload.addedCount || 0,
-    errors: payload.errors || []
+    errors: payload.errors || [],
+    lastUpdatedAt: payload.lastUpdatedAt || null
   }
 }
 

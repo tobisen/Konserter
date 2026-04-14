@@ -17,9 +17,11 @@ import {
 import { fetchConcertsFromUrl, handleSourceEventsRequest } from './sourceEvents.js'
 import {
   loadConcertsFromFile,
+  loadMetaFromStore,
   loadSourcesFromFile,
   loadUsersFromStore,
   saveConcertsToFile,
+  saveMetaToStore,
   saveSourcesToFile,
   saveUsersToStore
 } from './storage.js'
@@ -135,7 +137,11 @@ function isValidConcert(concert) {
 
 async function handleGetConcerts(response) {
   const concerts = await loadConcertsFromFile()
-  sendJson(response, 200, { concerts })
+  const meta = await loadMetaFromStore()
+  sendJson(response, 200, {
+    concerts,
+    lastUpdatedAt: meta.lastUpdatedAt || null
+  })
 }
 
 async function handleGetSources(request, response) {
@@ -214,12 +220,15 @@ async function handleDeleteSource(request, response, sourceId) {
   sendJson(response, 200, { sources: nextSources })
 }
 
-async function handleUpdateConcerts(request, response) {
+async function runConcertUpdate() {
   const sources = await loadSourcesFromFile()
 
   if (sources.length === 0) {
-    sendJson(response, 400, { error: 'Lägg till minst en källa innan uppdatering.' })
-    return
+    return {
+      ok: false,
+      statusCode: 400,
+      payload: { error: 'Lägg till minst en källa innan uppdatering.' }
+    }
   }
 
   const currentConcerts = await loadConcertsFromFile()
@@ -259,11 +268,52 @@ async function handleUpdateConcerts(request, response) {
     await saveConcertsToFile(merged)
   }
 
-  sendJson(response, 200, {
-    concerts: additions.length > 0 ? merged : currentConcerts,
-    addedCount: additions.length,
-    errors
+  const updateTimestamp = new Date().toISOString()
+  const meta = await loadMetaFromStore()
+  await saveMetaToStore({
+    ...meta,
+    lastUpdatedAt: updateTimestamp
   })
+
+  return {
+    ok: true,
+    statusCode: 200,
+    payload: {
+      concerts: additions.length > 0 ? merged : currentConcerts,
+      addedCount: additions.length,
+      errors,
+      lastUpdatedAt: updateTimestamp
+    }
+  }
+}
+
+async function handleUpdateConcerts(request, response) {
+  const result = await runConcertUpdate()
+  sendJson(response, result.statusCode, result.payload)
+}
+
+function isCronAuthorized(request, url) {
+  const configuredSecret = process.env.CRON_SECRET
+  if (!configuredSecret) {
+    return true
+  }
+
+  const authorization = String(request.headers.authorization || '')
+  if (authorization === `Bearer ${configuredSecret}`) {
+    return true
+  }
+
+  return url.searchParams.get('secret') === configuredSecret
+}
+
+async function handleCronUpdateConcerts(request, response, url) {
+  if (!isCronAuthorized(request, url)) {
+    sendJson(response, 401, { error: 'Unauthorized cron request.' })
+    return
+  }
+
+  const result = await runConcertUpdate()
+  sendJson(response, result.statusCode, result.payload)
 }
 
 async function handleClearConcerts(request, response) {
@@ -373,6 +423,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === '/api/source-events') {
     await handleSourceEventsRequest(request, response)
+    return
+  }
+
+  if (pathname === '/api/cron/update-concerts' && request.method === 'GET') {
+    await handleCronUpdateConcerts(request, response, url)
     return
   }
 

@@ -17,6 +17,7 @@ import {
 } from './services/userStore'
 
 const concerts = ref([])
+const lastUpdatedAt = ref(null)
 const sources = ref([])
 const loading = ref(false)
 const status = ref('')
@@ -58,6 +59,10 @@ const deselectedGenres = ref([])
 
 const monthFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long' })
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', { month: 'long', year: 'numeric' })
+const updatedAtFormatter = new Intl.DateTimeFormat('sv-SE', {
+  dateStyle: 'medium',
+  timeStyle: 'short'
+})
 
 function getConcertDate(concert) {
   const date = new Date(concert?.date)
@@ -136,6 +141,13 @@ async function handleAuthButton() {
 }
 
 const userAuthenticated = computed(() => Boolean(appUser.value))
+const formattedLastUpdatedAt = computed(() => {
+  if (!lastUpdatedAt.value) return 'Har inte uppdaterats ännu'
+
+  const date = new Date(lastUpdatedAt.value)
+  if (Number.isNaN(date.getTime())) return 'Okänd tidpunkt'
+  return updatedAtFormatter.format(date)
+})
 
 const availableSourceNames = computed(() => {
   return [...new Set(concerts.value.map((concert) => getConcertSourceName(concert)))].sort((a, b) =>
@@ -247,7 +259,9 @@ function isFavorite(concert) {
 
 async function toggleFavorite(concert) {
   if (!userAuthenticated.value) {
-    userStatus.value = 'Logga in eller registrera dig för att spara favoriter.'
+    const message = 'Du behöver logga in eller registrera dig för att spara favoriter.'
+    userStatus.value = message
+    window.alert(message)
     setView('favorites')
     return
   }
@@ -467,7 +481,9 @@ async function logout() {
 }
 
 async function refreshConcerts() {
-  concerts.value = await loadStoredConcerts()
+  const result = await loadStoredConcerts()
+  concerts.value = result.concerts
+  lastUpdatedAt.value = result.lastUpdatedAt
 }
 
 async function updateConcerts() {
@@ -479,6 +495,7 @@ async function updateConcerts() {
     const result = await updateConcertsFromSources()
     concerts.value = result.concerts
     fetchErrors.value = result.errors
+    lastUpdatedAt.value = result.lastUpdatedAt || lastUpdatedAt.value
 
     if (result.addedCount > 0) {
       status.value = `Lade till ${result.addedCount} nya konserter.`
@@ -660,6 +677,10 @@ onMounted(async () => {
       <p class="updated">{{ status }}</p>
     </section>
 
+    <section class="hero">
+      <p class="lead">Senast uppdaterad: {{ formattedLastUpdatedAt }}</p>
+    </section>
+
     <section v-if="!authReady" class="hero">
       <p class="lead">Laddar inloggningsstatus...</p>
     </section>
@@ -702,8 +723,13 @@ onMounted(async () => {
               <p class="venue">{{ concert.venue }}</p>
               <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
               <p class="source">{{ getConcertSourceName(concert) }}</p>
-              <button class="link-button favorite" @click="toggleFavorite(concert)">
-                {{ isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit' }}
+              <button
+                class="heart-button"
+                :class="{ active: isFavorite(concert) }"
+                :aria-label="isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'"
+                @click="toggleFavorite(concert)"
+              >
+                {{ isFavorite(concert) ? '♥' : '♡' }}
               </button>
               <a
                 v-if="getConcertDetailsUrl(concert)"
@@ -842,8 +868,12 @@ onMounted(async () => {
                 <p class="venue">{{ concert.venue }}</p>
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
-                <button class="link-button favorite" @click="toggleFavorite(concert)">
-                  Ta bort favorit
+                <button
+                  class="heart-button active"
+                  aria-label="Ta bort favorit"
+                  @click="toggleFavorite(concert)"
+                >
+                  ♥
                 </button>
                 <a
                   v-if="getConcertDetailsUrl(concert)"
@@ -961,8 +991,13 @@ onMounted(async () => {
                 <p class="venue">{{ concert.venue }}</p>
                 <p v-if="getConcertGenre(concert)" class="genre">{{ getConcertGenre(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
-                <button class="link-button favorite" @click="toggleFavorite(concert)">
-                  {{ isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit' }}
+                <button
+                  class="heart-button"
+                  :class="{ active: isFavorite(concert) }"
+                  :aria-label="isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'"
+                  @click="toggleFavorite(concert)"
+                >
+                  {{ isFavorite(concert) ? '♥' : '♡' }}
                 </button>
                 <a
                   v-if="getConcertDetailsUrl(concert)"
