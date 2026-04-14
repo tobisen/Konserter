@@ -4,6 +4,8 @@
     "username": "tobbe",
     "usernameLower": "tobbe",
     "passwordHash": "f526f6aa11f85d3eac52d193e10d58230df293eb4102321cb89dea7e2b9b9ab5",
-    "favorites": []
+    "favorites": [],
+    "bookings": [],
+    "seen": []
   }
 ]

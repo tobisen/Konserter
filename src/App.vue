@@ -187,12 +187,11 @@ function closeAuthModal() {
 }
 
 async function handleAdminButton() {
-  if (isAuthenticated.value) {
-    setView("admin");
-    return;
-  }
+  setView("admin");
 
-  openAuthModal();
+  if (!isAuthenticated.value) {
+    openAuthModal();
+  }
 }
 
 const userAuthenticated = computed(() => Boolean(appUser.value));

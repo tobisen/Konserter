@@ -1,27 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
   <!-- Background -->
   <rect width="64" height="64" rx="12" fill="#1a1a2e"/>
-  
+
   <!-- Stage/Bottom -->
   <rect x="8" y="42" width="48" height="3" fill="#f0a500"/>
-  
+
   <!-- Stage light left -->
   <circle cx="16" cy="36" r="2" fill="#ff6b6b"/>
   <path d="M 16 36 L 12 48" stroke="#ff6b6b" stroke-width="1" opacity="0.5"/>
-  
+
   <!-- Stage light center -->
   <circle cx="32" cy="34" r="2" fill="#4ecdc4"/>
   <path d="M 32 34 L 32 48" stroke="#4ecdc4" stroke-width="1" opacity="0.5"/>
-  
+
   <!-- Stage light right -->
   <circle cx="48" cy="36" r="2" fill="#95e1d3"/>
   <path d="M 48 36 L 52 48" stroke="#95e1d3" stroke-width="1" opacity="0.5"/>
-  
+
   <!-- Microphone stand -->
   <rect x="30" y="22" width="1.5" height="16" fill="#888" rx="0.75"/>
   <circle cx="31.5" cy="20" r="2.5" fill="#d0d0d0"/>
   <circle cx="31.5" cy="20" r="1.5" fill="#888"/>
-  
+
   <!-- Musical notes -->
   <g transform="translate(20, 8)">
     <!-- Note 1 -->
@@ -33,7 +33,7 @@
     <!-- Connecting beam -->
     <path d="M 1.5 7 Q 4 5 7.5 3" stroke="#f0a500" stroke-width="1" fill="none"/>
   </g>
-  
+
   <!-- Spotlight glow -->
   <circle cx="32" cy="32" r="20" fill="#4ecdc4" opacity="0.1"/>
 </svg>

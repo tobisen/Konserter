@@ -1,5 +1,104 @@
 [
   {
+    "artist": "Dina Ögon",
+    "title": "Dina Ögon",
+    "date": "2026-04-17T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Dina Ögon",
+    "title": "Dina Ögon",
+    "date": "2026-04-18T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Kiefer Sutherland",
+    "title": "Kiefer Sutherland",
+    "date": "2026-04-22T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "En Hemlig Artist #6",
+    "title": "En Hemlig Artist #6",
+    "date": "2026-04-25T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Fryshuset x Sthlm Music Week",
+    "title": "Fryshuset x Sthlm Music Week",
+    "date": "2026-04-25T18:00:00.000Z",
+    "venue": "BAR15",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "UNTITLED Presents: Major League DJz, Jamiie, Lews",
+    "title": "UNTITLED Presents: Major League DJz, Jamiie, Lews",
+    "date": "2026-05-02T18:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "ERIC PRYDZ – HOTEL GRAND STADE",
+    "title": "ERIC PRYDZ – HOTEL GRAND STADE",
+    "date": "2026-05-08T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Sara Parkman",
+    "title": "Sara Parkman",
+    "date": "2026-05-09T17:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Indira Paganotto",
+    "title": "Indira Paganotto",
+    "date": "2026-05-13T18:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Dolly Style",
     "title": "Dolly Style",
     "date": "2026-05-14T16:00:00.000Z",
@@ -9,6 +108,28 @@
     "detailsUrl": "",
     "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/2irJLLfj4K42xGrAqW6QxK/8a4c6229682086c55769fbf8963a9d2c/Dolly_small.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "LANY",
+    "title": "LANY",
+    "date": "2026-05-15T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Killen",
+    "title": "Killen",
+    "date": "2026-05-15T18:00:00.000Z",
+    "venue": "BAR15",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "KAJ",
@@ -22,6 +143,50 @@
     "sourceName": "Furuvik"
   },
   {
+    "artist": "Joey Valance & Brae",
+    "title": "Joey Valance & Brae",
+    "date": "2026-05-23T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Sweet Home Alabama",
+    "title": "Sweet Home Alabama",
+    "date": "2026-05-23T18:00:00.000Z",
+    "venue": "Lilla Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Restricted",
+    "title": "Restricted",
+    "date": "2026-05-29T18:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "En Hemlig Artist #7",
+    "title": "En Hemlig Artist #7",
+    "date": "2026-05-30T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Lovet",
     "title": "Lovet",
     "date": "2026-05-30T18:00:00.000Z",
@@ -31,6 +196,28 @@
     "detailsUrl": "",
     "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/3IhjL3afnuLEWz8BnH0AL1/7782cbdbe58c798a4edad06217ce870e/Lovet_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Natural Mystics",
+    "title": "Natural Mystics",
+    "date": "2026-05-30T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Fat Freddy's Drop",
+    "title": "Fat Freddy's Drop",
+    "date": "2026-06-02T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "Smash Into Pieces",
@@ -55,6 +242,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Eken Marknad",
+    "title": "Eken Marknad",
+    "date": "2026-06-06T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Bransta City Släckers",
     "title": "Bransta City Släckers",
     "date": "2026-06-07T18:00:00.000Z",
@@ -64,6 +262,17 @@
     "detailsUrl": "",
     "imageUrl": "",
     "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Eken Marknad",
+    "title": "Eken Marknad",
+    "date": "2026-06-07T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "Korslagda",
@@ -88,6 +297,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "En Hemlig Artist #8",
+    "title": "En Hemlig Artist #8",
+    "date": "2026-06-13T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Hooja",
     "title": "Hooja",
     "date": "2026-06-13T18:00:00.000Z",
@@ -110,6 +330,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Extreme",
+    "title": "Extreme",
+    "date": "2026-06-14T16:30:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Sångpiraterna",
     "title": "Sångpiraterna",
     "date": "2026-06-14T18:00:00.000Z",
@@ -119,6 +350,39 @@
     "detailsUrl": "",
     "imageUrl": "",
     "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "Natasha Bedingfield",
+    "title": "Natasha Bedingfield",
+    "date": "2026-06-15T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Redman",
+    "title": "Redman",
+    "date": "2026-06-17T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Men I Trust",
+    "title": "Men I Trust",
+    "date": "2026-06-18T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "Greczula",
@@ -176,6 +440,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Joost Klein",
+    "title": "Joost Klein",
+    "date": "2026-06-24T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "The Primitives (UK)",
     "title": "The Primitives (UK)",
     "date": "2026-06-26T18:00:00.000Z",
@@ -209,6 +484,28 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Mästerbotten",
+    "title": "Mästerbotten",
+    "date": "2026-06-27T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "XL Major Lazer Soundsystem",
+    "title": "XL Major Lazer Soundsystem",
+    "date": "2026-06-28T16:30:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Dave Weckl (US) möter Uppsala Storband",
     "title": "Dave Weckl (US) möter Uppsala Storband",
     "date": "2026-06-28T18:00:00.000Z",
@@ -231,6 +528,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Seinabou Sey, Amanda Bergman & Sunnan",
+    "title": "Seinabou Sey, Amanda Bergman & Sunnan",
+    "date": "2026-07-02T15:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Abba Allsång",
     "title": "Abba Allsång",
     "date": "2026-07-02T18:00:00.000Z",
@@ -240,6 +548,17 @@
     "detailsUrl": "",
     "imageUrl": "",
     "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "XL Salvatore Ganacci",
+    "title": "XL Salvatore Ganacci",
+    "date": "2026-07-03T17:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "Petter",
@@ -484,6 +803,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Pride Sthlm",
+    "title": "Pride Sthlm",
+    "date": "2026-07-30T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Molly Sandén",
     "title": "Molly Sandén",
     "date": "2026-07-31T18:00:00.000Z",
@@ -493,6 +823,17 @@
     "detailsUrl": "",
     "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/42QPDLlBTPMg7bemiNoAgl/d5cada09e5d676be0efe6be07d928275/Molly_ny_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Pride Sthlm",
+    "title": "Pride Sthlm",
+    "date": "2026-07-31T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "Cleo",
@@ -506,6 +847,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Pride Sthlm",
+    "title": "Pride Sthlm",
+    "date": "2026-08-01T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Niklas Strömstedt",
     "title": "Niklas Strömstedt",
     "date": "2026-08-02T18:00:00.000Z",
@@ -515,6 +867,17 @@
     "detailsUrl": "",
     "imageUrl": "",
     "sourceName": "Parksnäckan"
+  },
+  {
+    "artist": "The Living Tombstone",
+    "title": "The Living Tombstone",
+    "date": "2026-08-03T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   },
   {
     "artist": "Världens Band",
@@ -726,6 +1089,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Snarky Puppy",
+    "title": "Snarky Puppy",
+    "date": "2026-09-02T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Björn & Järv",
     "title": "Björn & Järv",
     "date": "2026-09-04T18:00:00.000Z",
@@ -737,6 +1111,17 @@
     "sourceName": "Parksnäckan"
   },
   {
+    "artist": "Nightshade Frequencies",
+    "title": "Nightshade Frequencies",
+    "date": "2026-09-05T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
     "artist": "Felicia",
     "title": "Felicia",
     "date": "2026-09-05T18:00:00.000Z",
@@ -746,5 +1131,192 @@
     "detailsUrl": "",
     "imageUrl": "https://images.ctfassets.net/udjaqv66jihd/7mRTuAKnSZjwIziOG0ZN1X/836454f2258e63adce94cda775927074/Felicia_1000x1000.png",
     "sourceName": "Furuvik"
+  },
+  {
+    "artist": "Bailey Zimmerman",
+    "title": "Bailey Zimmerman",
+    "date": "2026-09-10T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "The Blaze – Hotel Grand Stade",
+    "title": "The Blaze – Hotel Grand Stade",
+    "date": "2026-09-12T18:00:00.000Z",
+    "venue": "Förbindelsehallen",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Ella Mai",
+    "title": "Ella Mai",
+    "date": "2026-09-15T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Lucinda Williams",
+    "title": "Lucinda Williams",
+    "date": "2026-09-20T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Lake Street Dive",
+    "title": "Lake Street Dive",
+    "date": "2026-09-24T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Cat Power",
+    "title": "Cat Power",
+    "date": "2026-10-09T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Simple Plan",
+    "title": "Simple Plan",
+    "date": "2026-10-14T16:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Sixpence None The Richer",
+    "title": "Sixpence None The Richer",
+    "date": "2026-10-15T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Kaizers Orchestra",
+    "title": "Kaizers Orchestra",
+    "date": "2026-10-23T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Gavin DeGraw",
+    "title": "Gavin DeGraw",
+    "date": "2026-10-24T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "WARREN ZEIDERS",
+    "title": "WARREN ZEIDERS",
+    "date": "2026-10-31T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Stephen Wilson Jr.",
+    "title": "Stephen Wilson Jr.",
+    "date": "2026-11-04T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Ezhel",
+    "title": "Ezhel",
+    "date": "2026-11-08T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "The Wallflowers",
+    "title": "The Wallflowers",
+    "date": "2026-11-12T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "The Sisters of Mercy",
+    "title": "The Sisters of Mercy",
+    "date": "2026-11-16T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Artemas",
+    "title": "Artemas",
+    "date": "2026-11-29T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
+  },
+  {
+    "artist": "Whitechapel",
+    "title": "Whitechapel",
+    "date": "2027-02-24T17:00:00.000Z",
+    "venue": "Fållan",
+    "city": "Stockholm",
+    "genre": "",
+    "detailsUrl": "",
+    "imageUrl": "",
+    "sourceName": "Fållan"
   }
 ]

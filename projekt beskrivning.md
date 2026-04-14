@@ -32,7 +32,9 @@ Konsertnavigator is a web application for collecting, organizing, and exploring 
   - Year + month grouping
   - Filtering by source, month, and genre
   - Search by artist, venue, and city
-- Concert cards with image, metadata, details link, and calendar export (`.ics`).
+- Concert cards with image, metadata, details link, share action, and calendar export (`.ics`).
+- Shared concert deep-links (`?concert=...`) that open the Concerts view and highlight the target concert.
+- Clear call-to-action for shared links to save the concert to Favorites.
 
 ### 3. Personal User Experience (My Concerts)
 
@@ -87,7 +89,7 @@ Konsertnavigator is a web application for collecting, organizing, and exploring 
   - My Concerts
   - Help
   - Admin
-- English Help page explaining all available features.
+- Swedish Help page explaining all available features.
 - Version/build display in header for release clarity.
 
 ## Technical Stack
@@ -98,14 +100,20 @@ Konsertnavigator is a web application for collecting, organizing, and exploring 
   - Vercel KV in production (recommended)
   - JSON file fallback for local/dev
 
-## Project Maturity (v1.0.0)
+## Project Maturity (v1.2.0)
 
-Version 1.0.0 marks the first complete product milestone:
+Version 1.2.0 adds Spotify music discovery integration:
 
 - End-to-end source ingestion
 - Public and authenticated user journeys
-- Operational admin controls
+- Operational admin controls with visitor tracking and clear functionality
 - Security baseline and password recovery
 - Notification capabilities and monitoring surfaces
+- Concert-level sharing with deep-link and save-to-favorites CTA
+- **NEW:** Spotify integration showing artist info and top 5 tracks
+  - Artist lookup via Spotify API
+  - Preview tracks and direct Spotify links
+  - Popularity metrics
+  - Graceful fallback if not configured
 
-Konsertnavigator is now a stable, usable MVP suitable for low-traffic production use and further iterative improvements.
+Konsertnavigator is now a feature-rich MVP suitable for production use with growing engagement features.
