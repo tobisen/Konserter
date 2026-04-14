@@ -94,6 +94,27 @@ body {
   background: #eef7f9;
 }
 
+.nav-link:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nav-action {
+  background: linear-gradient(120deg, var(--accent), #1f8aa0);
+  color: #fff;
+  border-color: transparent;
+}
+
+.nav-action:hover {
+  color: #fff;
+  border-color: transparent;
+}
+
+.nav-danger {
+  background: linear-gradient(120deg, #9a1f1f, #bf2f2f);
+}
+
 .hero {
   background: var(--paper);
   border: 1px solid var(--line);

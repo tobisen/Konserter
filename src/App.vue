@@ -444,11 +444,26 @@ onMounted(async () => {
         >
           Spelningar
         </button>
+        <button class="nav-link nav-action" @click="updateConcerts" :disabled="loading">
+          {{ loading ? 'Uppdaterar...' : 'Uppdatera' }}
+        </button>
+        <button
+          v-if="isAuthenticated"
+          class="nav-link nav-action nav-danger"
+          @click="clearConcerts"
+          :disabled="loading"
+        >
+          Töm
+        </button>
         <button class="nav-link" @click="handleAuthButton">
           {{ isAuthenticated ? 'Logga ut' : 'Logga in' }}
         </button>
       </nav>
     </header>
+
+    <section v-if="status" class="hero">
+      <p class="updated">{{ status }}</p>
+    </section>
 
     <section v-if="!authReady" class="hero">
       <p class="lead">Laddar inloggningsstatus...</p>
@@ -462,21 +477,6 @@ onMounted(async () => {
           Här samlar vi konserter från flera källor på ett ställe. Gå till Spelningar för hela
           listan och filtrering, eller till Källor för att se vilka arrangörer som ingår.
         </p>
-
-        <div class="actions">
-          <button class="refresh" @click="updateConcerts" :disabled="loading">
-            {{ loading ? 'Uppdaterar...' : 'Uppdatera konserter' }}
-          </button>
-          <button
-            v-if="isAuthenticated"
-            class="refresh danger"
-            @click="clearConcerts"
-            :disabled="loading"
-          >
-            Töm konserter
-          </button>
-          <p v-if="status" class="updated">{{ status }}</p>
-        </div>
       </section>
 
       <section v-if="currentView === 'home'" class="hero">
