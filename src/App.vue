@@ -1,7 +1,357 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import { computed, onMounted, ref } from 'vue'
+import {
+  loadStoredConcerts,
+  updateConcertsFromSources
+} from './services/concertStore'
+import { addSource, loadSources, removeSource } from './services/sourceStore'
+
+const concerts = ref([])
+const sources = ref([])
+const loading = ref(false)
+const status = ref('')
+const sourceStatus = ref('')
+const fetchErrors = ref([])
+
+const isAuthenticated = ref(false)
+const authReady = ref(false)
+const authError = ref('')
+const loginUsername = ref('')
+const loginPassword = ref('')
+const authLoading = ref(false)
+
+const passwordCurrent = ref('')
+const passwordNext = ref('')
+const passwordConfirm = ref('')
+const passwordLoading = ref(false)
+const passwordStatus = ref('')
+
+const newSourceName = ref('')
+const newSourceUrl = ref('')
+
+const groupedByYear = computed(() => {
+  const groups = new Map()
+
+  for (const concert of concerts.value) {
+    const year = new Date(concert.date).getFullYear()
+
+    if (!groups.has(year)) {
+      groups.set(year, [])
+    }
+
+    groups.get(year).push(concert)
+  }
+
+  return [...groups.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, items]) => ({
+      year,
+      concerts: items
+    }))
+})
+
+function formatDate(isoDate) {
+  return new Intl.DateTimeFormat('sv-SE', {
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(isoDate))
+}
+
+async function checkAuth() {
+  const response = await fetch('/api/auth/me')
+  const payload = await response.json().catch(() => ({ authenticated: false }))
+
+  isAuthenticated.value = Boolean(payload.authenticated)
+
+  if (isAuthenticated.value) {
+    sources.value = await loadSources()
+  } else {
+    sources.value = []
+  }
+}
+
+async function login() {
+  authLoading.value = true
+  authError.value = ''
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: loginUsername.value,
+        password: loginPassword.value
+      })
+    })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      authError.value = payload.error || 'Inloggning misslyckades.'
+      return
+    }
+
+    loginPassword.value = ''
+    await checkAuth()
+  } finally {
+    authLoading.value = false
+  }
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', {
+    method: 'POST'
+  })
+
+  isAuthenticated.value = false
+  sources.value = []
+  sourceStatus.value = ''
+  passwordStatus.value = ''
+}
+
+async function refreshConcerts() {
+  concerts.value = await loadStoredConcerts()
+}
+
+async function updateConcerts() {
+  if (!isAuthenticated.value) {
+    status.value = 'Du måste vara inloggad för att uppdatera.'
+    return
+  }
+
+  loading.value = true
+  status.value = ''
+  fetchErrors.value = []
+
+  try {
+    const result = await updateConcertsFromSources()
+    concerts.value = result.concerts
+    fetchErrors.value = result.errors
+
+    if (result.addedCount > 0) {
+      status.value = `Lade till ${result.addedCount} nya konserter.`
+      return
+    }
+
+    status.value = 'Inga nya konserter hittades. Befintliga är kvar.'
+  } catch (error) {
+    status.value = error.message || 'Kunde inte uppdatera konserter.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitSource() {
+  if (!isAuthenticated.value) {
+    sourceStatus.value = 'Du måste vara inloggad för att ändra källor.'
+    return
+  }
+
+  sourceStatus.value = ''
+
+  try {
+    sources.value = await addSource({
+      name: newSourceName.value,
+      url: newSourceUrl.value
+    })
+
+    newSourceName.value = ''
+    newSourceUrl.value = ''
+    sourceStatus.value = 'Källa tillagd.'
+  } catch (error) {
+    sourceStatus.value = error.message || 'Kunde inte lägga till källa.'
+  }
+}
+
+async function deleteSource(id) {
+  if (!isAuthenticated.value) {
+    sourceStatus.value = 'Du måste vara inloggad för att ändra källor.'
+    return
+  }
+
+  try {
+    sources.value = await removeSource(id)
+    sourceStatus.value = 'Källa borttagen.'
+  } catch (error) {
+    sourceStatus.value = error.message || 'Kunde inte ta bort källa.'
+  }
+}
+
+async function submitPasswordChange() {
+  passwordStatus.value = ''
+
+  if (!passwordCurrent.value || !passwordNext.value || !passwordConfirm.value) {
+    passwordStatus.value = 'Fyll i alla lösenordsfält.'
+    return
+  }
+
+  if (passwordNext.value !== passwordConfirm.value) {
+    passwordStatus.value = 'Nytt lösenord och bekräftelse matchar inte.'
+    return
+  }
+
+  passwordLoading.value = true
+
+  try {
+    const response = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        currentPassword: passwordCurrent.value,
+        newPassword: passwordNext.value
+      })
+    })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      passwordStatus.value = payload.error || 'Kunde inte byta lösenord.'
+      return
+    }
+
+    passwordCurrent.value = ''
+    passwordNext.value = ''
+    passwordConfirm.value = ''
+    passwordStatus.value = 'Lösenord uppdaterat.'
+  } finally {
+    passwordLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    await Promise.all([checkAuth(), refreshConcerts()])
+  } finally {
+    authReady.value = true
+  }
+})
 </script>
 
 <template>
-  <HelloWorld />
+  <main class="page">
+    <header class="hero">
+      <p class="kicker">Konsertnavigator</p>
+      <h1>Hantera källor och samla konserter</h1>
+      <p class="lead">
+        Lägg till datakällor, uppdatera och fyll på med nya konserter. Befintliga poster tas
+        aldrig bort vid uppdatering.
+      </p>
+
+      <div class="actions">
+        <button class="refresh" @click="updateConcerts" :disabled="loading || !isAuthenticated">
+          {{ loading ? 'Uppdaterar...' : 'Uppdatera konserter' }}
+        </button>
+        <p v-if="status" class="updated">{{ status }}</p>
+      </div>
+    </header>
+
+    <section v-if="!authReady" class="hero">
+      <p class="lead">Laddar inloggningsstatus...</p>
+    </section>
+
+    <section v-else-if="isAuthenticated" class="hero source-panel">
+      <div class="auth-header">
+        <h2>Källor</h2>
+        <button class="link-button" @click="logout">Logga ut</button>
+      </div>
+
+      <p class="lead">
+        Du kan ange en vanlig webbsida eller en JSON-URL. Appen försöker extrahera event
+        automatiskt.
+      </p>
+
+      <form class="source-form" @submit.prevent="submitSource">
+        <input v-model="newSourceName" type="text" placeholder="Namn, t.ex. Ticketmaster" />
+        <input
+          v-model="newSourceUrl"
+          type="url"
+          placeholder="URL till eventsida, t.ex. https://www.furuvik.se/konserter"
+        />
+        <button class="refresh" type="submit">Lägg till källa</button>
+      </form>
+
+      <p v-if="sourceStatus" class="updated">{{ sourceStatus }}</p>
+
+      <ul v-if="sources.length" class="source-list">
+        <li v-for="source in sources" :key="source.id">
+          <div>
+            <strong>{{ source.name }}</strong>
+            <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.url }}</a>
+          </div>
+          <button class="link-button" @click="deleteSource(source.id)">Ta bort</button>
+        </li>
+      </ul>
+      <p v-else class="lead">Inga källor tillagda än.</p>
+    </section>
+
+    <section v-if="isAuthenticated" class="hero source-panel">
+      <h2>Byt lösenord</h2>
+
+      <form class="login-form" @submit.prevent="submitPasswordChange">
+        <input v-model="passwordCurrent" type="password" placeholder="Nuvarande lösenord" />
+        <input v-model="passwordNext" type="password" placeholder="Nytt lösenord" />
+        <input v-model="passwordConfirm" type="password" placeholder="Bekräfta nytt lösenord" />
+        <button class="refresh" type="submit" :disabled="passwordLoading">
+          {{ passwordLoading ? 'Sparar...' : 'Byt lösenord' }}
+        </button>
+      </form>
+
+      <p v-if="passwordStatus" class="updated">{{ passwordStatus }}</p>
+    </section>
+
+    <section v-else class="hero source-panel">
+      <h2>Admin-inloggning</h2>
+      <p class="lead">Endast inloggad admin kan lägga till/ta bort källor och uppdatera data.</p>
+
+      <form class="login-form" @submit.prevent="login">
+        <input v-model="loginUsername" type="text" placeholder="Användarnamn" />
+        <input v-model="loginPassword" type="password" placeholder="Lösenord" />
+        <button class="refresh" type="submit" :disabled="authLoading">
+          {{ authLoading ? 'Loggar in...' : 'Logga in' }}
+        </button>
+      </form>
+
+      <p v-if="authError" class="updated">{{ authError }}</p>
+    </section>
+
+    <section v-if="fetchErrors.length" class="hero errors">
+      <h2>Kunde inte läsa vissa källor</h2>
+      <ul>
+        <li v-for="(error, index) in fetchErrors" :key="index">{{ error }}</li>
+      </ul>
+    </section>
+
+    <section v-if="groupedByYear.length" class="list">
+      <article v-for="group in groupedByYear" :key="group.year" class="year-group">
+        <h2>{{ group.year }}</h2>
+
+        <article
+          v-for="concert in group.concerts"
+          :key="`${concert.artist}-${concert.date}-${concert.venue}`"
+          class="card"
+        >
+          <div class="meta">
+            <p>{{ formatDate(concert.date) }}</p>
+            <p>{{ concert.city }}</p>
+          </div>
+
+          <div class="content">
+            <h3>{{ concert.artist }}</h3>
+            <p class="title">{{ concert.title }}</p>
+            <p class="venue">{{ concert.venue }}</p>
+          </div>
+        </article>
+      </article>
+    </section>
+
+    <section v-else class="hero">
+      <p class="lead">Inga konserter lagrade än.</p>
+    </section>
+  </main>
 </template>
