@@ -8,9 +8,11 @@ import {
   requireAuth
 } from './auth.js'
 import {
+  handleUserForgotPassword,
   handleUserLogin,
   handleUserLogout,
   handleUserMe,
+  handleUserResetPassword,
   handleUserRegister,
   requireAppUser
 } from './userAuth.js'
@@ -646,6 +648,32 @@ export async function handleApiRequest(request, response) {
     }
 
     await handleUserLogin(request, response, body)
+    return
+  }
+
+  if (pathname === '/api/users/forgot-password' && request.method === 'POST') {
+    let body
+    try {
+      body = await readJsonBody(request)
+    } catch (error) {
+      sendJson(response, 400, { error: error.message })
+      return
+    }
+
+    await handleUserForgotPassword(request, response, body)
+    return
+  }
+
+  if (pathname === '/api/users/reset-password' && request.method === 'POST') {
+    let body
+    try {
+      body = await readJsonBody(request)
+    } catch (error) {
+      sendJson(response, 400, { error: error.message })
+      return
+    }
+
+    await handleUserResetPassword(request, response, body)
     return
   }
 

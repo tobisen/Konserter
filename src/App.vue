@@ -12,7 +12,9 @@ import {
   loadUserLists,
   loginUser,
   logoutUser,
+  requestPasswordReset,
   registerUser,
+  resetPassword,
   removeFromUserList
 } from './services/userStore'
 
@@ -45,12 +47,17 @@ const userStatus = ref('')
 const userLoginUsername = ref('')
 const userLoginPassword = ref('')
 const userRegisterUsername = ref('')
+const userRegisterEmail = ref('')
 const userRegisterPassword = ref('')
 const userLoading = ref(false)
 const favoriteIds = ref([])
 const bookingIds = ref([])
 const seenIds = ref([])
 const myConcertsSubView = ref('favorites')
+const forgotEmail = ref('')
+const resetToken = ref('')
+const resetNewPassword = ref('')
+const showResetForm = ref(false)
 
 const passwordCurrent = ref('')
 const passwordNext = ref('')
@@ -728,15 +735,49 @@ async function registerRegularUser() {
   try {
     const payload = await registerUser({
       username: userRegisterUsername.value,
+      email: userRegisterEmail.value,
       password: userRegisterPassword.value
     })
 
     appUser.value = payload.user
+    userRegisterEmail.value = ''
     userRegisterPassword.value = ''
     applyUserLists(await loadUserLists())
     userStatus.value = `Konto skapat och inloggat som ${payload.user.username}.`
   } catch (error) {
     userError.value = error.message || 'Kunde inte skapa konto.'
+  } finally {
+    userLoading.value = false
+  }
+}
+
+async function forgotRegularUserPassword() {
+  userLoading.value = true
+  userError.value = ''
+  userStatus.value = ''
+
+  try {
+    const payload = await requestPasswordReset(forgotEmail.value)
+    userStatus.value = payload.message || 'Om e-post finns skickas en återställningslänk.'
+  } catch (error) {
+    userError.value = error.message || 'Kunde inte skicka återställningslänk.'
+  } finally {
+    userLoading.value = false
+  }
+}
+
+async function resetRegularUserPassword() {
+  userLoading.value = true
+  userError.value = ''
+  userStatus.value = ''
+
+  try {
+    await resetPassword(resetToken.value, resetNewPassword.value)
+    resetToken.value = ''
+    resetNewPassword.value = ''
+    userStatus.value = 'Lösenordet är återställt. Du kan logga in nu.'
+  } catch (error) {
+    userError.value = error.message || 'Kunde inte återställa lösenord.'
   } finally {
     userLoading.value = false
   }
@@ -902,6 +943,14 @@ async function submitPasswordChange() {
 }
 
 onMounted(async () => {
+  const url = new URL(window.location.href)
+  const tokenFromUrl = url.searchParams.get('resetToken')
+  if (tokenFromUrl) {
+    resetToken.value = tokenFromUrl
+    showResetForm.value = true
+    currentView.value = 'my-concerts'
+  }
+
   try {
     await trackVisitor()
     await Promise.all([checkAuth(), checkUserAuth(), refreshConcerts()])
@@ -1197,20 +1246,101 @@ onMounted(async () => {
           <p class="lead">Registrera dig eller logga in för att hantera dina personliga spelningslistor.</p>
 
           <div class="user-auth-grid">
-            <form class="login-form user-auth-form" @submit.prevent="registerRegularUser">
+            <form class="user-auth-form stacked-form" @submit.prevent="registerRegularUser">
               <h3>Skapa konto</h3>
-              <input v-model="userRegisterUsername" type="text" placeholder="Användarnamn" />
-              <input v-model="userRegisterPassword" type="password" placeholder="Lösenord" />
+              <label class="field-group">
+                <span>Användarnamn</span>
+                <input
+                  v-model="userRegisterUsername"
+                  type="text"
+                  placeholder="t.ex. tobias"
+                  autocomplete="username"
+                />
+              </label>
+              <label class="field-group">
+                <span>E-post</span>
+                <input
+                  v-model="userRegisterEmail"
+                  type="email"
+                  placeholder="namn@epost.se"
+                  autocomplete="email"
+                />
+              </label>
+              <label class="field-group">
+                <span>Lösenord</span>
+                <input
+                  v-model="userRegisterPassword"
+                  type="password"
+                  placeholder="Minst 8 tecken"
+                  autocomplete="new-password"
+                />
+              </label>
               <button class="refresh" type="submit" :disabled="userLoading">Registrera</button>
             </form>
 
-            <form class="login-form user-auth-form" @submit.prevent="loginRegularUser">
+            <form class="user-auth-form stacked-form" @submit.prevent="loginRegularUser">
               <h3>Logga in</h3>
-              <input v-model="userLoginUsername" type="text" placeholder="Användarnamn" />
-              <input v-model="userLoginPassword" type="password" placeholder="Lösenord" />
+              <label class="field-group">
+                <span>Användarnamn eller e-post</span>
+                <input
+                  v-model="userLoginUsername"
+                  type="text"
+                  placeholder="användarnamn eller namn@epost.se"
+                  autocomplete="username"
+                />
+              </label>
+              <label class="field-group">
+                <span>Lösenord</span>
+                <input
+                  v-model="userLoginPassword"
+                  type="password"
+                  placeholder="Ditt lösenord"
+                  autocomplete="current-password"
+                />
+              </label>
               <button class="refresh" type="submit" :disabled="userLoading">Logga in</button>
             </form>
+
+            <form class="user-auth-form stacked-form" @submit.prevent="forgotRegularUserPassword">
+              <h3>Glömt lösenord</h3>
+              <label class="field-group">
+                <span>E-post</span>
+                <input
+                  v-model="forgotEmail"
+                  type="email"
+                  placeholder="Din registrerade e-post"
+                  autocomplete="email"
+                />
+              </label>
+              <button class="refresh" type="submit" :disabled="userLoading">Skicka länk</button>
+            </form>
           </div>
+
+          <button class="link-button neutral" type="button" @click="showResetForm = !showResetForm">
+            {{ showResetForm ? 'Dölj återställning' : 'Har du fått en länk? Återställ lösenord' }}
+          </button>
+
+          <form
+            v-if="showResetForm"
+            class="user-auth-form stacked-form"
+            @submit.prevent="resetRegularUserPassword"
+          >
+            <h3>Återställ lösenord</h3>
+            <label class="field-group">
+              <span>Reset-token</span>
+              <input v-model="resetToken" type="text" placeholder="Token från mail-länken" />
+            </label>
+            <label class="field-group">
+              <span>Nytt lösenord</span>
+              <input
+                v-model="resetNewPassword"
+                type="password"
+                placeholder="Minst 8 tecken"
+                autocomplete="new-password"
+              />
+            </label>
+            <button class="refresh" type="submit" :disabled="userLoading">Spara lösenord</button>
+          </form>
 
           <p v-if="userError" class="updated">{{ userError }}</p>
           <p v-if="userStatus" class="updated">{{ userStatus }}</p>

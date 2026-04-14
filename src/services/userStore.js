@@ -36,6 +36,30 @@ export async function loginUser(credentials) {
   return parseJson(response)
 }
 
+export async function requestPasswordReset(email) {
+  const response = await fetch('/api/users/forgot-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email })
+  })
+
+  return parseJson(response)
+}
+
+export async function resetPassword(token, newPassword) {
+  const response = await fetch('/api/users/reset-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ token, newPassword })
+  })
+
+  return parseJson(response)
+}
+
 export async function logoutUser() {
   const response = await fetch('/api/users/logout', {
     method: 'POST'
