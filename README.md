@@ -6,6 +6,7 @@ A Vue + Vite app that aggregates concert events from multiple sources into one s
 
 - Public concert browsing with:
   - Upcoming and past views
+  - Quick discovery chips: This Week, Weekend, Free, Student-Friendly
   - Filters (source, month, genre)
   - Search by artist, venue, or city
   - Event images, genre, source name, and details link

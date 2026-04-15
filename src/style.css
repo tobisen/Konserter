@@ -348,6 +348,16 @@ h3 {
   justify-content: flex-start;
 }
 
+.discovery-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.discovery-top {
+  display: grid;
+  gap: 10px;
+}
+
 .concerts-submenu-row {
   display: flex;
   flex-wrap: wrap;
@@ -359,9 +369,34 @@ h3 {
   justify-content: flex-end;
 }
 
-.concerts-switch {
-  padding-top: 14px;
-  padding-bottom: 14px;
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-filter-button {
+  border: 1px solid #3a4153;
+  background: #141923;
+  color: #d6deef;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.quick-filter-button:hover {
+  border-color: #ff8a00;
+}
+
+.quick-filter-button.active {
+  border-color: var(--accent);
+  background: rgba(255, 59, 48, 0.14);
+  color: #ffd5d2;
 }
 
 .search-panel {

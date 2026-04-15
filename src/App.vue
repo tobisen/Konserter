@@ -89,12 +89,21 @@ const deselectedMonths = ref([]);
 const deselectedGenres = ref([]);
 const concertsSearch = ref("");
 const concertsDateTo = ref("");
+const quickDiscoverMode = ref("all");
 const concertsDateToInput = ref(null);
 const filtersExpanded = ref(false);
 const concertsSubView = ref("upcoming");
 const sharedConcertId = ref("");
 const shareStatus = ref("");
 let concertsDateToPicker = null;
+
+const quickDiscoverOptions = [
+  { id: "all", label: "Alla" },
+  { id: "week", label: "Denna vecka" },
+  { id: "weekend", label: "I helgen" },
+  { id: "free", label: "Gratis" },
+  { id: "student", label: "Studentvänligt" },
+];
 
 function initConcertsDateToPicker() {
   if (!concertsDateToInput.value || concertsDateToPicker) return;
@@ -315,14 +324,95 @@ const availableGenreLabels = computed(() => {
   });
 });
 
-const filteredConcerts = computed(() => {
-  if (sharedConcertId.value) {
-    const shared = concerts.value.find(
-      (concert) => getConcertId(concert) === sharedConcertId.value,
-    );
-    return shared ? [shared] : [];
+function getConcertSearchableText(concert) {
+  return normalizeText(
+    [
+      concert?.artist || "",
+      concert?.title || "",
+      concert?.venue || "",
+      concert?.city || "",
+      concert?.genre || "",
+      concert?.sourceName || "",
+      concert?.detailsUrl || "",
+    ].join(" "),
+  );
+}
+
+function getWeekRange(referenceDate = new Date()) {
+  const date = new Date(referenceDate);
+  const dayOffset = (date.getDay() + 6) % 7;
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - dayOffset);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+function getWeekendRange(referenceDate = new Date()) {
+  const { start } = getWeekRange(referenceDate);
+  const weekendStart = new Date(start);
+  weekendStart.setDate(weekendStart.getDate() + 4);
+  weekendStart.setHours(17, 0, 0, 0);
+
+  const weekendEnd = new Date(start);
+  weekendEnd.setDate(weekendEnd.getDate() + 6);
+  weekendEnd.setHours(23, 59, 59, 999);
+  return { start: weekendStart, end: weekendEnd };
+}
+
+function isFreeConcert(concert) {
+  const text = getConcertSearchableText(concert);
+  const freeKeywords = [
+    "gratis",
+    "fri entre",
+    "fri entré",
+    "free entry",
+    "kostnadsfri",
+    "utan kostnad",
+    "0 kr",
+  ];
+  return freeKeywords.some((keyword) => text.includes(normalizeText(keyword)));
+}
+
+function isStudentFriendlyConcert(concert) {
+  const text = getConcertSearchableText(concert);
+  const studentKeywords = [
+    "student",
+    "studentrabatt",
+    "mecenat",
+    "csn",
+    "nation",
+  ];
+  return studentKeywords.some((keyword) =>
+    text.includes(normalizeText(keyword)),
+  );
+}
+
+function matchesQuickDiscoverFilter(concert, mode) {
+  if (mode === "all") return true;
+
+  const date = getConcertDate(concert);
+  if (!date && (mode === "week" || mode === "weekend")) return false;
+
+  if (mode === "week") {
+    const { start, end } = getWeekRange();
+    return date >= start && date <= end;
   }
 
+  if (mode === "weekend") {
+    const { start, end } = getWeekendRange();
+    return date >= start && date <= end;
+  }
+
+  if (mode === "free") return isFreeConcert(concert);
+  if (mode === "student") return isStudentFriendlyConcert(concert);
+  return true;
+}
+
+const filteredConcertsBase = computed(() => {
   const query = normalizeText(concertsSearch.value);
   const dateToLimit = concertsDateTo.value
     ? new Date(`${concertsDateTo.value}T23:59:59.999`)
@@ -338,22 +428,44 @@ const filteredConcerts = computed(() => {
     const genreIncluded = !deselectedGenres.value.includes(
       getConcertGenreLabel(concert),
     );
-    const searchable = normalizeText(
-      `${concert?.artist || ""} ${concert?.venue || ""} ${concert?.city || ""}`,
-    );
+    const searchable = getConcertSearchableText(concert);
     const searchIncluded = !query || searchable.includes(query);
     const concertDate = getConcertDate(concert);
     const dateIncluded =
       !dateToLimit || (concertDate && concertDate.getTime() <= dateToLimit.getTime());
 
-    return (
-      sourceIncluded &&
-      monthIncluded &&
-      genreIncluded &&
-      searchIncluded &&
-      dateIncluded
-    );
+    return sourceIncluded && monthIncluded && genreIncluded && searchIncluded && dateIncluded;
   });
+});
+
+const quickFilterCounts = computed(() => {
+  const base = filteredConcertsBase.value;
+  return {
+    all: base.length,
+    week: base.filter((concert) => matchesQuickDiscoverFilter(concert, "week"))
+      .length,
+    weekend: base.filter((concert) =>
+      matchesQuickDiscoverFilter(concert, "weekend"),
+    ).length,
+    free: base.filter((concert) => matchesQuickDiscoverFilter(concert, "free"))
+      .length,
+    student: base.filter((concert) =>
+      matchesQuickDiscoverFilter(concert, "student"),
+    ).length,
+  };
+});
+
+const filteredConcerts = computed(() => {
+  if (sharedConcertId.value) {
+    const shared = concerts.value.find(
+      (concert) => getConcertId(concert) === sharedConcertId.value,
+    );
+    return shared ? [shared] : [];
+  }
+
+  return filteredConcertsBase.value.filter((concert) =>
+    matchesQuickDiscoverFilter(concert, quickDiscoverMode.value),
+  );
 });
 
 const groupedByYearAndMonth = computed(() => {
@@ -1745,9 +1857,10 @@ watch(
             <div>
               <strong>Spelningar</strong>
               <p>
-                Visa kommande/tidigare spelningar, filtrera på
-                källa/månad/genre, sök på artist/scen/stad, dela en spelning med
-                direktlänk, och klicka 🎵 för Spotify artist-info.
+                Visa kommande/tidigare spelningar, använd snabbfilter (Denna
+                vecka, I helgen, Gratis, Studentvänligt), filtrera på
+                källa/månad/genre, sök på artist/scen/stad, dela en spelning
+                med direktlänk, och klicka 🎵 för Spotify artist-info.
               </p>
             </div>
           </li>
@@ -2465,56 +2578,73 @@ watch(
         </transition>
       </section>
 
-      <section v-if="currentView === 'concerts'" class="hero concerts-switch">
-        <div class="main-nav concerts-submenu">
-          <button
-            class="nav-link"
-            :class="{ active: concertsSubView === 'upcoming' }"
-            type="button"
-            @click="setConcertsSubView('upcoming')"
-          >
-            Framtida
-          </button>
-          <button
-            class="nav-link"
-            :class="{ active: concertsSubView === 'past' }"
-            type="button"
-            @click="setConcertsSubView('past')"
-          >
-            Tidigare
-          </button>
-        </div>
-      </section>
-
-      <section v-if="currentView === 'concerts'" class="hero search-panel">
-        <label class="search-label" for="concert-search">Sök spelning</label>
-        <input
-          id="concert-search"
-          v-model="concertsSearch"
-          class="search-input"
-          type="search"
-          placeholder="Sök på artist, scen eller stad..."
-        />
-        <div class="search-row">
-          <div class="search-field">
-            <label class="search-label" for="concert-date-to">Datum till</label>
-            <input
-              id="concert-date-to"
-              ref="concertsDateToInput"
-              class="search-input"
-              type="text"
-              placeholder="Välj datum"
-              readonly
-            />
+      <section v-if="currentView === 'concerts'" class="hero discovery-panel">
+        <div class="discovery-top">
+          <div class="main-nav concerts-submenu">
+            <button
+              class="nav-link"
+              :class="{ active: concertsSubView === 'upcoming' }"
+              type="button"
+              @click="setConcertsSubView('upcoming')"
+            >
+              Framtida
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: concertsSubView === 'past' }"
+              type="button"
+              @click="setConcertsSubView('past')"
+            >
+              Tidigare
+            </button>
           </div>
-          <button
-            class="nav-link"
-            type="button"
-            :disabled="!concertsDateTo"
-            @click="clearConcertsDateTo"
-          >
-            Rensa datum
-          </button>
+
+          <div v-if="!sharedConcertId" class="quick-filters">
+            <button
+              v-for="option in quickDiscoverOptions"
+              :key="option.id"
+              class="quick-filter-button"
+              :class="{ active: quickDiscoverMode === option.id }"
+              type="button"
+              @click="quickDiscoverMode = option.id"
+            >
+              {{ option.label }} ({{ quickFilterCounts[option.id] || 0 }})
+            </button>
+          </div>
+        </div>
+
+        <div class="search-panel">
+          <label class="search-label" for="concert-search">Sök spelning</label>
+          <input
+            id="concert-search"
+            v-model="concertsSearch"
+            class="search-input"
+            type="search"
+            placeholder="Sök på artist, scen eller stad..."
+          />
+          <div class="search-row">
+            <div class="search-field">
+              <label class="search-label" for="concert-date-to"
+                >Datum till</label
+              >
+              <input
+                id="concert-date-to"
+                ref="concertsDateToInput"
+                class="search-input"
+                type="text"
+                placeholder="Välj datum"
+                readonly
+              />
+            </div>
+            <button
+              class="nav-link"
+              type="button"
+              :disabled="!concertsDateTo"
+              @click="clearConcertsDateTo"
+            >
+              Rensa datum
+            </button>
+          </div>
         </div>
       </section>
 
