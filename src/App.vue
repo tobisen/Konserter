@@ -720,6 +720,18 @@ async function shareConcert(concert) {
   }
 }
 
+async function copyConcertLink(concert) {
+  const shareUrl = buildSharedConcertUrl(concert);
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    shareStatus.value = "Länk kopierad.";
+  } catch {
+    window.prompt("Kopiera länken:", shareUrl);
+    shareStatus.value = "Delningslänk skapad.";
+  }
+}
+
 async function handleSharedConcertCta() {
   if (!sharedConcert.value) return;
   await toggleFavorite(sharedConcert.value);
@@ -1481,6 +1493,13 @@ watch(
                   @click="shareConcert(concert)"
                 >
                   Dela
+                </button>
+                <button
+                  class="mini-action-button"
+                  type="button"
+                  @click="copyConcertLink(concert)"
+                >
+                  Kopiera länk
                 </button>
                 <button
                   class="mini-action-button"
@@ -2404,6 +2423,13 @@ watch(
                     @click="shareConcert(concert)"
                   >
                     Dela
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    type="button"
+                    @click="copyConcertLink(concert)"
+                  >
+                    Kopiera länk
                   </button>
                 </div>
                 <button
