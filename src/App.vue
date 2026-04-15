@@ -37,6 +37,8 @@ const adminSubView = ref("sources");
 const adminUsers = ref([]);
 const adminVisitors = ref([]);
 const adminMailStatus = ref({ configured: false, mode: "logs_only" });
+const popularItems = ref([]);
+const popularLoading = ref(false);
 
 const currentView = ref("home");
 const showAuthModal = ref(false);
@@ -431,6 +433,37 @@ const filteredConcerts = computed(() => {
   );
 });
 
+const popularThisWeekConcerts = computed(() => {
+  if (concertsSubView.value !== "upcoming" || sharedConcertId.value) return [];
+
+  const { start, end } = getWeekRange();
+  const byId = new Map(
+    (popularItems.value || []).map((item) => [String(item?.concertId || ""), item]),
+  );
+
+  return concerts.value
+    .filter((concert) => {
+      const concertId = getConcertId(concert);
+      const date = getConcertDate(concert);
+      if (!concertId || !date) return false;
+      if (date < start || date > end) return false;
+      const stats = byId.get(concertId);
+      return Boolean(stats && Number(stats.score || 0) > 0);
+    })
+    .map((concert) => ({
+      concert,
+      stats: byId.get(getConcertId(concert)),
+      date: getConcertDate(concert),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.stats?.score || 0) - Number(a.stats?.score || 0) ||
+        Number(b.stats?.bookings || 0) - Number(a.stats?.bookings || 0) ||
+        Number(a.date || 0) - Number(b.date || 0),
+    )
+    .slice(0, 5);
+});
+
 const groupedByYearAndMonth = computed(() => {
   const yearGroups = new Map();
 
@@ -648,12 +681,14 @@ async function toggleFavorite(concert) {
       const lists = await removeFromUserList("favorites", concertId);
       applyUserLists(lists);
       userStatus.value = "Tog bort spelning från favoriter.";
+      await refreshPopularConcerts();
       return;
     }
 
     const lists = await addToUserList("favorites", concertId);
     applyUserLists(lists);
     userStatus.value = "Spelning sparad i favoriter.";
+    await refreshPopularConcerts();
   } catch (error) {
     userStatus.value = error.message || "Kunde inte uppdatera favoriter.";
   }
@@ -681,6 +716,7 @@ async function toggleBooking(concert) {
     userStatus.value = wasBooked
       ? "Tog bort spelning från bokningar."
       : "Spelning lagd i bokningar.";
+    await refreshPopularConcerts();
   } catch (error) {
     userStatus.value = error.message || "Kunde inte uppdatera bokningar.";
   }
@@ -1295,6 +1331,22 @@ async function refreshConcerts() {
   lastUpdatedAt.value = result.lastUpdatedAt;
 }
 
+async function refreshPopularConcerts() {
+  popularLoading.value = true;
+  try {
+    const response = await fetch("/api/concerts/popular");
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "Kunde inte läsa populära spelningar.");
+    }
+    popularItems.value = Array.isArray(payload.items) ? payload.items : [];
+  } catch {
+    popularItems.value = [];
+  } finally {
+    popularLoading.value = false;
+  }
+}
+
 async function updateConcerts() {
   loading.value = true;
   status.value = "";
@@ -1309,10 +1361,12 @@ async function updateConcerts() {
 
     if (result.addedCount > 0) {
       status.value = `Lade till ${result.addedCount} nya konserter.`;
+      await refreshPopularConcerts();
       return;
     }
 
     status.value = "Inga nya konserter hittades. Befintliga är kvar.";
+    await refreshPopularConcerts();
   } catch (error) {
     status.value = error.message || "Kunde inte uppdatera konserter.";
   } finally {
@@ -1503,7 +1557,12 @@ onMounted(async () => {
 
   try {
     await trackVisitor();
-    await Promise.all([checkAuth(), checkUserAuth(), refreshConcerts()]);
+    await Promise.all([
+      checkAuth(),
+      checkUserAuth(),
+      refreshConcerts(),
+      refreshPopularConcerts(),
+    ]);
   } finally {
     authReady.value = true;
   }
@@ -1822,8 +1881,9 @@ watch(
               <p>
                 Visa kommande/tidigare spelningar, använd snabbfilter (Denna
                 vecka, I helgen), filtrera på källa/månad/genre, sök på
-                artist/scen/stad, dela en spelning med direktlänk, och klicka
-                🎵 för Spotify artist-info.
+                artist/scen/stad, se populära spelningar denna vecka,
+                dela en spelning med direktlänk, och klicka 🎵 för Spotify
+                artist-info.
               </p>
             </div>
           </li>
@@ -2609,6 +2669,36 @@ watch(
             </button>
           </div>
         </div>
+      </section>
+
+      <section
+        v-if="
+          currentView === 'concerts' &&
+          concertsSubView === 'upcoming' &&
+          !sharedConcertId &&
+          (popularThisWeekConcerts.length || popularLoading)
+        "
+        class="hero popular-panel"
+      >
+        <h2>Populära spelningar denna vecka</h2>
+        <p class="lead">
+          Baserat på antal likes och bokningar från användare i Soundcheck.
+        </p>
+        <ul v-if="popularThisWeekConcerts.length" class="source-list popular-list">
+          <li
+            v-for="item in popularThisWeekConcerts"
+            :key="`popular-${getConcertId(item.concert)}`"
+          >
+            <div>
+              <strong>{{ item.concert.artist }}</strong>
+              <p>{{ formatDate(item.concert.date) }} · {{ item.concert.venue }}</p>
+            </div>
+            <strong class="popular-score"
+              >{{ item.stats.score }} poäng ({{ item.stats.likes }} likes / {{ item.stats.bookings }} bokningar)</strong
+            >
+          </li>
+        </ul>
+        <p v-else class="lead">Laddar populära spelningar...</p>
       </section>
 
       <section

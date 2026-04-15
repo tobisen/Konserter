@@ -170,6 +170,48 @@ async function handleGetConcerts(response) {
   });
 }
 
+async function handleGetPopularConcerts(response) {
+  const users = await loadUsersFromStore();
+  const byConcertId = new Map();
+
+  for (const user of users) {
+    const favoriteIds = new Set(Array.isArray(user?.favorites) ? user.favorites : []);
+    const bookingIds = new Set(Array.isArray(user?.bookings) ? user.bookings : []);
+
+    for (const concertId of favoriteIds) {
+      if (!concertId) continue;
+      const current = byConcertId.get(concertId) || {
+        concertId,
+        likes: 0,
+        bookings: 0,
+        score: 0,
+      };
+      current.likes += 1;
+      current.score += 1;
+      byConcertId.set(concertId, current);
+    }
+
+    for (const concertId of bookingIds) {
+      if (!concertId) continue;
+      const current = byConcertId.get(concertId) || {
+        concertId,
+        likes: 0,
+        bookings: 0,
+        score: 0,
+      };
+      current.bookings += 1;
+      current.score += 1;
+      byConcertId.set(concertId, current);
+    }
+  }
+
+  const items = [...byConcertId.values()].sort(
+    (a, b) => b.score - a.score || b.bookings - a.bookings || b.likes - a.likes,
+  );
+
+  sendJson(response, 200, { items });
+}
+
 async function handleGetSources(request, response) {
   const user = getAuthenticatedUser(request);
   const sources = await loadSourcesFromFile();
@@ -1153,6 +1195,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === "/api/concerts" && request.method === "GET") {
     await handleGetConcerts(response);
+    return;
+  }
+
+  if (pathname === "/api/concerts/popular" && request.method === "GET") {
+    await handleGetPopularConcerts(response);
     return;
   }
 

@@ -399,6 +399,20 @@ h3 {
   color: #ffd5d2;
 }
 
+.popular-panel {
+  border-color: #ff8a00;
+}
+
+.popular-list p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.popular-score {
+  color: #ffd57a;
+  font-size: 0.92rem;
+}
+
 .search-panel {
   display: grid;
   gap: 8px;
