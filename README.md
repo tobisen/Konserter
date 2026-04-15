@@ -82,14 +82,14 @@ If mail variables are missing, reset links are logged on the server as a fallbac
 The same mail config is also used for concert reminder emails.
 When mail is not configured, the app runs in a logs-only test mode for reset/reminder messages.
 
-```
 ## Vercel Deployment
 
 1. Import the GitHub repo in Vercel.
 2. Keep build command as `npm run build`.
 3. Ensure output is `dist` (auto-detected by Vite in most cases).
 4. Configure the environment variables above.
-5. Deploy.
+5. Enable Analytics in Vercel Project Settings (`Analytics` tab) if you want dashboard metrics.
+6. Deploy.
 
 ## Automated E2E Tests (Playwright)
 
