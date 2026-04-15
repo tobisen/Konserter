@@ -699,7 +699,7 @@ function buildSharedConcertUrl(concert) {
 async function shareConcert(concert) {
   const shareUrl = buildSharedConcertUrl(concert);
   const title = `${concert?.artist || "Spelning"} – ${concert?.venue || "Okänd scen"}`;
-  const text = "Kolla in den här spelningen i Konsertnavigator";
+  const text = "Kolla in den här spelningen i Soundcheck";
 
   try {
     if (navigator.share) {
@@ -832,7 +832,7 @@ function downloadCalendarEvent(concert) {
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Konsertnavigator//SE",
+    "PRODID:-//Soundcheck//SE",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `UID:${escapeIcsText(uid)}`,
@@ -1348,7 +1348,7 @@ watch(
 
     <header class="site-header">
       <div>
-        <p class="brand">Konsertnavigator</p>
+        <p class="brand">Soundcheck</p>
         <p class="build-version">{{ displayVersion }}</p>
         <p class="build-version">
           Senast uppdaterad: {{ formattedLastUpdatedAt }}
@@ -1413,7 +1413,7 @@ watch(
 
     <template v-else>
       <section v-if="currentView === 'home'" class="hero">
-        <p class="kicker">Konsertnavigator</p>
+        <p class="kicker">Soundcheck</p>
         <h1>Välkommen</h1>
         <p class="lead">
           Här samlar vi konserter från flera källor på ett ställe. Gå till
@@ -1518,7 +1518,7 @@ watch(
 
       <section v-if="currentView === 'help'" class="hero source-panel">
         <h2>Hjälp</h2>
-        <p class="lead">Här ser du vad du kan göra i Konsertnavigator.</p>
+        <p class="lead">Här ser du vad du kan göra i Soundcheck.</p>
         <ul class="source-list source-status-list">
           <li>
             <div>
