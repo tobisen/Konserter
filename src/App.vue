@@ -734,40 +734,176 @@ function buildSharedConcertUrl(concert) {
   return url.toString();
 }
 
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth) {
+      current = next;
+      continue;
+    }
+
+    if (current) lines.push(current);
+    current = word;
+    if (lines.length >= maxLines) break;
+  }
+
+  if (current && lines.length < maxLines) lines.push(current);
+  if (!lines.length) lines.push("");
+
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+
+  return y + (lines.length - 1) * lineHeight;
+}
+
+async function loadImageElement(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = url;
+  });
+}
+
+async function buildConcertPreviewBlob(concert) {
+  const width = 1200;
+  const height = 630;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const background = ctx.createLinearGradient(0, 0, width, height);
+  background.addColorStop(0, "#0f1013");
+  background.addColorStop(1, "#1f1212");
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, width, height);
+
+  const glow = ctx.createRadialGradient(width * 0.86, height * 0.14, 20, width * 0.86, height * 0.14, 320);
+  glow.addColorStop(0, "rgba(255, 59, 48, 0.32)");
+  glow.addColorStop(1, "rgba(255, 59, 48, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, width, height);
+
+  const imageUrl = getConcertImageUrl(concert);
+  if (imageUrl) {
+    try {
+      const image = await loadImageElement(imageUrl);
+      const imgW = 300;
+      const imgH = 300;
+      const x = width - imgW - 56;
+      const y = 56;
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, imgW, imgH, 22);
+      ctx.clip();
+      ctx.drawImage(image, x, y, imgW, imgH);
+      ctx.restore();
+    } catch {
+      // Ignore image errors (CORS or unavailable image).
+    }
+  }
+
+  ctx.fillStyle = "#ff8a00";
+  ctx.font = "700 28px 'Barlow Condensed', sans-serif";
+  ctx.fillText("SOUNDCHECK", 56, 74);
+
+  const artist = concert?.artist || "Okänd artist";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "700 68px 'Barlow Condensed', sans-serif";
+  const titleBottom = drawWrappedText(ctx, artist, 56, 170, 760, 72, 3);
+
+  ctx.fillStyle = "#d6deef";
+  ctx.font = "500 36px 'Barlow Condensed', sans-serif";
+  const dateLabel = concert?.date ? formatDate(concert.date) : "Okänt datum";
+  ctx.fillText(dateLabel, 56, titleBottom + 78);
+
+  const venueLabel = `${concert?.venue || "Okänd scen"}${concert?.city ? `, ${concert.city}` : ""}`;
+  ctx.fillStyle = "#72d4ff";
+  ctx.font = "700 34px 'Barlow Condensed', sans-serif";
+  ctx.fillText(venueLabel, 56, titleBottom + 128);
+
+  ctx.strokeStyle = "rgba(255, 138, 0, 0.8)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(18, 18, width - 36, height - 36);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob || null), "image/png", 0.92);
+  });
+}
+
+function downloadPreviewBlob(blob, concert) {
+  const artist = normalizeText(concert?.artist || "spelning").replace(/\s+/g, "-");
+  const fileName = `soundcheck-${artist || "spelning"}.png`;
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = blobUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 500);
+}
+
+async function copyShareUrl(shareUrl) {
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    return true;
+  } catch {
+    window.prompt("Kopiera länken:", shareUrl);
+    return false;
+  }
+}
+
 async function shareConcert(concert) {
   const shareUrl = buildSharedConcertUrl(concert);
   const title = `${concert?.artist || "Spelning"} – ${concert?.venue || "Okänd scen"}`;
   const text = "Kolla in den här spelningen i Soundcheck";
+  const copied = await copyShareUrl(shareUrl);
+  const previewBlob = await buildConcertPreviewBlob(concert);
+  const previewFile =
+    previewBlob && typeof File !== "undefined"
+      ? new File([previewBlob], "soundcheck-preview.png", { type: "image/png" })
+      : null;
 
   try {
-    if (navigator.share) {
-      await navigator.share({ title, text, url: shareUrl });
-      shareStatus.value = "Länk delad.";
+    if (
+      navigator.share &&
+      previewFile &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [previewFile] })
+    ) {
+      await navigator.share({
+        title,
+        text,
+        url: shareUrl,
+        files: [previewFile],
+      });
+      shareStatus.value = copied
+        ? "Länk kopierad och spelning delad med preview-bild."
+        : "Spelning delad med preview-bild.";
       return;
     }
   } catch {
-    // Fallback to clipboard below if native share fails or is cancelled.
+    // Continue with fallback below.
   }
 
-  try {
-    await navigator.clipboard.writeText(shareUrl);
-    shareStatus.value = "Länk kopierad.";
-  } catch {
-    window.prompt("Kopiera länken:", shareUrl);
-    shareStatus.value = "Delningslänk skapad.";
+  if (previewBlob) {
+    downloadPreviewBlob(previewBlob, concert);
+    shareStatus.value = copied
+      ? "Länk kopierad och preview-bild nedladdad."
+      : "Preview-bild nedladdad. Kopiera länken från dialogen.";
+    return;
   }
-}
 
-async function copyConcertLink(concert) {
-  const shareUrl = buildSharedConcertUrl(concert);
-
-  try {
-    await navigator.clipboard.writeText(shareUrl);
-    shareStatus.value = "Länk kopierad.";
-  } catch {
-    window.prompt("Kopiera länken:", shareUrl);
-    shareStatus.value = "Delningslänk skapad.";
-  }
+  shareStatus.value = copied ? "Länk kopierad." : "Delningslänk skapad.";
 }
 
 async function handleSharedConcertCta() {
@@ -1553,14 +1689,7 @@ watch(
                   type="button"
                   @click="shareConcert(concert)"
                 >
-                  Dela
-                </button>
-                <button
-                  class="mini-action-button"
-                  type="button"
-                  @click="copyConcertLink(concert)"
-                >
-                  Kopiera länk
+                  Dela spelning
                 </button>
                 <button
                   class="mini-action-button"
@@ -2504,14 +2633,7 @@ watch(
                     type="button"
                     @click="shareConcert(concert)"
                   >
-                    Dela
-                  </button>
-                  <button
-                    class="mini-action-button"
-                    type="button"
-                    @click="copyConcertLink(concert)"
-                  >
-                    Kopiera länk
+                    Dela spelning
                   </button>
                 </div>
                 <button

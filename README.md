@@ -9,7 +9,7 @@ A Vue + Vite app that aggregates concert events from multiple sources into one s
   - Filters (source, month, genre)
   - Search by artist, venue, or city
   - Event images, genre, source name, and details link
-  - Share button on each concert card
+  - "Dela spelning" button that copies a deep-link and generates a shareable preview image
   - Deep-link support to open a specific shared concert with a clear "Save to favorites" CTA
   - "Add to calendar" (`.ics`) export per concert
 - User area (`My Concerts`) with:
