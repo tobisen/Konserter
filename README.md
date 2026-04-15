@@ -17,6 +17,8 @@ A Vue + Vite app that aggregates concert events from multiple sources into one s
 - User area (`My Concerts`) with:
   - Registration and login
   - Personal lists: Favorites, Going, Been There
+  - Follow artists and venues
+  - "New from what you follow" in-app notifications
   - Forgot-password and reset-password flow
   - Email reminders for tomorrow's saved concerts (Favorites/Going)
 - Admin area with:

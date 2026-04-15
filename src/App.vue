@@ -14,11 +14,14 @@ import {
   removeSource,
 } from "./services/sourceStore";
 import {
+  addUserFollow,
   addToUserList,
   getUserSession,
+  loadUserFollows,
   loadUserLists,
   loginUser,
   logoutUser,
+  removeUserFollow,
   requestPasswordReset,
   registerUser,
   resetPassword,
@@ -66,6 +69,8 @@ const userLoading = ref(false);
 const favoriteIds = ref([]);
 const bookingIds = ref([]);
 const seenIds = ref([]);
+const followedArtists = ref([]);
+const followedVenues = ref([]);
 const myConcertsSubView = ref("favorites");
 const favoritesSort = ref("date_asc");
 const forgotEmail = ref("");
@@ -577,6 +582,25 @@ const myConcertsBySubView = computed(() => {
   return sortedFavoriteConcerts.value;
 });
 
+const followedReleaseConcerts = computed(() => {
+  if (!followedArtists.value.length && !followedVenues.value.length) return [];
+
+  const artistSet = new Set(followedArtists.value.map((item) => normalizeText(item)));
+  const venueSet = new Set(followedVenues.value.map((item) => normalizeText(item)));
+  const startOfToday = getStartOfToday();
+
+  return concerts.value
+    .filter((concert) => {
+      const date = getConcertDate(concert);
+      if (!date || date < startOfToday) return false;
+      const artistMatch = artistSet.has(normalizeText(concert.artist));
+      const venueMatch = venueSet.has(normalizeText(concert.venue));
+      return artistMatch || venueMatch;
+    })
+    .sort((a, b) => getConcertDate(a) - getConcertDate(b))
+    .slice(0, 20);
+});
+
 const favoriteArtistSuggestionConcerts = computed(() => {
   if (!favoriteConcerts.value.length) return [];
 
@@ -661,6 +685,74 @@ function applyUserLists(lists) {
   favoriteIds.value = lists.favorites || [];
   bookingIds.value = lists.bookings || [];
   seenIds.value = lists.seen || [];
+  followedArtists.value = lists.followedArtists || [];
+  followedVenues.value = lists.followedVenues || [];
+}
+
+function isFollowedArtist(artistName) {
+  const normalized = normalizeText(artistName);
+  if (!normalized) return false;
+  return followedArtists.value.some((item) => normalizeText(item) === normalized);
+}
+
+function isFollowedVenue(venueName) {
+  const normalized = normalizeText(venueName);
+  if (!normalized) return false;
+  return followedVenues.value.some((item) => normalizeText(item) === normalized);
+}
+
+async function toggleFollowArtist(artistName) {
+  if (!userAuthenticated.value) {
+    const message = "Du behöver logga in eller registrera dig för att följa artister.";
+    userStatus.value = message;
+    window.alert(message);
+    setView("my-concerts");
+    return;
+  }
+
+  const value = String(artistName || "").trim();
+  if (!value) return;
+  const wasFollowed = isFollowedArtist(value);
+
+  try {
+    const follows = wasFollowed
+      ? await removeUserFollow("artist", value)
+      : await addUserFollow("artist", value);
+    followedArtists.value = follows.followedArtists || [];
+    followedVenues.value = follows.followedVenues || followedVenues.value;
+    userStatus.value = wasFollowed
+      ? `Följer inte längre ${value}.`
+      : `Följer nu ${value}.`;
+  } catch (error) {
+    userStatus.value = error.message || "Kunde inte uppdatera följning.";
+  }
+}
+
+async function toggleFollowVenue(venueName) {
+  if (!userAuthenticated.value) {
+    const message = "Du behöver logga in eller registrera dig för att följa scener.";
+    userStatus.value = message;
+    window.alert(message);
+    setView("my-concerts");
+    return;
+  }
+
+  const value = String(venueName || "").trim();
+  if (!value) return;
+  const wasFollowed = isFollowedVenue(value);
+
+  try {
+    const follows = wasFollowed
+      ? await removeUserFollow("venue", value)
+      : await addUserFollow("venue", value);
+    followedArtists.value = follows.followedArtists || followedArtists.value;
+    followedVenues.value = follows.followedVenues || [];
+    userStatus.value = wasFollowed
+      ? `Följer inte längre ${value}.`
+      : `Följer nu ${value}.`;
+  } catch (error) {
+    userStatus.value = error.message || "Kunde inte uppdatera följning.";
+  }
 }
 
 async function toggleFavorite(concert) {
@@ -1185,12 +1277,27 @@ async function checkUserAuth() {
 
     if (payload.authenticated) {
       applyUserLists(await loadUserLists());
+      const follows = await loadUserFollows();
+      followedArtists.value = follows.followedArtists || [];
+      followedVenues.value = follows.followedVenues || [];
     } else {
-      applyUserLists({ favorites: [], bookings: [], seen: [] });
+      applyUserLists({
+        favorites: [],
+        bookings: [],
+        seen: [],
+        followedArtists: [],
+        followedVenues: [],
+      });
     }
   } catch {
     appUser.value = null;
-    applyUserLists({ favorites: [], bookings: [], seen: [] });
+    applyUserLists({
+      favorites: [],
+      bookings: [],
+      seen: [],
+      followedArtists: [],
+      followedVenues: [],
+    });
   } finally {
     userAuthReady.value = true;
   }
@@ -1242,6 +1349,9 @@ async function loginRegularUser() {
     appUser.value = payload.user;
     userLoginPassword.value = "";
     applyUserLists(await loadUserLists());
+    const follows = await loadUserFollows();
+    followedArtists.value = follows.followedArtists || [];
+    followedVenues.value = follows.followedVenues || [];
     userStatus.value = `Inloggad som ${payload.user.username}.`;
   } catch (error) {
     userError.value = error.message || "Kunde inte logga in.";
@@ -1266,6 +1376,9 @@ async function registerRegularUser() {
     userRegisterEmail.value = "";
     userRegisterPassword.value = "";
     applyUserLists(await loadUserLists());
+    const follows = await loadUserFollows();
+    followedArtists.value = follows.followedArtists || [];
+    followedVenues.value = follows.followedVenues || [];
     userStatus.value = `Konto skapat och inloggat som ${payload.user.username}.`;
   } catch (error) {
     userError.value = error.message || "Kunde inte skapa konto.";
@@ -1310,7 +1423,13 @@ async function resetRegularUserPassword() {
 async function logoutRegularUser() {
   await logoutUser();
   appUser.value = null;
-  applyUserLists({ favorites: [], bookings: [], seen: [] });
+  applyUserLists({
+    favorites: [],
+    bookings: [],
+    seen: [],
+    followedArtists: [],
+    followedVenues: [],
+  });
   userStatus.value = "Du är utloggad från användarkontot.";
 }
 
@@ -1817,6 +1936,28 @@ watch(
                   @click="downloadCalendarEvent(concert)"
                 >
                   Lägg till i kalender
+                </button>
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isFollowedArtist(concert.artist) }"
+                  type="button"
+                  @click="toggleFollowArtist(concert.artist)"
+                >
+                  {{
+                    isFollowedArtist(concert.artist)
+                      ? "Följer artist"
+                      : "Följ artist"
+                  }}
+                </button>
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isFollowedVenue(concert.venue) }"
+                  type="button"
+                  @click="toggleFollowVenue(concert.venue)"
+                >
+                  {{
+                    isFollowedVenue(concert.venue) ? "Följer scen" : "Följ scen"
+                  }}
                 </button>
                 <button
                   class="mini-action-button"
@@ -2419,6 +2560,31 @@ watch(
 
           <p v-if="userStatus" class="updated">{{ userStatus }}</p>
 
+          <section
+            v-if="followedArtists.length || followedVenues.length"
+            class="hero"
+          >
+            <h3>Nytt från det du följer</h3>
+            <p class="lead">
+              {{
+                followedReleaseConcerts.length
+                  ? "Nya kommande spelningar från artister/scener du följer."
+                  : "Inga nya kommande spelningar från det du följer just nu."
+              }}
+            </p>
+            <ul v-if="followedReleaseConcerts.length" class="source-list source-status-list">
+              <li
+                v-for="concert in followedReleaseConcerts.slice(0, 8)"
+                :key="`followed-release-${getConcertId(concert)}`"
+              >
+                <div>
+                  <strong>{{ concert.artist }}</strong>
+                  <p>{{ formatDate(concert.date) }} · {{ concert.venue }}</p>
+                </div>
+              </li>
+            </ul>
+          </section>
+
           <div v-if="myConcertsBySubView.length" class="list compact-list">
             <article
               v-for="concert in myConcertsBySubView"
@@ -2810,6 +2976,30 @@ watch(
                     @click="downloadCalendarEvent(concert)"
                   >
                     Lägg till i kalender
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isFollowedArtist(concert.artist) }"
+                    type="button"
+                    @click="toggleFollowArtist(concert.artist)"
+                  >
+                    {{
+                      isFollowedArtist(concert.artist)
+                        ? "Följer artist"
+                        : "Följ artist"
+                    }}
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isFollowedVenue(concert.venue) }"
+                    type="button"
+                    @click="toggleFollowVenue(concert.venue)"
+                  >
+                    {{
+                      isFollowedVenue(concert.venue)
+                        ? "Följer scen"
+                        : "Följ scen"
+                    }}
                   </button>
                   <button
                     class="mini-action-button"

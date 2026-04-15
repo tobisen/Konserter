@@ -791,6 +791,19 @@ function normalizeUserLists(user) {
     favorites: Array.isArray(user?.favorites) ? user.favorites : [],
     bookings: Array.isArray(user?.bookings) ? user.bookings : [],
     seen: Array.isArray(user?.seen) ? user.seen : [],
+    followedArtists: Array.isArray(user?.followedArtists)
+      ? user.followedArtists
+      : [],
+    followedVenues: Array.isArray(user?.followedVenues) ? user.followedVenues : [],
+  };
+}
+
+function normalizeUserFollows(user) {
+  return {
+    followedArtists: Array.isArray(user?.followedArtists)
+      ? user.followedArtists
+      : [],
+    followedVenues: Array.isArray(user?.followedVenues) ? user.followedVenues : [],
   };
 }
 
@@ -816,6 +829,85 @@ async function handleGetUserLists(request, response) {
   if (!user) return;
 
   sendJson(response, 200, normalizeUserLists(user));
+}
+
+function normalizeFollowType(value) {
+  const type = String(value || "").toLowerCase();
+  if (type === "artist") return "artist";
+  if (type === "venue") return "venue";
+  return null;
+}
+
+function normalizeFollowValue(value) {
+  return String(value || "").trim();
+}
+
+async function handleGetUserFollows(request, response) {
+  const user = await requireAppUser(request, response);
+  if (!user) return;
+
+  sendJson(response, 200, normalizeUserFollows(user));
+}
+
+async function handleAddUserFollow(request, response, followType, followValue) {
+  const user = await requireAppUser(request, response);
+  if (!user) return;
+
+  const type = normalizeFollowType(followType);
+  const value = normalizeFollowValue(followValue);
+  if (!type || !value) {
+    sendJson(response, 400, { error: "Ogiltig följning." });
+    return;
+  }
+
+  const key = type === "artist" ? "followedArtists" : "followedVenues";
+  const users = await loadUsersFromStore();
+  const nextUsers = users.map((entry) => {
+    if (entry.id !== user.id) return entry;
+    const current = Array.isArray(entry[key]) ? entry[key] : [];
+    if (current.some((item) => String(item).toLowerCase() === value.toLowerCase())) {
+      return entry;
+    }
+    return { ...entry, [key]: [...current, value] };
+  });
+
+  await saveUsersToStore(nextUsers);
+  const updatedUser = nextUsers.find((entry) => entry.id === user.id);
+  sendJson(response, 200, normalizeUserFollows(updatedUser));
+}
+
+async function handleRemoveUserFollow(
+  request,
+  response,
+  followType,
+  followValue,
+) {
+  const user = await requireAppUser(request, response);
+  if (!user) return;
+
+  const type = normalizeFollowType(followType);
+  const value = normalizeFollowValue(followValue);
+  if (!type || !value) {
+    sendJson(response, 400, { error: "Ogiltig följning." });
+    return;
+  }
+
+  const key = type === "artist" ? "followedArtists" : "followedVenues";
+  const users = await loadUsersFromStore();
+  const nextUsers = users.map((entry) => {
+    if (entry.id !== user.id) return entry;
+    const current = Array.isArray(entry[key]) ? entry[key] : [];
+    return {
+      ...entry,
+      [key]: current.filter(
+        (item) => String(item).toLowerCase() !== value.toLowerCase(),
+      ),
+    };
+  });
+
+  await saveUsersToStore(nextUsers);
+  const updatedUser = nextUsers.find((entry) => entry.id === user.id);
+  sendJson(response, 200, normalizeUserFollows(updatedUser));
 }
 
 async function handleAddToUserList(request, response, listType, concertId) {
@@ -1261,6 +1353,11 @@ export async function handleApiRequest(request, response) {
     return;
   }
 
+  if (pathname === "/api/users/follows" && request.method === "GET") {
+    await handleGetUserFollows(request, response);
+    return;
+  }
+
   if (pathname === "/api/admin/users" && request.method === "GET") {
     await handleGetAdminUsers(request, response);
     return;
@@ -1299,6 +1396,24 @@ export async function handleApiRequest(request, response) {
     return;
   }
 
+  if (pathname === "/api/users/follows" && request.method === "POST") {
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+      return;
+    }
+
+    await handleAddUserFollow(
+      request,
+      response,
+      String(body?.followType || ""),
+      String(body?.value || ""),
+    );
+    return;
+  }
+
   if (pathname.startsWith("/api/users/lists/") && request.method === "DELETE") {
     const pathPart = pathname.slice("/api/users/lists/".length);
     const firstSlash = pathPart.indexOf("/");
@@ -1311,6 +1426,21 @@ export async function handleApiRequest(request, response) {
     const listType = decodeURIComponent(pathPart.slice(0, firstSlash));
     const concertId = decodeURIComponent(pathPart.slice(firstSlash + 1));
     await handleRemoveFromUserList(request, response, listType, concertId);
+    return;
+  }
+
+  if (pathname.startsWith("/api/users/follows/") && request.method === "DELETE") {
+    const pathPart = pathname.slice("/api/users/follows/".length);
+    const firstSlash = pathPart.indexOf("/");
+
+    if (firstSlash <= 0) {
+      sendJson(response, 400, { error: "Ogiltig följning." });
+      return;
+    }
+
+    const followType = decodeURIComponent(pathPart.slice(0, firstSlash));
+    const value = decodeURIComponent(pathPart.slice(firstSlash + 1));
+    await handleRemoveUserFollow(request, response, followType, value);
     return;
   }
 

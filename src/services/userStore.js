@@ -80,7 +80,49 @@ export async function loadUserLists() {
   return {
     favorites: payload.favorites || [],
     bookings: payload.bookings || [],
-    seen: payload.seen || []
+    seen: payload.seen || [],
+    followedArtists: payload.followedArtists || [],
+    followedVenues: payload.followedVenues || []
+  }
+}
+
+export async function loadUserFollows() {
+  const response = await fetch('/api/users/follows')
+  const payload = await parseJson(response)
+  return {
+    followedArtists: payload.followedArtists || [],
+    followedVenues: payload.followedVenues || []
+  }
+}
+
+export async function addUserFollow(followType, value) {
+  const response = await fetch('/api/users/follows', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ followType, value })
+  })
+
+  const payload = await parseJson(response)
+  return {
+    followedArtists: payload.followedArtists || [],
+    followedVenues: payload.followedVenues || []
+  }
+}
+
+export async function removeUserFollow(followType, value) {
+  const response = await fetch(
+    `/api/users/follows/${encodeURIComponent(followType)}/${encodeURIComponent(value)}`,
+    {
+      method: 'DELETE'
+    }
+  )
+
+  const payload = await parseJson(response)
+  return {
+    followedArtists: payload.followedArtists || [],
+    followedVenues: payload.followedVenues || []
   }
 }
 
