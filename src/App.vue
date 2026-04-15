@@ -1,5 +1,8 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import flatpickr from "flatpickr";
+import { Swedish } from "flatpickr/dist/l10n/sv.js";
+import "flatpickr/dist/flatpickr.min.css";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   clearStoredConcerts,
   loadStoredConcerts,
@@ -85,10 +88,33 @@ const deselectedSources = ref([]);
 const deselectedMonths = ref([]);
 const deselectedGenres = ref([]);
 const concertsSearch = ref("");
+const concertsDateTo = ref("");
+const concertsDateToInput = ref(null);
 const filtersExpanded = ref(false);
 const concertsSubView = ref("upcoming");
 const sharedConcertId = ref("");
 const shareStatus = ref("");
+let concertsDateToPicker = null;
+
+function initConcertsDateToPicker() {
+  if (!concertsDateToInput.value || concertsDateToPicker) return;
+
+  concertsDateToPicker = flatpickr(concertsDateToInput.value, {
+    locale: Swedish,
+    dateFormat: "Y-m-d",
+    altInput: true,
+    altFormat: "j F Y",
+    allowInput: false,
+    onChange: (selectedDates, dateStr) => {
+      concertsDateTo.value = dateStr || "";
+    },
+  });
+}
+
+function destroyConcertsDateToPicker() {
+  concertsDateToPicker?.destroy();
+  concertsDateToPicker = null;
+}
 
 // Spotify modal
 const showSpotifyModal = ref(false);
@@ -298,6 +324,9 @@ const filteredConcerts = computed(() => {
   }
 
   const query = normalizeText(concertsSearch.value);
+  const dateToLimit = concertsDateTo.value
+    ? new Date(`${concertsDateTo.value}T23:59:59.999`)
+    : null;
 
   return concertsForCurrentView.value.filter((concert) => {
     const sourceIncluded = !deselectedSources.value.includes(
@@ -313,8 +342,17 @@ const filteredConcerts = computed(() => {
       `${concert?.artist || ""} ${concert?.venue || ""} ${concert?.city || ""}`,
     );
     const searchIncluded = !query || searchable.includes(query);
+    const concertDate = getConcertDate(concert);
+    const dateIncluded =
+      !dateToLimit || (concertDate && concertDate.getTime() <= dateToLimit.getTime());
 
-    return sourceIncluded && monthIncluded && genreIncluded && searchIncluded;
+    return (
+      sourceIncluded &&
+      monthIncluded &&
+      genreIncluded &&
+      searchIncluded &&
+      dateIncluded
+    );
   });
 });
 
@@ -743,6 +781,11 @@ function clearSharedConcertMode() {
   url.searchParams.delete("concert");
   url.searchParams.delete("view");
   window.history.replaceState({}, "", url.toString());
+}
+
+function clearConcertsDateTo() {
+  concertsDateTo.value = "";
+  concertsDateToPicker?.clear();
 }
 
 async function trackVisitor() {
@@ -1253,6 +1296,24 @@ onMounted(async () => {
   } finally {
     authReady.value = true;
   }
+  await nextTick();
+  if (currentView.value === "concerts") {
+    initConcertsDateToPicker();
+  }
+});
+
+watch(currentView, async (view) => {
+  if (view === "concerts") {
+    await nextTick();
+    initConcertsDateToPicker();
+    return;
+  }
+
+  destroyConcertsDateToPicker();
+});
+
+onUnmounted(() => {
+  destroyConcertsDateToPicker();
 });
 
 watch(
@@ -2305,6 +2366,27 @@ watch(
           type="search"
           placeholder="Sök på artist, scen eller stad..."
         />
+        <div class="search-row">
+          <div class="search-field">
+            <label class="search-label" for="concert-date-to">Datum till</label>
+            <input
+              id="concert-date-to"
+              ref="concertsDateToInput"
+              class="search-input"
+              type="text"
+              placeholder="Välj datum"
+              readonly
+            />
+          </div>
+          <button
+            class="nav-link"
+            type="button"
+            :disabled="!concertsDateTo"
+            @click="clearConcertsDateTo"
+          >
+            Rensa datum
+          </button>
+        </div>
       </section>
 
       <section

@@ -369,6 +369,19 @@ h3 {
   gap: 8px;
 }
 
+.search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.search-field {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+}
+
 .favorites-toolbar {
   display: grid;
   gap: 8px;
