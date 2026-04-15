@@ -290,6 +290,13 @@ const availableGenreLabels = computed(() => {
 });
 
 const filteredConcerts = computed(() => {
+  if (sharedConcertId.value) {
+    const shared = concerts.value.find(
+      (concert) => getConcertId(concert) === sharedConcertId.value,
+    );
+    return shared ? [shared] : [];
+  }
+
   const query = normalizeText(concertsSearch.value);
 
   return concertsForCurrentView.value.filter((concert) => {
@@ -716,6 +723,14 @@ async function shareConcert(concert) {
 async function handleSharedConcertCta() {
   if (!sharedConcert.value) return;
   await toggleFavorite(sharedConcert.value);
+}
+
+function clearSharedConcertMode() {
+  sharedConcertId.value = "";
+  const url = new URL(window.location.href);
+  url.searchParams.delete("concert");
+  url.searchParams.delete("view");
+  window.history.replaceState({}, "", url.toString());
 }
 
 async function trackVisitor() {
@@ -2287,7 +2302,7 @@ watch(
             }}{{ sharedConcert.city ? `, ${sharedConcert.city}` : "" }}</span
           >
         </p>
-        <p class="lead">Kortet är markerat i listan nedanför.</p>
+        <p class="lead">Du ser endast den delade spelningen just nu.</p>
         <div class="actions">
           <button class="refresh" type="button" @click="handleSharedConcertCta">
             {{
@@ -2295,6 +2310,13 @@ watch(
                 ? `Ta bort ${sharedConcert.artist} från favoriter`
                 : `Spara ${sharedConcert.artist} i favoriter`
             }}
+          </button>
+          <button
+            class="nav-link"
+            type="button"
+            @click="clearSharedConcertMode"
+          >
+            Visa alla spelningar
           </button>
           <button
             class="nav-link"
