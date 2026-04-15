@@ -101,8 +101,6 @@ const quickDiscoverOptions = [
   { id: "all", label: "Alla" },
   { id: "week", label: "Denna vecka" },
   { id: "weekend", label: "I helgen" },
-  { id: "free", label: "Gratis" },
-  { id: "student", label: "Studentvänligt" },
 ];
 
 function initConcertsDateToPicker() {
@@ -363,34 +361,6 @@ function getWeekendRange(referenceDate = new Date()) {
   return { start: weekendStart, end: weekendEnd };
 }
 
-function isFreeConcert(concert) {
-  const text = getConcertSearchableText(concert);
-  const freeKeywords = [
-    "gratis",
-    "fri entre",
-    "fri entré",
-    "free entry",
-    "kostnadsfri",
-    "utan kostnad",
-    "0 kr",
-  ];
-  return freeKeywords.some((keyword) => text.includes(normalizeText(keyword)));
-}
-
-function isStudentFriendlyConcert(concert) {
-  const text = getConcertSearchableText(concert);
-  const studentKeywords = [
-    "student",
-    "studentrabatt",
-    "mecenat",
-    "csn",
-    "nation",
-  ];
-  return studentKeywords.some((keyword) =>
-    text.includes(normalizeText(keyword)),
-  );
-}
-
 function matchesQuickDiscoverFilter(concert, mode) {
   if (mode === "all") return true;
 
@@ -407,8 +377,6 @@ function matchesQuickDiscoverFilter(concert, mode) {
     return date >= start && date <= end;
   }
 
-  if (mode === "free") return isFreeConcert(concert);
-  if (mode === "student") return isStudentFriendlyConcert(concert);
   return true;
 }
 
@@ -446,11 +414,6 @@ const quickFilterCounts = computed(() => {
       .length,
     weekend: base.filter((concert) =>
       matchesQuickDiscoverFilter(concert, "weekend"),
-    ).length,
-    free: base.filter((concert) => matchesQuickDiscoverFilter(concert, "free"))
-      .length,
-    student: base.filter((concert) =>
-      matchesQuickDiscoverFilter(concert, "student"),
     ).length,
   };
 });
@@ -1858,9 +1821,9 @@ watch(
               <strong>Spelningar</strong>
               <p>
                 Visa kommande/tidigare spelningar, använd snabbfilter (Denna
-                vecka, I helgen, Gratis, Studentvänligt), filtrera på
-                källa/månad/genre, sök på artist/scen/stad, dela en spelning
-                med direktlänk, och klicka 🎵 för Spotify artist-info.
+                vecka, I helgen), filtrera på källa/månad/genre, sök på
+                artist/scen/stad, dela en spelning med direktlänk, och klicka
+                🎵 för Spotify artist-info.
               </p>
             </div>
           </li>
