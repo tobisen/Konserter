@@ -1285,7 +1285,7 @@ watch(
             </div>
           </div>
 
-          <h4 style="margin-top: 16px">Top 5 låtar</h4>
+          <h4 style="margin-top: 16px">Top 3 låtar</h4>
           <div class="spotify-tracks">
             <div
               v-for="(track, idx) in spotifyData.tracks"

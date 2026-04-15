@@ -1,4 +1,9 @@
 import crypto from "node:crypto";
+import dotenv from "dotenv";
+
+// Load environment variables from .env.local
+dotenv.config({ path: ".env.local" });
+
 import {
   getAuthenticatedUser,
   handleAuthMe,
@@ -869,6 +874,10 @@ async function getSpotifyAccessToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
+  console.log(
+    `Spotify auth: ID=${clientId ? "✓" : "✗"}, Secret=${clientSecret ? "✓" : "✗"}`,
+  );
+
   if (!clientId || !clientSecret) {
     throw new Error("Spotify credentials not configured");
   }
@@ -884,6 +893,18 @@ async function getSpotifyAccessToken() {
   });
 
   const data = await response.json();
+
+  if (!response.ok || !data.access_token) {
+    console.error(
+      `Spotify token error: ${response.status}`,
+      JSON.stringify(data),
+    );
+    throw new Error(
+      data.error_description || "Failed to get Spotify access token",
+    );
+  }
+
+  console.log(`Spotify token obtained successfully`);
   spotifyTokenCache = {
     token: data.access_token,
     expiresAt: now + data.expires_in * 1000,
@@ -908,10 +929,14 @@ async function handleSpotifySearch(request, response) {
     searchUrl.searchParams.set("type", "artist");
     searchUrl.searchParams.set("limit", "1");
 
+    console.log(
+      `Searching artist with token: Bearer ${token.substring(0, 20)}...`,
+    );
     const searchResponse = await fetch(searchUrl.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
 
+    console.log(`Search response status: ${searchResponse.status}`);
     const searchData = await searchResponse.json();
 
     if (!searchData.artists?.items?.[0]) {
@@ -925,19 +950,53 @@ async function handleSpotifySearch(request, response) {
     const spotifyUrl =
       searchData.artists.items[0].external_urls?.spotify || null;
 
-    // Get top tracks
+    // Get top tracks - try alternative approach if 403
     const tracksUrl = new URL(
       `https://api.spotify.com/v1/artists/${artistId}/top-tracks`,
     );
     tracksUrl.searchParams.set("market", "SE");
 
-    const tracksResponse = await fetch(tracksUrl.toString(), {
+    console.log(`Fetching tracks from: ${tracksUrl.toString()}`);
+
+    let tracksResponse = await fetch(tracksUrl.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    const tracksData = await tracksResponse.json();
+    let tracksData = { tracks: [] };
 
-    const tracks = (tracksData.tracks || []).slice(0, 5).map((track) => ({
+    if (tracksResponse.ok) {
+      tracksData = await tracksResponse.json();
+      console.log(`Found ${tracksData.tracks?.length || 0} tracks`);
+    } else if (tracksResponse.status === 403) {
+      // Fallback: use search to get tracks
+      console.log(`top-tracks returned 403, using search fallback`);
+      const searchTracksUrl = new URL("https://api.spotify.com/v1/search");
+      searchTracksUrl.searchParams.set("q", `artist:"${artistName}"`);
+      searchTracksUrl.searchParams.set("type", "track");
+      searchTracksUrl.searchParams.set("limit", "5");
+
+      const searchTracksResponse = await fetch(searchTracksUrl.toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (searchTracksResponse.ok) {
+        const searchTracksData = await searchTracksResponse.json();
+        tracksData.tracks = searchTracksData.tracks?.items || [];
+        console.log(`Found ${tracksData.tracks.length} tracks via search`);
+      } else {
+        console.error(
+          `Search fallback also failed: ${searchTracksResponse.status}`,
+        );
+      }
+    } else {
+      const errorText = await tracksResponse.text();
+      console.error(
+        `Spotify tracks API error: ${tracksResponse.status}`,
+        errorText,
+      );
+    }
+
+    const tracks = (tracksData.tracks || []).slice(0, 3).map((track) => ({
       name: track.name,
       url: track.external_urls?.spotify || null,
       preview: track.preview_url || null,

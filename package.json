@@ -1,7 +1,7 @@
 {
   "name": "konserter",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "vue": "^3.5.32"
   },
   "devDependencies": {
