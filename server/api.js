@@ -380,6 +380,7 @@ async function runConcertUpdate() {
   return {
     ok: true,
     statusCode: 200,
+    additions,
     payload: {
       concerts: additions.length > 0 ? merged : currentConcerts,
       addedCount: additions.length,
@@ -446,6 +447,86 @@ function buildConcertReminderLine(concert, listTags) {
 
   const tags = listTags.join(", ");
   return `- ${concert.artist} (${dateText}) på ${concert.venue}, ${concert.city} [${tags}]`;
+}
+
+function formatConcertDateLabel(value) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildConcertDigestEmailHtml({
+  username,
+  tomorrowItems,
+  followItems,
+  appUrl,
+}) {
+  const backgroundImageUrl = `${String(appUrl || "").replace(/\/$/, "")}/background-concert.jpg`;
+  const tomorrowSection =
+    tomorrowItems.length > 0
+      ? `<h2 style="margin:0 0 10px;font-size:18px;color:#ffd57a;">Spelningar imorgon</h2>
+         <ul style="margin:0 0 18px;padding-left:18px;">
+           ${tomorrowItems
+             .map((item) => {
+               const details = item.concert?.detailsUrl
+                 ? ` <a href="${escapeHtml(item.concert.detailsUrl)}" style="color:#72d4ff;">Läs mer</a>`
+                 : "";
+               return `<li style="margin-bottom:8px;">
+                 <strong>${escapeHtml(item.concert.artist)}</strong> · ${escapeHtml(formatConcertDateLabel(item.concert.date))} · ${escapeHtml(item.concert.venue)}, ${escapeHtml(item.concert.city)}
+                 <span style="color:#aeb9d2;">[${escapeHtml(item.tags.join(", "))}]</span>${details}
+               </li>`;
+             })
+             .join("")}
+         </ul>`
+      : "";
+
+  const followSection =
+    followItems.length > 0
+      ? `<h2 style="margin:0 0 10px;font-size:18px;color:#ffd57a;">Nya matchningar på det du följer</h2>
+         <ul style="margin:0 0 18px;padding-left:18px;">
+           ${followItems
+             .map((item) => {
+               const details = item.concert?.detailsUrl
+                 ? ` <a href="${escapeHtml(item.concert.detailsUrl)}" style="color:#72d4ff;">Läs mer</a>`
+                 : "";
+               return `<li style="margin-bottom:8px;">
+                 <strong>${escapeHtml(item.concert.artist)}</strong> · ${escapeHtml(formatConcertDateLabel(item.concert.date))} · ${escapeHtml(item.concert.venue)}, ${escapeHtml(item.concert.city)}
+                 <span style="color:#aeb9d2;">[${escapeHtml(item.matchTags.join(", "))}]</span>${details}
+               </li>`;
+             })
+             .join("")}
+         </ul>`
+      : "";
+
+  return `
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;background:#0d131f;color:#f4f8ff;border:1px solid #2f3b57;border-radius:14px;overflow:hidden;">
+      <div style="padding:26px 24px;background:linear-gradient(rgba(8,11,18,0.58),rgba(8,11,18,0.72)),url('${backgroundImageUrl}') center/cover no-repeat;">
+        <p style="margin:0 0 6px;color:#f8b84f;font-weight:800;letter-spacing:0.08em;">SOUNDCHECK</p>
+        <h1 style="margin:0;font-size:30px;line-height:1.1;color:#ffffff;">Veckans notiser för ${escapeHtml(username || "dig")}</h1>
+        <p style="margin:12px 0 0;max-width:560px;color:#dce5f7;font-size:15px;line-height:1.45;">
+          Här är en snabb översikt över dina sparade/bokade spelningar och nya matchningar från det du följer.
+        </p>
+      </div>
+      <div style="padding:22px 24px 24px;">
+        ${tomorrowSection}
+        ${followSection}
+        <a href="${escapeHtml(appUrl)}" style="display:inline-block;background:linear-gradient(135deg,#ffb84f,#ff8a00);color:#101726;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:800;letter-spacing:0.03em;">
+          ÖPPNA SOUNDCHECK
+        </a>
+      </div>
+    </div>
+  `;
 }
 
 async function sendReminderEmail(email, subject, textBody, htmlBody) {
@@ -567,7 +648,7 @@ async function handleContactForm(request, response, body) {
   });
 }
 
-async function sendTomorrowConcertReminders() {
+async function sendUserConcertNotifications(newConcerts = []) {
   const users = await loadUsersFromStore();
   const concerts = await loadConcertsFromFile();
   const concertsById = new Map(
@@ -581,10 +662,21 @@ async function sendTomorrowConcertReminders() {
     meta?.reminderLog && typeof meta.reminderLog === "object"
       ? meta.reminderLog
       : {};
+  const followLog =
+    meta?.followNotificationLog &&
+    typeof meta.followNotificationLog === "object"
+      ? meta.followNotificationLog
+      : {};
   const nextReminderLog = { ...reminderLog };
+  const nextFollowLog = { ...followLog };
+  const appUrl = String(process.env.APP_BASE_URL || "https://soundcheck.fun").replace(
+    /\/$/,
+    "",
+  );
 
   let emailsSent = 0;
   let usersNotified = 0;
+  let followMatchesSent = 0;
 
   for (const user of users) {
     const email = String(user?.email || "").trim();
@@ -624,33 +716,80 @@ async function sendTomorrowConcertReminders() {
       });
     }
 
-    if (reminderItems.length === 0) {
+    const followedArtists = Array.isArray(user?.followedArtists)
+      ? user.followedArtists
+      : [];
+    const followedVenues = Array.isArray(user?.followedVenues)
+      ? user.followedVenues
+      : [];
+    const followedArtistSet = new Set(
+      followedArtists.map((item) => normalizeText(item)).filter(Boolean),
+    );
+    const followedVenueSet = new Set(
+      followedVenues.map((item) => normalizeText(item)).filter(Boolean),
+    );
+
+    const followItems = [];
+    for (const concert of newConcerts) {
+      const concertId = createStableId(concert);
+      if (!concertId) continue;
+      const matchTags = [];
+      if (followedArtistSet.has(normalizeText(concert.artist))) {
+        matchTags.push("Följer artist");
+      }
+      if (followedVenueSet.has(normalizeText(concert.venue))) {
+        matchTags.push("Följer scen");
+      }
+      if (matchTags.length === 0) continue;
+
+      const dedupeKey = `follow:${user.id}:${concertId}`;
+      if (nextFollowLog[dedupeKey]) continue;
+
+      followItems.push({
+        concertId,
+        concert,
+        matchTags,
+      });
+    }
+
+    if (reminderItems.length === 0 && followItems.length === 0) {
       continue;
     }
 
-    const textLines = reminderItems.map((item) =>
-      buildConcertReminderLine(item.concert, item.tags),
-    );
+    const textSections = [];
+    if (reminderItems.length > 0) {
+      const textLines = reminderItems.map((item) =>
+        buildConcertReminderLine(item.concert, item.tags),
+      );
+      textSections.push(
+        `Spelningar imorgon (${reminderItems.length}):\n${textLines.join("\n")}`,
+      );
+    }
+    if (followItems.length > 0) {
+      const followLines = followItems.map(
+        (item) =>
+          `- ${item.concert.artist} (${formatConcertDateLabel(item.concert.date)}) på ${item.concert.venue}, ${item.concert.city} [${item.matchTags.join(", ")}]`,
+      );
+      textSections.push(
+        `Nya matchningar på det du följer (${followItems.length}):\n${followLines.join("\n")}`,
+      );
+    }
+
     const textBody =
       `Hej ${user.username || ""},\n\n` +
-      `Du har ${reminderItems.length} spelning(ar) imorgon:\n` +
-      `${textLines.join("\n")}\n\n` +
-      "Ha en grym konsertkväll!";
+      `${textSections.join("\n\n")}\n\n` +
+      "Öppna Soundcheck för full överblick.";
 
-    const htmlBody =
-      `<p>Hej ${String(user.username || "").replace(/</g, "&lt;")}!</p>` +
-      `<p>Du har <strong>${reminderItems.length}</strong> spelning(ar) imorgon:</p>` +
-      `<ul>${reminderItems
-        .map(
-          (item) =>
-            `<li>${buildConcertReminderLine(item.concert, item.tags).replace(/</g, "&lt;")}</li>`,
-        )
-        .join("")}</ul>` +
-      "<p>Ha en grym konsertkväll!</p>";
+    const htmlBody = buildConcertDigestEmailHtml({
+      username: user.username || "",
+      tomorrowItems: reminderItems,
+      followItems,
+      appUrl,
+    });
 
     await sendReminderEmail(
       email,
-      "Påminnelse: dina spelningar imorgon",
+      "Soundcheck-notiser: spelningar och nya matchningar",
       textBody,
       htmlBody,
     );
@@ -660,6 +799,11 @@ async function sendTomorrowConcertReminders() {
     for (const item of reminderItems) {
       const dedupeKey = `${tomorrowKey}:${user.id}:${item.concertId}`;
       nextReminderLog[dedupeKey] = sentAt;
+    }
+    for (const item of followItems) {
+      const dedupeKey = `follow:${user.id}:${item.concertId}`;
+      nextFollowLog[dedupeKey] = sentAt;
+      followMatchesSent += 1;
     }
   }
 
@@ -674,12 +818,20 @@ async function sendTomorrowConcertReminders() {
   await saveMetaToStore({
     ...meta,
     reminderLog: prunedReminderLog,
+    followNotificationLog: Object.fromEntries(
+      Object.entries(nextFollowLog).filter(([, value]) => {
+        const asTime = new Date(value).getTime();
+        return Number.isFinite(asTime) && asTime >= oldestAllowed;
+      }),
+    ),
   });
 
   return {
     tomorrowDate: tomorrowKey,
     usersNotified,
     emailsSent,
+    followMatchesSent,
+    newConcertsChecked: newConcerts.length,
   };
 }
 
@@ -690,7 +842,9 @@ async function handleCronUpdateConcerts(request, response, url) {
   }
 
   const updateResult = await runConcertUpdate();
-  const reminderResult = await sendTomorrowConcertReminders().catch(
+  const reminderResult = await sendUserConcertNotifications(
+    Array.isArray(updateResult?.additions) ? updateResult.additions : [],
+  ).catch(
     (error) => ({
       error: error instanceof Error ? error.message : "Unknown reminder error",
     }),

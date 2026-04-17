@@ -450,6 +450,65 @@ function parseFallanEventsFromHtml(html, sourceUrl = null) {
   return deduped
 }
 
+function parseNalenEventsFromHtml(html, sourceUrl = null) {
+  if (!sourceUrl?.hostname?.includes('nalen.com')) {
+    return []
+  }
+
+  const anchors = [...html.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)]
+  const concerts = []
+  const seen = new Set()
+
+  for (const [, hrefRaw, anchorInner] of anchors) {
+    const text = cleanupText(stripHtmlTags(anchorInner))
+    if (!text) continue
+
+    const dateMatch = text.match(
+      /(\d{1,2})\s+(jan|feb|mar|apr|maj|jun|jul|aug|sep|okt|nov|dec|januari|februari|mars|april|juni|juli|augusti|september|oktober|november|december)\.?/i
+    )
+    if (!dateMatch) continue
+
+    const isoDate = parseSwedishDateWithRollingYear(dateMatch[0])
+    if (!isoDate) continue
+
+    let titlePart = text.split(dateMatch[0])[0]
+    titlePart = cleanupText(
+      titlePart
+        .replace(/\b(UTSÅLT|FÅTAL KVAR|INSTÄLLT|FLYTTAD TILL FÅLLAN|EXTRAKONSERT)\b/gi, ' ')
+        .replace(/\b\d+(?:[.,]\d+)?\s*(?:SEK|€)\b/gi, ' ')
+        .replace(/\+\s*service/gi, ' ')
+    )
+
+    if (!titlePart || titlePart.length < 2) continue
+    if (/^(home|konserter|event|läs mer)$/i.test(titlePart)) continue
+
+    let detailsUrl = ''
+    try {
+      detailsUrl = new URL(normalizeUrlLike(hrefRaw), sourceUrl).toString()
+    } catch {
+      detailsUrl = sourceUrl.toString()
+    }
+
+    const concert = {
+      artist: titlePart,
+      title: titlePart,
+      date: isoDate,
+      venue: 'Nalen',
+      city: 'Stockholm',
+      genre: '',
+      detailsUrl,
+      imageUrl: ''
+    }
+
+    const key = `${concert.artist}|${concert.date}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    concerts.push(concert)
+  }
+
+  return concerts
+}
+
 function parseConcertsFromJsonPayload(payload) {
   const rawEvents = pickEventsPayload(payload)
   return rawEvents
@@ -501,6 +560,11 @@ function parseConcertsFromHtml(html, sourceUrl = null) {
   const fromFallanHtml = parseFallanEventsFromHtml(html, sourceUrl)
   if (fromFallanHtml.length > 0) {
     return fromFallanHtml
+  }
+
+  const fromNalenHtml = parseNalenEventsFromHtml(html, sourceUrl)
+  if (fromNalenHtml.length > 0) {
+    return fromNalenHtml
   }
 
   return parseKaliberEventsFromHtml(html, sourceUrl)

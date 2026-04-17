@@ -2785,7 +2785,9 @@ watch(
               <strong>Mina Spelningar</strong>
               <p>
                 Skapa konto, logga in, få välkomstmail, spara favoriter,
-                markera Ska gå/Var där och lägg till i kalender.
+                markera Ska gå/Var där och lägg till i kalender. Du får även
+                mailnotiser om sparade/bokade spelningar och nya matchningar på
+                artister/scener du följer.
               </p>
             </div>
           </li>

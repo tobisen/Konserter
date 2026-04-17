@@ -23,6 +23,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Favorites, Going, Seen
   - Follow artists and venues
   - Password reset flow via email link (30 min token)
+  - Branded email digest with reminders for saved/booked concerts and new follow matches
 - Admin area:
   - Source add/remove
   - Update concerts / clear concerts
