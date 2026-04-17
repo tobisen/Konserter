@@ -485,6 +485,11 @@ h3 {
   grid-template-columns: 1fr 1.5fr auto;
 }
 
+.contact-form {
+  grid-template-columns: 1fr;
+  max-width: 720px;
+}
+
 .login-form {
   grid-template-columns: 1fr 1fr auto;
 }
@@ -502,6 +507,24 @@ h3 {
   border-radius: 4px;
   padding: 10px 12px;
   font: inherit;
+}
+
+.contact-message {
+  width: 100%;
+  resize: vertical;
+  min-height: 120px;
+  border: 1px solid var(--line);
+  background: #11141b;
+  color: var(--text);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.error {
+  margin: 6px 0 0;
+  color: #ff8e8e;
+  font-weight: 600;
 }
 
 .source-list {

@@ -32,6 +32,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
 - UI/UX:
   - Sticky full-width header
   - Right-side slide menu (hamburger)
+  - Contact page with menu entry and contact form
   - Language toggle (SV/EN, Swedish default)
 
 ## Tech
@@ -72,6 +73,7 @@ Default URL: `http://localhost:5173`
 - `RESET_EMAIL_FROM`
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_CLIENT_SECRET`
+- `CONTACT_EMAIL_TO` (optional recipient for contact form)
 
 ### Required for Password Reset Emails in Production
 

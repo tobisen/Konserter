@@ -49,6 +49,7 @@ const allowedViews = new Set([
   "concerts",
   "my-concerts",
   "help",
+  "contact",
   "sources",
   "admin",
 ]);
@@ -58,6 +59,7 @@ const viewToPath = {
   concerts: "/spelningar",
   "my-concerts": "/mina-spelningar",
   help: "/hjalp",
+  contact: "/kontakt",
   sources: "/kallor",
   admin: "/admin",
 };
@@ -130,6 +132,12 @@ const resetNewPassword = ref("");
 const showResetNewPassword = ref(false);
 const showResetForm = ref(false);
 const newFavoriteArtistSuggestionConcerts = ref([]);
+const contactName = ref("");
+const contactEmail = ref("");
+const contactMessage = ref("");
+const contactSubmitting = ref(false);
+const contactStatus = ref("");
+const contactError = ref("");
 
 const passwordCurrent = ref("");
 const passwordNext = ref("");
@@ -171,6 +179,7 @@ const i18n = {
       concerts: "Spelningar",
       myConcerts: "Mina Spelningar",
       help: "Hjälp",
+      contact: "Kontakt",
       sources: "Källor",
       admin: "Admin",
       login: "Logga in",
@@ -212,6 +221,16 @@ const i18n = {
       unknownDate: "Okänt datum",
       unknownVenue: "Okänd scen",
     },
+    contact: {
+      title: "Kontakt",
+      lead:
+        "Skicka gärna feedback, felrapport eller förslag så svarar vi så fort vi kan.",
+      name: "Namn",
+      email: "E-post",
+      message: "Meddelande",
+      submit: "Skicka",
+      submitting: "Skickar...",
+    },
   },
   en: {
     nav: {
@@ -219,6 +238,7 @@ const i18n = {
       concerts: "Concerts",
       myConcerts: "My Concerts",
       help: "Help",
+      contact: "Contact",
       sources: "Sources",
       admin: "Admin",
       login: "Log in",
@@ -259,6 +279,16 @@ const i18n = {
       unknownArtist: "Unknown artist",
       unknownDate: "Unknown date",
       unknownVenue: "Unknown venue",
+    },
+    contact: {
+      title: "Contact",
+      lead:
+        "Send feedback, bug reports, or ideas and we will reply as soon as possible.",
+      name: "Name",
+      email: "Email",
+      message: "Message",
+      submit: "Send",
+      submitting: "Sending...",
     },
   },
 };
@@ -1792,6 +1822,46 @@ async function logoutRegularUser() {
   userStatus.value = "Du är utloggad från användarkontot.";
 }
 
+async function submitContactForm() {
+  contactSubmitting.value = true;
+  contactError.value = "";
+  contactStatus.value = "";
+
+  try {
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: contactName.value,
+        email: contactEmail.value,
+        message: contactMessage.value,
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || (locale.value === "en" ? "Could not send message." : "Kunde inte skicka meddelandet."));
+    }
+
+    contactName.value = "";
+    contactEmail.value = "";
+    contactMessage.value = "";
+    contactStatus.value =
+      payload.message ||
+      (locale.value === "en"
+        ? "Thanks! Your message has been sent."
+        : "Tack! Ditt meddelande har skickats.");
+  } catch (error) {
+    contactError.value =
+      error.message ||
+      (locale.value === "en"
+        ? "Could not send message."
+        : "Kunde inte skicka meddelandet.");
+  } finally {
+    contactSubmitting.value = false;
+  }
+}
+
 async function logout() {
   await fetch("/api/auth/logout", {
     method: "POST",
@@ -2299,6 +2369,14 @@ watch(
         </button>
         <button
           class="slide-menu-link"
+          :class="{ active: currentView === 'contact' }"
+          type="button"
+          @click="navigateTo('contact')"
+        >
+          {{ t("nav.contact") }}
+        </button>
+        <button
+          class="slide-menu-link"
           :class="{ active: currentView === 'sources' }"
           type="button"
           @click="navigateTo('sources')"
@@ -2713,6 +2791,15 @@ watch(
           </li>
           <li>
             <div>
+              <strong>Kontakt</strong>
+              <p>
+                Skicka feedback, felrapporter eller förslag direkt via
+                kontaktformuläret i menyn.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
               <strong>Admin</strong>
               <p>
                 Hantera källor, kör uppdatering, töm konserter, se
@@ -2730,6 +2817,37 @@ watch(
             </div>
           </li>
         </ul>
+      </section>
+
+      <section v-if="currentView === 'contact'" class="hero source-panel">
+        <h2>{{ t("contact.title") }}</h2>
+        <p class="lead">{{ t("contact.lead") }}</p>
+        <form class="source-form contact-form" @submit.prevent="submitContactForm">
+          <input
+            v-model="contactName"
+            type="text"
+            :placeholder="t('contact.name')"
+            required
+          />
+          <input
+            v-model="contactEmail"
+            type="email"
+            :placeholder="t('contact.email')"
+            required
+          />
+          <textarea
+            v-model="contactMessage"
+            class="contact-message"
+            :placeholder="t('contact.message')"
+            rows="5"
+            required
+          ></textarea>
+          <button class="refresh" type="submit" :disabled="contactSubmitting">
+            {{ contactSubmitting ? t("contact.submitting") : t("contact.submit") }}
+          </button>
+        </form>
+        <p v-if="contactStatus" class="updated">{{ contactStatus }}</p>
+        <p v-if="contactError" class="error">{{ contactError }}</p>
       </section>
 
       <section v-if="currentView === 'sources'" class="hero source-panel">

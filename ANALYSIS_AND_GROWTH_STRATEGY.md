@@ -13,6 +13,7 @@
 7. Reliable account recovery with real email-based password reset.
 8. User lifecycle controls in admin (including account deletion).
 9. Better first-run user activation via welcome email.
+10. Direct inbound feedback channel via contact form.
 
 ### Risks / Gaps
 

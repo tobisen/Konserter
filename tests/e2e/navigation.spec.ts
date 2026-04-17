@@ -17,6 +17,7 @@ test.describe('Navigation', () => {
     await openMenu(page)
     await expect(page.getByRole('button', { name: /^Hem$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Källor$/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Kontakt$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Hjälp$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Admin$/ })).toBeVisible()
   })
@@ -38,5 +39,17 @@ test.describe('Navigation', () => {
     await page.getByRole('button', { name: /^Källor$/ }).click()
 
     await expect(page.getByRole('heading', { name: 'Källor' })).toBeVisible()
+  })
+
+  test('contact page opens', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('soundcheck_locale', 'sv'))
+    await page.goto('/')
+    await openMenu(page)
+    await page.getByRole('button', { name: /^Kontakt$/ }).click()
+
+    await expect(page.getByRole('heading', { name: 'Kontakt' })).toBeVisible()
+    await expect(page.getByPlaceholder('Namn')).toBeVisible()
+    await expect(page.getByPlaceholder('E-post')).toBeVisible()
+    await expect(page.getByPlaceholder('Meddelande')).toBeVisible()
   })
 })

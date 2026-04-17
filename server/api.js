@@ -481,6 +481,92 @@ async function sendReminderEmail(email, subject, textBody, htmlBody) {
   console.info(`[ReminderEmail] ${email}\n${textBody}`);
 }
 
+function isValidEmail(value) {
+  const email = String(value || "").trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function resolveContactRecipient() {
+  const explicit = String(process.env.CONTACT_EMAIL_TO || "").trim();
+  if (explicit) return explicit;
+
+  const fromRaw = String(process.env.RESET_EMAIL_FROM || "").trim();
+  const bracketMatch = fromRaw.match(/<([^>]+)>/);
+  const fromEmail = bracketMatch ? bracketMatch[1] : fromRaw;
+  return String(fromEmail || "").trim();
+}
+
+async function handleContactForm(request, response, body) {
+  const name = String(body?.name || "").trim();
+  const email = String(body?.email || "").trim().toLowerCase();
+  const message = String(body?.message || "").trim();
+
+  if (!name || !email || !message) {
+    sendJson(response, 400, {
+      error: "Namn, e-post och meddelande måste anges.",
+    });
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    sendJson(response, 400, { error: "Ange en giltig e-postadress." });
+    return;
+  }
+
+  if (message.length < 10) {
+    sendJson(response, 400, { error: "Meddelandet är för kort." });
+    return;
+  }
+
+  const toEmail = resolveContactRecipient();
+  const resendApiKey = String(process.env.RESEND_API_KEY || "").trim();
+  const fromEmail = String(process.env.RESET_EMAIL_FROM || "").trim();
+
+  const safeName = name.replace(/</g, "&lt;");
+  const safeEmail = email.replace(/</g, "&lt;");
+  const safeMessage = message.replace(/</g, "&lt;").replace(/\n/g, "<br/>");
+  const subject = `Kontaktformulär: ${name}`;
+  const textBody = `Nytt kontaktmeddelande\n\nNamn: ${name}\nE-post: ${email}\n\nMeddelande:\n${message}`;
+  const htmlBody =
+    `<p><strong>Nytt kontaktmeddelande</strong></p>` +
+    `<p><strong>Namn:</strong> ${safeName}<br/>` +
+    `<strong>E-post:</strong> ${safeEmail}</p>` +
+    `<p><strong>Meddelande:</strong><br/>${safeMessage}</p>`;
+
+  if (resendApiKey && fromEmail && toEmail) {
+    const mailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [toEmail],
+        reply_to: email,
+        subject,
+        html: htmlBody,
+        text: textBody,
+      }),
+    });
+
+    if (!mailResponse.ok) {
+      const payload = await mailResponse.text().catch(() => "");
+      sendJson(response, 502, {
+        error: `Kunde inte skicka meddelandet (${mailResponse.status}): ${payload}`,
+      });
+      return;
+    }
+  } else {
+    console.info(`[ContactForm]\n${textBody}`);
+  }
+
+  sendJson(response, 200, {
+    ok: true,
+    message: "Tack! Ditt meddelande är skickat.",
+  });
+}
+
 async function sendTomorrowConcertReminders() {
   const users = await loadUsersFromStore();
   const concerts = await loadConcertsFromFile();
@@ -1303,6 +1389,19 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === "/api/users/logout" && request.method === "POST") {
     handleUserLogout(request, response);
+    return;
+  }
+
+  if (pathname === "/api/contact" && request.method === "POST") {
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+      return;
+    }
+
+    await handleContactForm(request, response, body);
     return;
   }
 

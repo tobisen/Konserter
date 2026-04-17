@@ -32,6 +32,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Search by artist, venue, city.
 - Shareable concert deep-links and preview image generation.
 - Calendar export (`.ics`).
+- Contact page with a public contact form in the main menu.
 
 ### 3. My Concerts
 
