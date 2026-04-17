@@ -2819,7 +2819,7 @@ watch(
         </ul>
       </section>
 
-      <section v-if="currentView === 'contact'" class="hero source-panel">
+      <section v-if="currentView === 'contact'" class="hero source-panel contact-panel">
         <h2>{{ t("contact.title") }}</h2>
         <p class="lead">{{ t("contact.lead") }}</p>
         <form class="source-form contact-form" @submit.prevent="submitContactForm">

@@ -487,7 +487,13 @@ h3 {
 
 .contact-form {
   grid-template-columns: 1fr;
-  max-width: 720px;
+  width: min(100%, 680px);
+  margin: 16px auto 0;
+  padding: 18px;
+  border: 1px solid #31384a;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #121722 0%, #10141d 100%);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.25);
 }
 
 .login-form {
@@ -519,6 +525,21 @@ h3 {
   border-radius: 4px;
   padding: 10px 12px;
   font: inherit;
+}
+
+.contact-panel .lead {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.contact-form input {
+  width: 100%;
+}
+
+.contact-form .refresh {
+  justify-self: start;
 }
 
 .error {

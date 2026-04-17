@@ -365,7 +365,9 @@ function buildResetUrl(request, token) {
   const explicitBase = String(process.env.APP_BASE_URL || '').trim()
   const fallbackBase = 'http://localhost:5173'
   const detectedBase = resolveRequestOrigin(request)
-  const base = explicitBase || detectedBase || fallbackBase
+  // Prefer the actual request origin so custom domains (e.g. soundcheck.fun)
+  // are used automatically, even if APP_BASE_URL is stale.
+  const base = detectedBase || explicitBase || fallbackBase
   return `${base.replace(/\/$/, '')}/?resetToken=${encodeURIComponent(token)}`
 }
 
