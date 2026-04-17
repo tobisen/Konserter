@@ -10,6 +10,24 @@ test.describe("Concerts view", () => {
     ).toBeVisible();
     await expect(page.getByLabel("Sök spelning")).toBeVisible();
     await expect(page.getByLabel("Välj datum")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Kortvy$/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Listvy$/ })).toBeVisible();
+  });
+
+  test("can switch between card and table view", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^Spelningar$/ }).click();
+
+    await page.getByRole("button", { name: /^Listvy$/ }).click();
+    await expect(page.getByRole("columnheader", { name: "Datum" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Artist" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Plats" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Ort" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Åtgärder" })).toBeVisible();
+    await expect(page.locator(".table-actions .mini-action-button").first()).toBeVisible();
+
+    await page.getByRole("button", { name: /^Kortvy$/ }).click();
+    await expect(page.locator(".concert-cards-grid")).toBeVisible();
   });
 
   test("can toggle upcoming and past tabs", async ({ page }) => {

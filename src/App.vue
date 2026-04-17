@@ -97,6 +97,7 @@ const deselectedGenres = ref([]);
 const concertsSearch = ref("");
 const concertsDateTo = ref("");
 const quickDiscoverMode = ref("all");
+const concertsListView = ref("cards");
 const concertsDateToInput = ref(null);
 const filtersExpanded = ref(false);
 const concertsSubView = ref("upcoming");
@@ -219,6 +220,10 @@ function setView(view) {
 
 function setConcertsSubView(view) {
   concertsSubView.value = view;
+}
+
+function setConcertsListView(view) {
+  concertsListView.value = view;
 }
 
 function toggleFiltersExpanded() {
@@ -449,6 +454,14 @@ const filteredConcerts = computed(() => {
 
   return filteredConcertsBase.value.filter((concert) =>
     matchesQuickDiscoverFilter(concert, quickDiscoverMode.value),
+  );
+});
+
+const sortedFilteredConcerts = computed(() => {
+  return [...filteredConcerts.value].sort((a, b) =>
+    concertsSubView.value === "past"
+      ? getConcertDate(b) - getConcertDate(a)
+      : getConcertDate(a) - getConcertDate(b),
   );
 });
 
@@ -1914,7 +1927,7 @@ watch(
       <section v-if="currentView === 'home'" class="hero">
         <h2>Spelningar i {{ currentMonthLabel }}</h2>
 
-        <div v-if="currentMonthConcerts.length" class="list compact-list">
+        <div v-if="currentMonthConcerts.length" class="list compact-list home-concerts-grid">
           <article
             v-for="concert in currentMonthConcerts"
             :key="`home-${concert.artist}-${concert.date}-${concert.venue}`"
@@ -2050,9 +2063,10 @@ watch(
                 Visa kommande/tidigare spelningar, använd snabbfilter (Denna
                 vecka, I helgen), filtrera på källa/månad/genre, sök på
                 artist/scen/stad, välj ett specifikt datum i kalendern (med
-                markerade eventdagar), se populära spelningar denna vecka, dela
-                en spelning med direktlänk, och klicka 🎵 för Spotify
-                artist-info.
+                markerade eventdagar), växla mellan kortvy och tabellvy (med
+                snabbtnappar i båda vyerna),
+                se populära spelningar denna vecka, dela en spelning med
+                direktlänk, och klicka 🎵 för Spotify artist-info.
               </p>
             </div>
           </li>
@@ -2828,6 +2842,25 @@ watch(
               {{ option.label }} ({{ quickFilterCounts[option.id] || 0 }})
             </button>
           </div>
+
+          <div class="view-mode-switch">
+            <button
+              class="nav-link"
+              :class="{ active: concertsListView === 'cards' }"
+              type="button"
+              @click="setConcertsListView('cards')"
+            >
+              Kortvy
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: concertsListView === 'table' }"
+              type="button"
+              @click="setConcertsListView('table')"
+            >
+              Listvy
+            </button>
+          </div>
         </div>
 
         <div class="search-panel">
@@ -2936,52 +2969,113 @@ watch(
       </section>
 
       <section
-        v-if="currentView === 'concerts' && groupedByYearAndMonth.length"
-        class="list"
+        v-if="
+          currentView === 'concerts' &&
+          concertsListView === 'cards' &&
+          sortedFilteredConcerts.length
+        "
+        class="concert-cards-grid"
       >
         <article
-          v-for="group in groupedByYearAndMonth"
-          :key="group.year"
-          class="year-group"
+          v-for="concert in sortedFilteredConcerts"
+          :key="`concert-card-${getConcertId(concert)}`"
+          class="concert-tile"
+          :class="{ highlighted: getConcertId(concert) === sharedConcertId }"
         >
-          <h2>{{ group.year }}</h2>
-
-          <section
-            v-for="monthGroup in group.months"
-            :key="monthGroup.month"
-            class="month-group"
-          >
-            <h3 class="month-heading">{{ monthGroup.label }}</h3>
-
-            <article
-              v-for="concert in monthGroup.concerts"
-              :key="`${concert.artist}-${concert.date}-${concert.venue}`"
-              class="card"
-              :class="{
-                highlighted: getConcertId(concert) === sharedConcertId,
-              }"
+          <div class="concert-tile-media">
+            <img
+              v-if="getConcertImageUrl(concert)"
+              class="concert-tile-image"
+              :src="getConcertImageUrl(concert)"
+              :alt="`Bild för ${concert.title}`"
+              loading="lazy"
+            />
+            <div v-else class="concert-tile-image fallback"></div>
+            <p v-if="getConcertGenre(concert)" class="concert-tile-tag">
+              {{ getConcertGenre(concert) }}
+            </p>
+            <button
+              class="heart-button tile-heart"
+              :class="{ active: isFavorite(concert) }"
+              :aria-label="isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'"
+              @click="toggleFavorite(concert)"
             >
-              <div class="meta">
-                <img
-                  v-if="getConcertImageUrl(concert)"
-                  class="concert-image"
-                  :src="getConcertImageUrl(concert)"
-                  :alt="`Bild för ${concert.title}`"
-                  loading="lazy"
-                />
-                <p>{{ formatDate(concert.date) }}</p>
-                <p>{{ concert.city }}</p>
-              </div>
+              {{ isFavorite(concert) ? "♥" : "♡" }}
+            </button>
+          </div>
 
-              <div class="content">
-                <h3>{{ concert.artist }}</h3>
-                <p class="title">{{ concert.title }}</p>
-                <p class="venue">{{ concert.venue }}</p>
-                <p v-if="getConcertGenre(concert)" class="genre">
-                  {{ getConcertGenre(concert) }}
-                </p>
-                <p class="source">{{ getConcertSourceName(concert) }}</p>
-                <div class="mini-actions">
+          <div class="concert-tile-body">
+            <h3>{{ concert.artist }}</h3>
+            <p class="title">{{ concert.title }}</p>
+            <p class="venue">{{ concert.venue }}</p>
+            <p>{{ concert.city }}</p>
+            <p class="source">{{ formatDate(concert.date) }}</p>
+            <div class="mini-actions">
+              <button
+                class="mini-action-button"
+                :class="{ active: isBooked(concert) }"
+                type="button"
+                @click="toggleBooking(concert)"
+              >
+                Ska gå
+              </button>
+              <button
+                class="mini-action-button"
+                :class="{ active: isSeen(concert) }"
+                type="button"
+                @click="toggleSeen(concert)"
+              >
+                Var där
+              </button>
+              <button
+                class="mini-action-button"
+                type="button"
+                @click="shareConcert(concert)"
+              >
+                Dela spelning
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section
+        v-if="
+          currentView === 'concerts' &&
+          concertsListView === 'table' &&
+          sortedFilteredConcerts.length
+        "
+        class="hero concerts-table-wrap"
+      >
+        <table class="concerts-table">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Artist</th>
+              <th>Plats</th>
+              <th>Ort</th>
+              <th>Åtgärder</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="concert in sortedFilteredConcerts"
+              :key="`concert-row-${getConcertId(concert)}`"
+            >
+              <td>{{ formatDate(concert.date) }}</td>
+              <td>{{ concert.artist }}</td>
+              <td>{{ concert.venue }}</td>
+              <td>{{ concert.city }}</td>
+              <td>
+                <div class="table-actions">
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isFavorite(concert) }"
+                    type="button"
+                    @click="toggleFavorite(concert)"
+                  >
+                    {{ isFavorite(concert) ? "Favorit" : "Spara" }}
+                  </button>
                   <button
                     class="mini-action-button"
                     :class="{ active: isBooked(concert) }"
@@ -3000,22 +3094,11 @@ watch(
                   </button>
                   <button
                     class="mini-action-button"
-                    type="button"
-                    @click="downloadCalendarEvent(concert)"
-                  >
-                    Lägg till i kalender
-                  </button>
-                  <button
-                    class="mini-action-button"
                     :class="{ active: isFollowedArtist(concert.artist) }"
                     type="button"
                     @click="toggleFollowArtist(concert.artist)"
                   >
-                    {{
-                      isFollowedArtist(concert.artist)
-                        ? "Följer artist"
-                        : "Följ artist"
-                    }}
+                    {{ isFollowedArtist(concert.artist) ? "Följer artist" : "Följ artist" }}
                   </button>
                   <button
                     class="mini-action-button"
@@ -3023,47 +3106,24 @@ watch(
                     type="button"
                     @click="toggleFollowVenue(concert.venue)"
                   >
-                    {{
-                      isFollowedVenue(concert.venue)
-                        ? "Följer scen"
-                        : "Följ scen"
-                    }}
+                    {{ isFollowedVenue(concert.venue) ? "Följer scen" : "Följ scen" }}
                   </button>
                   <button
                     class="mini-action-button"
                     type="button"
                     @click="shareConcert(concert)"
                   >
-                    Dela spelning
+                    Dela
                   </button>
                 </div>
-                <button
-                  class="heart-button"
-                  :class="{ active: isFavorite(concert) }"
-                  :aria-label="
-                    isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'
-                  "
-                  @click="toggleFavorite(concert)"
-                >
-                  {{ isFavorite(concert) ? "♥" : "♡" }}
-                </button>
-                <a
-                  v-if="getConcertDetailsUrl(concert)"
-                  class="readmore"
-                  :href="getConcertDetailsUrl(concert)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Läs mer
-                </a>
-              </div>
-            </article>
-          </section>
-        </article>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <section
-        v-if="currentView === 'concerts' && !groupedByYearAndMonth.length"
+        v-if="currentView === 'concerts' && !sortedFilteredConcerts.length"
         class="hero"
       >
         <p class="lead">

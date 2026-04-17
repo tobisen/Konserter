@@ -399,6 +399,12 @@ h3 {
   color: #ffd5d2;
 }
 
+.view-mode-switch {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .popular-panel {
   border-color: #ff8a00;
 }
@@ -411,6 +417,97 @@ h3 {
 .popular-score {
   color: #ffd57a;
   font-size: 0.92rem;
+}
+
+.concert-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 14px;
+}
+
+.home-concerts-grid {
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
+.concert-tile {
+  border: 1px solid #2a3040;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #10131a;
+}
+
+.concert-tile.highlighted {
+  border-color: #ff8a00;
+  box-shadow: 0 0 0 1px rgba(255, 138, 0, 0.45);
+}
+
+.concert-tile-media {
+  position: relative;
+  min-height: 160px;
+}
+
+.concert-tile-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.concert-tile-image.fallback {
+  background: linear-gradient(135deg, #202532, #151a25);
+}
+
+.concert-tile-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  margin: 0;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid #3a4153;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tile-heart {
+  top: 10px;
+  right: 10px;
+}
+
+.concert-tile-body {
+  padding: 12px;
+}
+
+.concerts-table-wrap {
+  overflow-x: auto;
+}
+
+.concerts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.concerts-table th,
+.concerts-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #2a3040;
+  text-align: left;
+  vertical-align: top;
+}
+
+.concerts-table th {
+  color: #ffb356;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 320px;
 }
 
 .search-panel {

@@ -29,7 +29,7 @@ Konsertnavigator is a web application for collecting, organizing, and exploring 
 
 - Main concert view with:
   - Upcoming / Past subviews
-  - Year + month grouping
+  - Two display modes: wider card-style view and table-style list (date/artist/venue/city) with action buttons in both modes
   - Filtering by source, month, and genre
   - Single-date picker filter with highlighted event days
   - Search by artist, venue, and city
