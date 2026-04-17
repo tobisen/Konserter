@@ -354,6 +354,21 @@ function getConcertDetailsUrl(concert) {
   return String(concert?.detailsUrl || "").trim();
 }
 
+function getSourceUrlByName(sourceName) {
+  const normalized = String(sourceName || "").trim().toLowerCase();
+  if (!normalized) return "";
+  const match = sources.value.find(
+    (source) => String(source?.name || "").trim().toLowerCase() === normalized,
+  );
+  return String(match?.url || "").trim();
+}
+
+function getConcertReadMoreUrl(concert) {
+  const detailsUrl = getConcertDetailsUrl(concert);
+  if (detailsUrl) return detailsUrl;
+  return getSourceUrlByName(getConcertSourceName(concert));
+}
+
 function getConcertImageUrl(concert) {
   return String(concert?.imageUrl || "").trim();
 }
@@ -509,11 +524,17 @@ const currentMonthConcerts = computed(() => {
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
+  const startOfToday = getStartOfToday();
 
   return concerts.value
     .filter((concert) => {
       const date = getConcertDate(concert);
-      return date && date.getMonth() === month && date.getFullYear() === year;
+      return (
+        date &&
+        date.getMonth() === month &&
+        date.getFullYear() === year &&
+        date >= startOfToday
+      );
     })
     .sort((a, b) => getConcertDate(a) - getConcertDate(b));
 });
@@ -2293,6 +2314,15 @@ watch(
                 >
                 <span class="concert-date">{{ formatDate(concert.date) }}</span>
               </p>
+              <a
+                v-if="getConcertReadMoreUrl(concert)"
+                class="readmore card-readmore"
+                :href="getConcertReadMoreUrl(concert)"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ t("actions.readMore") }}
+              </a>
               <div class="card-footer">
                 <div class="mini-actions card-footer-main">
                   <button
@@ -2365,15 +2395,6 @@ watch(
                   </div>
                 </details>
               </div>
-              <a
-                v-if="getConcertDetailsUrl(concert)"
-                class="readmore card-readmore"
-                :href="getConcertDetailsUrl(concert)"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ t("actions.readMore") }}
-              </a>
             </div>
           </article>
         </section>
@@ -2471,7 +2492,9 @@ watch(
           </table>
         </section>
 
-        <p v-else class="lead">{{ t("home.noMonthConcerts") }}</p>
+        <p v-if="!currentMonthConcerts.length" class="lead">
+          {{ t("home.noMonthConcerts") }}
+        </p>
       </section>
 
       <section v-if="currentView === 'help'" class="hero source-panel">
@@ -3086,6 +3109,15 @@ watch(
                 </p>
                 <p class="genre">{{ getConcertGenreLabel(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
+                <a
+                  v-if="getConcertReadMoreUrl(concert)"
+                  class="readmore card-readmore"
+                  :href="getConcertReadMoreUrl(concert)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ t("actions.readMore") }}
+                </a>
                 <div class="card-footer">
                   <div class="mini-actions card-footer-main">
                     <button
@@ -3158,15 +3190,6 @@ watch(
                     </div>
                   </details>
                 </div>
-                <a
-                  v-if="getConcertDetailsUrl(concert)"
-                  class="readmore card-readmore"
-                  :href="getConcertDetailsUrl(concert)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {{ t("actions.readMore") }}
-                </a>
                 <button
                   class="heart-button"
                   :class="{ active: isFavorite(concert) }"
@@ -3498,6 +3521,15 @@ watch(
               >
               <span class="concert-date">{{ formatDate(concert.date) }}</span>
             </p>
+            <a
+              v-if="getConcertReadMoreUrl(concert)"
+              class="readmore card-readmore"
+              :href="getConcertReadMoreUrl(concert)"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ t("actions.readMore") }}
+            </a>
             <div class="card-footer">
               <div class="mini-actions card-footer-main">
                 <button
@@ -3570,15 +3602,6 @@ watch(
                 </div>
               </details>
             </div>
-            <a
-              v-if="getConcertDetailsUrl(concert)"
-              class="readmore card-readmore"
-              :href="getConcertDetailsUrl(concert)"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {{ t("actions.readMore") }}
-            </a>
           </div>
         </article>
       </section>
