@@ -528,7 +528,7 @@ const SWEDISH_MONTHS = {
 function parseSwedishDateFromText(text, fallbackYear) {
   const cleaned = cleanupText(text)
   const pattern =
-    /(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)(?:\s+(20\d{2}))?(?:[^\d]{0,20}(?:kl\.?|klockan)\s*(\d{1,2})[:.](\d{2}))?/i
+    /(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)(?:\s+(20\d{2}))?(?:[^\d]{0,20}(?:(?:kl\.?|klockan)\s*)?(\d{1,2})[:.](\d{2}))?/i
 
   const match = cleaned.match(pattern)
   if (!match) {
@@ -538,6 +538,47 @@ function parseSwedishDateFromText(text, fallbackYear) {
   const day = Number(match[1])
   const month = SWEDISH_MONTHS[match[2].toLowerCase()]
   const year = match[3] ? Number(match[3]) : fallbackYear
+  const hour = match[4] ? Number(match[4]) : 20
+  const minute = match[5] ? Number(match[5]) : 0
+
+  if (!Number.isInteger(day) || month == null || !Number.isInteger(year)) {
+    return null
+  }
+
+  const date = new Date(Date.UTC(year, month, day, hour - 2, minute))
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return date.toISOString()
+}
+
+const ENGLISH_MONTHS_FULL = {
+  january: 0,
+  february: 1,
+  march: 2,
+  april: 3,
+  may: 4,
+  june: 5,
+  july: 6,
+  august: 7,
+  september: 8,
+  october: 9,
+  november: 10,
+  december: 11
+}
+
+function parseEnglishDateFromText(text) {
+  const cleaned = cleanupText(text)
+  const match = cleaned.match(
+    /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d{2})(?:[^\d]{0,20}(\d{1,2})[:.](\d{2}))?/i
+  )
+
+  if (!match) return null
+
+  const day = Number(match[1])
+  const month = ENGLISH_MONTHS_FULL[String(match[2] || '').toLowerCase()]
+  const year = Number(match[3])
   const hour = match[4] ? Number(match[4]) : 20
   const minute = match[5] ? Number(match[5]) : 0
 
@@ -836,6 +877,82 @@ async function fetchParksResortsPageDataConcerts(sourceUrl) {
   return parseParksResortsConcertsFromPageData(payload, city)
 }
 
+function parseDalhallaConcertFromWpPost(post, sourceUrl) {
+  const title = cleanupText(post?.title?.rendered)
+  const detailsUrl = normalizeUrlLike(post?.link)
+  const contentText = stripHtmlTags(post?.content?.rendered)
+
+  const date =
+    parseSwedishDateWithRollingYear(contentText) ||
+    parseEnglishDateFromText(contentText)
+
+  if (!title || !date) {
+    return null
+  }
+
+  const imageUrl = normalizeUrlLike(
+    post?.yoast_head_json?.og_image?.[0]?.url ||
+      post?.yoast_head_json?.twitter_image ||
+      ''
+  )
+
+  return {
+    artist: title,
+    title,
+    date,
+    venue: 'Dalhalla',
+    city: 'Rättvik',
+    genre: '',
+    detailsUrl: detailsUrl || sourceUrl.origin,
+    imageUrl
+  }
+}
+
+async function fetchDalhallaConcertsFromWpApi(sourceUrl) {
+  if (!sourceUrl.hostname.includes('dalhalla.se')) {
+    return []
+  }
+
+  const concerts = []
+  const seen = new Set()
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages && page <= 6) {
+    const endpoint = `${sourceUrl.origin}/wp-json/wp/v2/konsert?per_page=100&page=${page}`
+    const response = await fetch(endpoint, {
+      headers: {
+        'User-Agent': 'KonserterBot/1.0 (+https://local.app)'
+      }
+    })
+
+    if (!response.ok) {
+      break
+    }
+
+    const pageItems = await response.json().catch(() => [])
+    if (!Array.isArray(pageItems) || pageItems.length === 0) {
+      break
+    }
+
+    totalPages = Number(response.headers.get('x-wp-totalpages') || totalPages || 1)
+
+    for (const post of pageItems) {
+      const normalized = parseDalhallaConcertFromWpPost(post, sourceUrl)
+      if (!normalized) continue
+
+      const key = `${normalized.artist}|${normalized.date}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      concerts.push(normalized)
+    }
+
+    page += 1
+  }
+
+  return concerts
+}
+
 export async function fetchConcertsFromUrl(sourceUrlRaw) {
   let sourceUrl
 
@@ -877,6 +994,13 @@ export async function fetchConcertsFromUrl(sourceUrlRaw) {
       concerts = parseConcertsFromJsonPayload(maybeJson)
     } else {
       concerts = parseConcertsFromHtml(body, sourceUrl)
+    }
+  }
+
+  if (concerts.length === 0) {
+    const dalhallaConcerts = await fetchDalhallaConcertsFromWpApi(sourceUrl)
+    if (dalhallaConcerts.length > 0) {
+      concerts = dalhallaConcerts
     }
   }
 

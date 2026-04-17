@@ -16,4 +16,12 @@ test.describe('Public API smoke', () => {
     const payload = await response.json()
     expect(Array.isArray(payload.sources)).toBeTruthy()
   })
+
+  test('GET /api/source-events without url returns 400', async ({ request, baseURL }) => {
+    const response = await request.get(`${baseURL}/api/source-events`)
+    expect(response.status()).toBe(400)
+
+    const payload = await response.json()
+    expect(String(payload.error || '')).toContain('url')
+  })
 })

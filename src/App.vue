@@ -2053,7 +2053,7 @@ watch(
           <li>
             <div>
               <strong>Källor</strong>
-              <p>Publik lista med aktiva källnamn.</p>
+              <p>Publik lista med aktiva källnamn. Stöd finns även för WordPress-baserade eventkällor som Dalhalla.</p>
             </div>
           </li>
           <li>

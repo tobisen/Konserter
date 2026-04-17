@@ -18,6 +18,7 @@ Konsertnavigator is a web application for collecting, organizing, and exploring 
 ### 1. Data Aggregation and Normalization
 
 - Source ingestion from HTML pages and JSON feeds.
+- Support for WordPress event APIs on custom post types (e.g. Dalhalla `wp-json/wp/v2/konsert`).
 - Source-specific parsing fallbacks for selected websites.
 - Concert normalization:
   - artist/title/date/venue/city

@@ -120,6 +120,7 @@ The app tries to parse concerts from:
 
 - Standard web pages (HTML), including JSON-LD event data
 - JSON feeds (`events`, `concerts`, `items`, or array payloads)
+- WordPress custom post type event APIs (for example `wp-json/wp/v2/konsert` used by Dalhalla)
 - Source-specific fallbacks currently included for some venues/pages used in this project
 
 ## Security Notes
