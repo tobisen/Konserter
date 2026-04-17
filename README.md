@@ -106,6 +106,7 @@ Optional secret:
 
 - Single endpoint: `api/index.js`
 - `vercel.json` rewrites `/api/:route*` to `/api?route=:route*`
+- SPA rewrites for app views (`/spelningar`, `/mina-spelningar`, `/hjalp`, `/kontakt`, `/kallor`, `/admin`) to support hard reload on the same page.
 
 ## Data Sources
 

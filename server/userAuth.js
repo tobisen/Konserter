@@ -440,24 +440,28 @@ async function sendWelcomeEmail(request, user) {
 
   const homeUrl = getAppBaseUrl(request)
   const username = String(user?.username || 'vän').trim()
+  const backgroundImageUrl = `${homeUrl}/background-concert.jpg`
 
   await sendEmailViaResend({
     to: user.email,
     subject: 'Välkommen till Soundcheck',
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0f1626;color:#f4f8ff;border:1px solid #2f3b57;border-radius:12px;">
-        <h1 style="margin:0 0 10px;color:#f8b84f;letter-spacing:0.03em;">SOUNDCHECK</h1>
-        <p style="margin:0 0 16px;font-size:18px;">Hej ${username}, kul att du är här.</p>
-        <p style="margin:0 0 16px;line-height:1.5;">
-          Ditt konto är nu aktivt. Du kan börja spara favoriter, markera spelningar du ska gå på
-          och bygga din egen konsertlista.
-        </p>
-        <a href="${homeUrl}" style="display:inline-block;background:#f8b84f;color:#101726;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700;">
-          Öppna Soundcheck
-        </a>
-        <p style="margin:18px 0 0;font-size:13px;color:#aeb9d2;">
-          Vi ses längst fram vid scenen.
-        </p>
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:680px;margin:0 auto;background:#0d131f;color:#f4f8ff;border:1px solid #2f3b57;border-radius:14px;overflow:hidden;">
+        <div style="position:relative;padding:26px 24px;background:linear-gradient(rgba(8,11,18,0.58),rgba(8,11,18,0.72)),url('${backgroundImageUrl}') center/cover no-repeat;">
+          <p style="margin:0 0 6px;color:#f8b84f;font-weight:800;letter-spacing:0.08em;">SOUNDCHECK</p>
+          <h1 style="margin:0;font-size:32px;line-height:1.1;color:#ffffff;">Välkommen ${username}</h1>
+          <p style="margin:12px 0 0;max-width:520px;color:#dce5f7;font-size:16px;line-height:1.45;">
+            Ditt konto är nu aktivt. Nu kan du spara favoriter, markera spelningar du ska gå på och bygga din egen konsertlista.
+          </p>
+        </div>
+        <div style="padding:22px 24px 24px;">
+          <a href="${homeUrl}" style="display:inline-block;background:linear-gradient(135deg,#ffb84f,#ff8a00);color:#101726;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:800;letter-spacing:0.03em;">
+            ÖPPNA SOUNDCHECK
+          </a>
+          <p style="margin:16px 0 0;font-size:13px;color:#aeb9d2;">
+            Vi ses längst fram vid scenen.
+          </p>
+        </div>
       </div>
     `
   })

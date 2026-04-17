@@ -14,6 +14,7 @@
 8. User lifecycle controls in admin (including account deletion).
 9. Better first-run user activation via welcome email.
 10. Direct inbound feedback channel via contact form.
+11. Better route persistence and deep-link reliability on reload.
 
 ### Risks / Gaps
 

@@ -512,23 +512,34 @@ function stripHtmlTags(value) {
 
 const SWEDISH_MONTHS = {
   januari: 0,
+  jan: 0,
   februari: 1,
+  feb: 1,
   mars: 2,
+  mar: 2,
   april: 3,
+  apr: 3,
   maj: 4,
   juni: 5,
+  jun: 5,
   juli: 6,
+  jul: 6,
   augusti: 7,
+  aug: 7,
   september: 8,
+  sep: 8,
   oktober: 9,
+  okt: 9,
   november: 10,
-  december: 11
+  nov: 10,
+  december: 11,
+  dec: 11
 }
 
 function parseSwedishDateFromText(text, fallbackYear) {
   const cleaned = cleanupText(text)
   const pattern =
-    /(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)(?:\s+(20\d{2}))?(?:[^\d]{0,20}(?:(?:kl\.?|klockan)\s*)?(\d{1,2})[:.](\d{2}))?/i
+    /(\d{1,2})\s+([a-zåäö.]+)(?:\s+(20\d{2}))?(?:[^\d]{0,20}(?:(?:kl\.?|klockan)\s*)?(\d{1,2})[:.](\d{2}))?/i
 
   const match = cleaned.match(pattern)
   if (!match) {
@@ -536,7 +547,10 @@ function parseSwedishDateFromText(text, fallbackYear) {
   }
 
   const day = Number(match[1])
-  const month = SWEDISH_MONTHS[match[2].toLowerCase()]
+  const monthKey = String(match[2] || '')
+    .toLowerCase()
+    .replace(/\.$/, '')
+  const month = SWEDISH_MONTHS[monthKey]
   const year = match[3] ? Number(match[3]) : fallbackYear
   const hour = match[4] ? Number(match[4]) : 20
   const minute = match[5] ? Number(match[5]) : 0

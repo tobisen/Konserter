@@ -3,6 +3,30 @@
     {
       "source": "/api/:route*",
       "destination": "/api?route=:route*"
+    },
+    {
+      "source": "/spelningar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mina-spelningar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/hjalp",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/kontakt",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/kallor",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
     }
   ],
   "crons": [

@@ -65,6 +65,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Vercel serverless API backend
 - Vercel KV (prod) + JSON fallback (local)
 - Playwright E2E test suite + GitHub Actions schedule
+- Vercel SPA rewrites for stable deep-link and reload behavior.
 
 ## Status
 

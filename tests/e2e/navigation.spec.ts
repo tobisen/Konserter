@@ -52,4 +52,15 @@ test.describe('Navigation', () => {
     await expect(page.getByPlaceholder('E-post')).toBeVisible()
     await expect(page.getByPlaceholder('Meddelande')).toBeVisible()
   })
+
+  test('reload keeps the same page route', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('soundcheck_locale', 'sv'))
+    await page.goto('/kontakt')
+    await expect(page.getByRole('heading', { name: 'Kontakt' })).toBeVisible()
+
+    await page.reload()
+
+    await expect(page).toHaveURL(/\/kontakt$/)
+    await expect(page.getByRole('heading', { name: 'Kontakt' })).toBeVisible()
+  })
 })
