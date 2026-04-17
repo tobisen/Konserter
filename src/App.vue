@@ -52,8 +52,37 @@ const allowedViews = new Set([
   "admin",
 ]);
 
+const viewToPath = {
+  home: "/",
+  concerts: "/spelningar",
+  "my-concerts": "/mina-spelningar",
+  help: "/hjalp",
+  sources: "/kallor",
+  admin: "/admin",
+};
+
+const pathToView = Object.fromEntries(
+  Object.entries(viewToPath).map(([view, path]) => [path, view]),
+);
+
+function normalizePathname(pathname) {
+  const normalized = String(pathname || "").trim();
+  if (!normalized || normalized === "/") return "/";
+  return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
+}
+
+function getViewFromCurrentUrl() {
+  if (typeof window === "undefined") return "";
+  const url = new URL(window.location.href);
+  const viewFromQuery = String(url.searchParams.get("view") || "").trim();
+  if (allowedViews.has(viewFromQuery)) return viewFromQuery;
+  return pathToView[normalizePathname(url.pathname)] || "";
+}
+
 function resolveInitialView() {
   if (typeof window === "undefined") return "home";
+  const viewFromUrl = getViewFromCurrentUrl();
+  if (viewFromUrl) return viewFromUrl;
   const saved = window.localStorage.getItem("soundcheck_view") || "";
   return allowedViews.has(saved) ? saved : "home";
 }
@@ -381,11 +410,31 @@ function getMonthLabel(monthNumber) {
   return monthFormatter.value.format(new Date(Date.UTC(2024, monthNumber, 1)));
 }
 
-function setView(view) {
+function syncBrowserRoute(view, replaceUrl = false) {
+  if (typeof window === "undefined") return;
+  const targetPath = viewToPath[view] || "/";
+  const url = new URL(window.location.href);
+  url.searchParams.delete("view");
+  url.pathname = targetPath;
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextUrl === currentUrl) return;
+  if (replaceUrl) {
+    window.history.replaceState({}, "", nextUrl);
+    return;
+  }
+  window.history.pushState({}, "", nextUrl);
+}
+
+function setView(view, options = {}) {
   if (!allowedViews.has(view)) return;
+  const { syncUrl = true, replaceUrl = false } = options;
   currentView.value = view;
   if (typeof window !== "undefined") {
     window.localStorage.setItem("soundcheck_view", view);
+    if (syncUrl) {
+      syncBrowserRoute(view, replaceUrl);
+    }
   }
 
   if (view === "admin" && isAuthenticated.value) {
@@ -400,6 +449,11 @@ function toggleMenu() {
 
 function closeMenu() {
   isMenuOpen.value = false;
+}
+
+function handleBrowserPopState() {
+  const viewFromUrl = getViewFromCurrentUrl();
+  setView(viewFromUrl || "home", { syncUrl: false });
 }
 
 function handleGlobalKeydown(event) {
@@ -1934,6 +1988,7 @@ async function submitPasswordChange() {
 }
 
 onMounted(async () => {
+  window.addEventListener("popstate", handleBrowserPopState);
   window.addEventListener("keydown", handleGlobalKeydown);
   window.addEventListener("pointerdown", handleGlobalPointerDown);
   const url = new URL(window.location.href);
@@ -1942,11 +1997,11 @@ onMounted(async () => {
   if (tokenFromUrl) {
     resetToken.value = tokenFromUrl;
     showResetForm.value = true;
-    setView("my-concerts");
+    setView("my-concerts", { replaceUrl: true });
   }
   if (sharedConcertFromUrl) {
     sharedConcertId.value = sharedConcertFromUrl;
-    setView("concerts");
+    setView("concerts", { replaceUrl: true });
   }
 
   try {
@@ -1997,6 +2052,7 @@ watch(
 );
 
 onUnmounted(() => {
+  window.removeEventListener("popstate", handleBrowserPopState);
   window.removeEventListener("keydown", handleGlobalKeydown);
   window.removeEventListener("pointerdown", handleGlobalPointerDown);
   destroyConcertsDateToPicker();
@@ -2636,8 +2692,8 @@ watch(
             <div>
               <strong>Lösenordsåterställning</strong>
               <p>
-                Använd “Glömt lösenord” för återställning. I testläge loggas
-                återställningslänken i serverloggar.
+                Använd “Glömt lösenord” för återställning. En länk skickas till
+                din e-postadress och gäller i 30 minuter.
               </p>
             </div>
           </li>
@@ -2659,8 +2715,8 @@ watch(
 
         <template v-if="isAuthenticated">
           <p v-if="!adminMailStatus.configured" class="updated">
-            Testläge: Mail är inte konfigurerat. Återställningslänkar och
-            påminnelser loggas i serverloggar.
+            Mail är inte konfigurerat. Sätt RESEND_API_KEY och
+            RESET_EMAIL_FROM i miljövariabler för att aktivera utskick.
           </p>
           <p v-else class="updated">Mailutskick är aktivt.</p>
 
@@ -2884,8 +2940,8 @@ watch(
             spelningslistor.
           </p>
           <p class="updated">
-            Om mail inte är konfigurerat körs lösenordsåterställning i testläge
-            via serverloggar.
+            Lösenordsåterställning skickas via e-post när du använder "Glömt
+            lösenord".
           </p>
 
           <div class="user-auth-grid">

@@ -38,7 +38,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Registration/login.
 - Favorites, Going, Seen lists.
 - Follow artists and venues.
-- Password reset flow.
+- Password reset by email link (30-minute token).
 
 ### 4. Admin Experience
 

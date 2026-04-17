@@ -10,6 +10,7 @@
 4. Shareability: deep-links and share preview image.
 5. Admin operations: source management + import quality + usage counters.
 6. Solid deployment workflow on Vercel.
+7. Reliable account recovery with real email-based password reset.
 
 ### Risks / Gaps
 

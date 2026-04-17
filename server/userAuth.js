@@ -346,10 +346,31 @@ export function handleUserLogout(request, response) {
   response.end(JSON.stringify({ ok: true }))
 }
 
-function buildResetUrl(token) {
+function resolveRequestOrigin(request) {
+  const headers = request?.headers || {}
+  const forwardedProto = String(headers['x-forwarded-proto'] || '').trim()
+  const forwardedHost = String(headers['x-forwarded-host'] || '').trim()
+  const host = String(headers.host || '').trim()
+  const protocol = forwardedProto || (host.includes('localhost') ? 'http' : 'https')
+  const hostname = forwardedHost || host
+
+  if (!hostname) return ''
+  return `${protocol}://${hostname}`
+}
+
+function buildResetUrl(request, token) {
   const explicitBase = String(process.env.APP_BASE_URL || '').trim()
-  const base = explicitBase || 'http://localhost:5173'
+  const fallbackBase = 'http://localhost:5173'
+  const detectedBase = resolveRequestOrigin(request)
+  const base = explicitBase || detectedBase || fallbackBase
   return `${base.replace(/\/$/, '')}/?resetToken=${encodeURIComponent(token)}`
+}
+
+function isProductionEnvironment() {
+  return (
+    String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production' ||
+    String(process.env.VERCEL_ENV || '').trim().toLowerCase() === 'production'
+  )
 }
 
 export function isMailDeliveryConfigured() {
@@ -401,6 +422,17 @@ export async function handleUserForgotPassword(request, response, body) {
   const user = users.find((entry) => normalizeEmail(entry.email) === email)
 
   const configured = isMailDeliveryConfigured()
+  if (!configured && isProductionEnvironment()) {
+    response.statusCode = 503
+    response.setHeader('Content-Type', 'application/json')
+    response.end(
+      JSON.stringify({
+        error:
+          'Lösenordsåterställning via e-post är inte konfigurerad. Sätt RESEND_API_KEY och RESET_EMAIL_FROM.'
+      })
+    )
+    return
+  }
 
   if (user) {
     const token = crypto.randomBytes(24).toString('hex')
@@ -413,7 +445,20 @@ export async function handleUserForgotPassword(request, response, body) {
         : entry
     )
     await saveUsersToStore(nextUsers)
-    await sendResetPasswordEmail(email, buildResetUrl(token))
+    try {
+      await sendResetPasswordEmail(email, buildResetUrl(request, token))
+    } catch (error) {
+      response.statusCode = 502
+      response.setHeader('Content-Type', 'application/json')
+      response.end(
+        JSON.stringify({
+          error:
+            error?.message ||
+            'Kunde inte skicka återställningsmail just nu. Försök igen snart.'
+        })
+      )
+      return
+    }
   }
 
   response.statusCode = 200

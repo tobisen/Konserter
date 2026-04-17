@@ -21,7 +21,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Register/login
   - Favorites, Going, Seen
   - Follow artists and venues
-  - Password reset flow
+  - Password reset flow via email link (30 min token)
 - Admin area:
   - Source add/remove
   - Update concerts / clear concerts
@@ -70,6 +70,13 @@ Default URL: `http://localhost:5173`
 - `RESET_EMAIL_FROM`
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_CLIENT_SECRET`
+
+### Required for Password Reset Emails in Production
+
+- `RESEND_API_KEY`
+- `RESET_EMAIL_FROM`
+
+If these are missing in production, forgot-password returns an explicit configuration error instead of pretending to send email.
 
 ## Deployment (Vercel)
 
