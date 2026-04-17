@@ -28,20 +28,43 @@
 body {
   margin: 0;
   min-height: 100vh;
+  position: relative;
+  background-color: #0f1013;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 1000px;
+  pointer-events: none;
+  z-index: 0;
   background:
-    radial-gradient(
-      circle at 85% 15%,
-      rgba(255, 59, 48, 0.24),
-      transparent 40%
+    linear-gradient(
+      180deg,
+      rgba(9, 10, 13, 0.4) 0%,
+      rgba(10, 11, 14, 0.7) 60%,
+      #0f1013 100%
     ),
-    radial-gradient(circle at 10% 85%, rgba(255, 138, 0, 0.2), transparent 40%),
-    linear-gradient(180deg, #0f1013 0%, #13151b 50%, #101217 100%);
+    radial-gradient(
+      circle at 84% 14%,
+      rgba(255, 59, 48, 0.18),
+      transparent 38%
+    ),
+    radial-gradient(circle at 12% 24%, rgba(255, 138, 0, 0.14), transparent 36%),
+    url("/background-concert.jpg");
+  background-size: auto, auto, auto, cover;
+  background-position: top center, top right, top left, center top;
+  background-repeat: no-repeat;
 }
 
 #app {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 0 16px 64px;
+  position: relative;
+  z-index: 1;
 }
 
 .page {
@@ -51,18 +74,163 @@ body {
 
 .site-header {
   position: sticky;
-  top: 10px;
-  z-index: 40;
+  top: 0;
+  z-index: 50;
   background: rgba(19, 21, 27, 0.9);
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
-  padding: 10px 12px;
+  padding: 10px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  min-height: 80px;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.brand-block {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+}
+
+.menu-toggle {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151a24;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  cursor: pointer;
+}
+
+.header-quick-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.locale-toggle {
+  border: 1px solid #3a4153;
+  background: #151a24;
+  color: #f2f4fb;
+  border-radius: 999px;
+  min-width: 58px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.locale-toggle:hover {
+  border-color: var(--accent);
+}
+
+.menu-toggle span {
+  width: 100%;
+  height: 2px;
+  background: #f0f2f8;
+  border-radius: 999px;
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 54;
+}
+
+.slide-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(360px, 90vw);
+  height: 100vh;
+  background: #11151e;
+  border-left: 1px solid #2e3545;
+  box-shadow: -18px 0 42px rgba(0, 0, 0, 0.42);
+  z-index: 55;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  padding: 86px 18px 20px;
+}
+
+.slide-menu.open {
+  transform: translateX(0);
+}
+
+.slide-menu-nav {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.slide-menu-link {
+  border: 1px solid #31384a;
+  background: #161b25;
+  color: #f1f3fa;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.slide-menu-link:hover {
+  border-color: var(--accent);
+}
+
+.slide-menu-link.active {
+  border-color: var(--accent);
+  background: linear-gradient(
+    120deg,
+    rgba(255, 59, 48, 0.18),
+    rgba(255, 138, 0, 0.14)
+  );
+}
+
+.slide-menu-footer {
+  border-top: 1px solid #2f3647;
+  padding-top: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.slide-menu-bottom {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.slide-menu-footer p {
+  margin: 0;
+  color: #aeb4c4;
+  font-size: 0.86rem;
 }
 
 .brand {
@@ -85,7 +253,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -151,6 +319,18 @@ body {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
 }
 
+.hero-transparent {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 78px 16px 42px;
+  min-height: 640px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
 .kicker {
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -189,6 +369,24 @@ h3 {
   color: var(--muted);
   max-width: 70ch;
   font-size: 1.05rem;
+}
+
+.home-title {
+  font-size: clamp(3.4rem, 10vw, 6rem);
+  line-height: 0.9;
+  margin: 0;
+  text-transform: uppercase;
+  color: #ffb356;
+  letter-spacing: 0.06em;
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+.home-lead {
+  margin-top: 14px;
+  max-width: 62ch;
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  color: #f1f3fa;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
 }
 
 .actions {
@@ -422,11 +620,21 @@ h3 {
 .concert-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 14px;
 }
 
 .home-concerts-grid {
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+}
+
+.home-concerts-grid .card + .card {
+  margin-top: 0;
+}
+
+.home-concerts-grid > article.card:last-of-type:nth-of-type(odd) {
+  grid-column: 1 / -1;
 }
 
 .concert-tile {
@@ -434,6 +642,9 @@ h3 {
   border-radius: 10px;
   overflow: hidden;
   background: #10131a;
+  display: grid;
+  grid-template-rows: 180px 1fr;
+  height: 100%;
 }
 
 .concert-tile.highlighted {
@@ -443,7 +654,7 @@ h3 {
 
 .concert-tile-media {
   position: relative;
-  min-height: 160px;
+  min-height: 180px;
 }
 
 .concert-tile-image {
@@ -477,6 +688,9 @@ h3 {
 
 .concert-tile-body {
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .concerts-table-wrap {
@@ -674,6 +888,7 @@ h3 {
   grid-template-columns: minmax(128px, 182px) 1fr;
   overflow: hidden;
   position: relative;
+  height: 100%;
 }
 
 .card::before {
@@ -718,10 +933,13 @@ h3 {
 .content {
   padding: 14px 58px 14px 14px;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .mini-actions {
-  margin-top: 6px;
+  margin-top: auto;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -956,12 +1174,16 @@ h3 {
 
 @media (max-width: 900px) {
   .site-header {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 10px 18px;
+    min-height: 72px;
   }
 
-  .main-nav {
-    justify-content: flex-start;
+  .header-quick-nav {
+    display: none;
+  }
+
+  .slide-menu {
+    width: min(340px, 94vw);
   }
 
   .source-form,
@@ -971,6 +1193,14 @@ h3 {
 
   .user-auth-grid {
     grid-template-columns: 1fr;
+  }
+
+  .home-concerts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-concerts-grid > article.card:last-of-type:nth-of-type(odd) {
+    grid-column: auto;
   }
 }
 

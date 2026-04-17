@@ -45,6 +45,12 @@ const popularLoading = ref(false);
 
 const currentView = ref("home");
 const showAuthModal = ref(false);
+const locale = ref(
+  typeof window !== "undefined" &&
+    window.localStorage.getItem("soundcheck_locale") === "en"
+    ? "en"
+    : "sv",
+);
 
 const isAuthenticated = ref(false);
 const authReady = ref(false);
@@ -103,19 +109,136 @@ const filtersExpanded = ref(false);
 const concertsSubView = ref("upcoming");
 const sharedConcertId = ref("");
 const shareStatus = ref("");
+const isMenuOpen = ref(false);
 let concertsDateToPicker = null;
 
-const quickDiscoverOptions = [
-  { id: "all", label: "Alla" },
-  { id: "week", label: "Denna vecka" },
-  { id: "weekend", label: "I helgen" },
-];
+const quickDiscoverOptions = computed(() => [
+  { id: "all", label: locale.value === "en" ? "All" : "Alla" },
+  { id: "week", label: locale.value === "en" ? "This week" : "Denna vecka" },
+  { id: "weekend", label: locale.value === "en" ? "This weekend" : "I helgen" },
+]);
+
+const i18n = {
+  sv: {
+    nav: {
+      home: "Hem",
+      concerts: "Spelningar",
+      myConcerts: "Mina Spelningar",
+      help: "Hjälp",
+      sources: "Källor",
+      admin: "Admin",
+      login: "Logga in",
+      logout: "Logga ut",
+    },
+    labels: {
+      version: "Version",
+      lastUpdated: "Senast uppdaterad",
+      loadingAuth: "Laddar inloggningsstatus...",
+    },
+    home: {
+      title: "Soundcheck",
+      lead:
+        "Hitta de bästa spelningarna snabbare. Soundcheck samlar konserter från flera källor på ett ställe, så du slipper leta runt och kan fokusera på att upptäcka nytt, spara favoriter och aldrig missa en kväll värd att gå på.",
+      monthHeading: "Spelningar i {month}",
+      noMonthConcerts: "Inga spelningar hittades för aktuell månad.",
+    },
+    actions: {
+      going: "Ska gå",
+      seen: "Var där",
+      addCalendar: "Lägg till i kalender",
+      shareConcert: "Dela spelning",
+      followArtist: "Följ artist",
+      followingArtist: "Följer artist",
+      followVenue: "Följ scen",
+      followingVenue: "Följer scen",
+      readMore: "Läs mer",
+      openMyConcerts: "Öppna Mina Spelningar",
+    },
+    misc: {
+      unknownSource: "Okänd källa",
+      otherGenre: "Övrigt",
+      neverUpdated: "Har inte uppdaterats ännu",
+      unknownTime: "Okänd tidpunkt",
+      unknown: "Okänd",
+      copyLinkPrompt: "Kopiera länken:",
+      unknownArtist: "Okänd artist",
+      unknownDate: "Okänt datum",
+      unknownVenue: "Okänd scen",
+    },
+  },
+  en: {
+    nav: {
+      home: "Home",
+      concerts: "Concerts",
+      myConcerts: "My Concerts",
+      help: "Help",
+      sources: "Sources",
+      admin: "Admin",
+      login: "Log in",
+      logout: "Log out",
+    },
+    labels: {
+      version: "Version",
+      lastUpdated: "Last updated",
+      loadingAuth: "Loading sign-in status...",
+    },
+    home: {
+      title: "Soundcheck",
+      lead:
+        "Find the best live shows faster. Soundcheck collects concerts from multiple sources in one place, so you can skip searching and focus on discovering new artists, saving favorites, and never missing a great night out.",
+      monthHeading: "Concerts in {month}",
+      noMonthConcerts: "No concerts found for the current month.",
+    },
+    actions: {
+      going: "Going",
+      seen: "Seen",
+      addCalendar: "Add to calendar",
+      shareConcert: "Share concert",
+      followArtist: "Follow artist",
+      followingArtist: "Following artist",
+      followVenue: "Follow venue",
+      followingVenue: "Following venue",
+      readMore: "Read more",
+      openMyConcerts: "Open My Concerts",
+    },
+    misc: {
+      unknownSource: "Unknown source",
+      otherGenre: "Other",
+      neverUpdated: "Not updated yet",
+      unknownTime: "Unknown time",
+      unknown: "Unknown",
+      copyLinkPrompt: "Copy link:",
+      unknownArtist: "Unknown artist",
+      unknownDate: "Unknown date",
+      unknownVenue: "Unknown venue",
+    },
+  },
+};
+
+function t(path, params = {}) {
+  const parts = String(path).split(".");
+  let value = i18n[locale.value];
+  let fallback = i18n.sv;
+  for (const part of parts) {
+    value = value?.[part];
+    fallback = fallback?.[part];
+  }
+  let text = String(value ?? fallback ?? path);
+  for (const [key, paramValue] of Object.entries(params)) {
+    text = text.replaceAll(`{${key}}`, String(paramValue));
+  }
+  return text;
+}
+
+function toggleLocale() {
+  locale.value = locale.value === "sv" ? "en" : "sv";
+}
 
 function initConcertsDateToPicker() {
   if (!concertsDateToInput.value || concertsDateToPicker) return;
 
   concertsDateToPicker = flatpickr(concertsDateToInput.value, {
-    locale: Swedish,
+    locale: locale.value === "en" ? undefined : Swedish,
     dateFormat: "Y-m-d",
     altInput: true,
     altFormat: "j F Y",
@@ -146,16 +269,27 @@ const spotifyData = ref(null);
 const spotifyLoading = ref(false);
 const spotifyError = ref("");
 
-const monthFormatter = new Intl.DateTimeFormat("sv-SE", { month: "long" });
-const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
-  month: "long",
-  year: "numeric",
-});
+const monthFormatter = computed(
+  () =>
+    new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
+      month: "long",
+    }),
+);
+const monthYearFormatter = computed(
+  () =>
+    new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
+      month: "long",
+      year: "numeric",
+    }),
+);
 const appVersion = __APP_VERSION__;
-const updatedAtFormatter = new Intl.DateTimeFormat("sv-SE", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+const updatedAtFormatter = computed(
+  () =>
+    new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }),
+);
 
 function getConcertDate(concert) {
   const date = new Date(concert?.date);
@@ -185,7 +319,7 @@ function getConcertId(concert) {
 
 function getConcertSourceName(concert) {
   const sourceName = String(concert?.sourceName || "").trim();
-  return sourceName || "Okänd källa";
+  return sourceName || t("misc.unknownSource");
 }
 
 function getConcertGenre(concert) {
@@ -194,7 +328,7 @@ function getConcertGenre(concert) {
 
 function getConcertGenreLabel(concert) {
   const genre = getConcertGenre(concert);
-  return genre || "Övrigt";
+  return genre || t("misc.otherGenre");
 }
 
 function getConcertDetailsUrl(concert) {
@@ -205,8 +339,12 @@ function getConcertImageUrl(concert) {
   return String(concert?.imageUrl || "").trim();
 }
 
+function getConcertDisplayImageUrl(concert) {
+  return getConcertImageUrl(concert) || "/default_artist.jpg";
+}
+
 function getMonthLabel(monthNumber) {
-  return monthFormatter.format(new Date(Date.UTC(2024, monthNumber, 1)));
+  return monthFormatter.value.format(new Date(Date.UTC(2024, monthNumber, 1)));
 }
 
 function setView(view) {
@@ -216,6 +354,39 @@ function setView(view) {
     loadAdminCounters();
     setAdminSubView(adminSubView.value);
   }
+}
+
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value;
+}
+
+function closeMenu() {
+  isMenuOpen.value = false;
+}
+
+function handleGlobalKeydown(event) {
+  if (event.key === "Escape") {
+    closeMenu();
+  }
+}
+
+function navigateTo(view) {
+  setView(view);
+  closeMenu();
+}
+
+async function handleMenuAdmin() {
+  closeMenu();
+  await handleAdminButton();
+}
+
+async function handleMenuAuth() {
+  closeMenu();
+  if (isAuthenticated.value) {
+    await logout();
+    return;
+  }
+  openAuthModal();
 }
 
 function setConcertsSubView(view) {
@@ -249,11 +420,11 @@ async function handleAdminButton() {
 
 const userAuthenticated = computed(() => Boolean(appUser.value));
 const formattedLastUpdatedAt = computed(() => {
-  if (!lastUpdatedAt.value) return "Har inte uppdaterats ännu";
+  if (!lastUpdatedAt.value) return t("misc.neverUpdated");
 
   const date = new Date(lastUpdatedAt.value);
-  if (Number.isNaN(date.getTime())) return "Okänd tidpunkt";
-  return updatedAtFormatter.format(date);
+  if (Number.isNaN(date.getTime())) return t("misc.unknownTime");
+  return updatedAtFormatter.value.format(date);
 });
 
 const displayVersion = computed(
@@ -273,7 +444,7 @@ function toLocalDateKey(date) {
 }
 
 const currentMonthLabel = computed(() => {
-  return monthYearFormatter.format(new Date());
+  return monthYearFormatter.value.format(new Date());
 });
 
 function getStartOfToday() {
@@ -343,9 +514,10 @@ const availableGenreLabels = computed(() => {
   ];
 
   return genres.sort((a, b) => {
-    if (a === "Övrigt" && b !== "Övrigt") return 1;
-    if (b === "Övrigt" && a !== "Övrigt") return -1;
-    return a.localeCompare(b, "sv-SE");
+    const other = t("misc.otherGenre");
+    if (a === other && b !== other) return 1;
+    if (b === other && a !== other) return -1;
+    return a.localeCompare(b, locale.value === "en" ? "en-GB" : "sv-SE");
   });
 });
 
@@ -948,7 +1120,7 @@ function deselectAllGenres() {
 }
 
 function formatDate(isoDate) {
-  return new Intl.DateTimeFormat("sv-SE", {
+  return new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
     day: "numeric",
     month: "long",
     hour: "2-digit",
@@ -957,10 +1129,10 @@ function formatDate(isoDate) {
 }
 
 function formatStatusDate(value) {
-  if (!value) return "Aldrig";
+  if (!value) return t("misc.neverUpdated");
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Okänd";
-  return updatedAtFormatter.format(date);
+  if (Number.isNaN(date.getTime())) return t("misc.unknown");
+  return updatedAtFormatter.value.format(date);
 }
 
 function buildSharedConcertUrl(concert) {
@@ -1054,17 +1226,17 @@ async function buildConcertPreviewBlob(concert) {
   ctx.font = "700 28px 'Barlow Condensed', sans-serif";
   ctx.fillText("SOUNDCHECK", 56, 74);
 
-  const artist = concert?.artist || "Okänd artist";
+  const artist = concert?.artist || t("misc.unknownArtist");
   ctx.fillStyle = "#ffffff";
   ctx.font = "700 68px 'Barlow Condensed', sans-serif";
   const titleBottom = drawWrappedText(ctx, artist, 56, 170, 760, 72, 3);
 
   ctx.fillStyle = "#d6deef";
   ctx.font = "500 36px 'Barlow Condensed', sans-serif";
-  const dateLabel = concert?.date ? formatDate(concert.date) : "Okänt datum";
+  const dateLabel = concert?.date ? formatDate(concert.date) : t("misc.unknownDate");
   ctx.fillText(dateLabel, 56, titleBottom + 78);
 
-  const venueLabel = `${concert?.venue || "Okänd scen"}${concert?.city ? `, ${concert.city}` : ""}`;
+  const venueLabel = `${concert?.venue || t("misc.unknownVenue")}${concert?.city ? `, ${concert.city}` : ""}`;
   ctx.fillStyle = "#72d4ff";
   ctx.font = "700 34px 'Barlow Condensed', sans-serif";
   ctx.fillText(venueLabel, 56, titleBottom + 128);
@@ -1096,7 +1268,7 @@ async function copyShareUrl(shareUrl) {
     await navigator.clipboard.writeText(shareUrl);
     return true;
   } catch {
-    window.prompt("Kopiera länken:", shareUrl);
+    window.prompt(t("misc.copyLinkPrompt"), shareUrl);
     return false;
   }
 }
@@ -1697,6 +1869,7 @@ async function submitPasswordChange() {
 }
 
 onMounted(async () => {
+  window.addEventListener("keydown", handleGlobalKeydown);
   const url = new URL(window.location.href);
   const tokenFromUrl = url.searchParams.get("resetToken");
   const sharedConcertFromUrl = url.searchParams.get("concert");
@@ -1741,7 +1914,24 @@ watch(concertsForCurrentView, () => {
   concertsDateToPicker?.redraw();
 });
 
+watch(
+  locale,
+  async (value) => {
+    document.documentElement.lang = value === "en" ? "en" : "sv";
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("soundcheck_locale", value);
+    }
+    if (currentView.value === "concerts") {
+      destroyConcertsDateToPicker();
+      await nextTick();
+      initConcertsDateToPicker();
+    }
+  },
+  { immediate: true },
+);
+
 onUnmounted(() => {
+  window.removeEventListener("keydown", handleGlobalKeydown);
   destroyConcertsDateToPicker();
 });
 
@@ -1849,58 +2039,128 @@ watch(
     </div>
 
     <header class="site-header">
-      <div>
+      <button class="brand-block" type="button" @click="navigateTo('home')">
         <p class="brand">Soundcheck</p>
-        <p class="build-version">{{ displayVersion }}</p>
-        <p class="build-version">
-          Senast uppdaterad: {{ formattedLastUpdatedAt }}
-        </p>
-      </div>
-      <nav class="main-nav" aria-label="Huvudmeny">
-        <button
-          class="nav-link"
-          :class="{ active: currentView === 'home' }"
-          @click="setView('home')"
-        >
-          Hem
-        </button>
-        <button
-          class="nav-link"
-          :class="{ active: currentView === 'sources' }"
-          @click="setView('sources')"
-        >
-          Källor
-        </button>
+      </button>
+      <nav
+        class="header-quick-nav"
+        :aria-label="locale === 'en' ? 'Quick navigation' : 'Snabbnavigering'"
+      >
         <button
           class="nav-link"
           :class="{ active: currentView === 'concerts' }"
-          @click="setView('concerts')"
+          type="button"
+          @click="navigateTo('concerts')"
         >
-          Spelningar
+          {{ t("nav.concerts") }}
         </button>
         <button
           class="nav-link"
           :class="{ active: currentView === 'my-concerts' }"
-          @click="setView('my-concerts')"
+          type="button"
+          @click="navigateTo('my-concerts')"
         >
-          Mina Spelningar
-        </button>
-        <button
-          class="nav-link"
-          :class="{ active: currentView === 'help' }"
-          @click="setView('help')"
-        >
-          Hjälp
-        </button>
-        <button
-          class="nav-link"
-          :class="{ active: currentView === 'admin' }"
-          @click="handleAdminButton"
-        >
-          Admin
+          {{ t("nav.myConcerts") }}
         </button>
       </nav>
+      <button
+        class="locale-toggle"
+        type="button"
+        :aria-label="locale === 'sv' ? 'Switch to English' : 'Byt till svenska'"
+        @click="toggleLocale"
+      >
+        {{ locale === "sv" ? "SV" : "EN" }}
+      </button>
+      <button
+        class="menu-toggle"
+        type="button"
+        :aria-expanded="isMenuOpen"
+        aria-controls="main-slide-menu"
+        :aria-label="locale === 'en' ? 'Open menu' : 'Öppna meny'"
+        @click="toggleMenu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </header>
+
+    <div
+      v-if="isMenuOpen"
+      class="menu-overlay"
+      role="presentation"
+      @click="closeMenu"
+    ></div>
+    <aside
+      id="main-slide-menu"
+      class="slide-menu"
+      :class="{ open: isMenuOpen }"
+      :aria-label="locale === 'en' ? 'Main menu' : 'Huvudmeny'"
+    >
+      <nav class="slide-menu-nav">
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'home' }"
+          type="button"
+          @click="navigateTo('home')"
+        >
+          {{ t("nav.home") }}
+        </button>
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'concerts' }"
+          type="button"
+          @click="navigateTo('concerts')"
+        >
+          {{ t("nav.concerts") }}
+        </button>
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'my-concerts' }"
+          type="button"
+          @click="navigateTo('my-concerts')"
+        >
+          {{ t("nav.myConcerts") }}
+        </button>
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'help' }"
+          type="button"
+          @click="navigateTo('help')"
+        >
+          {{ t("nav.help") }}
+        </button>
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'sources' }"
+          type="button"
+          @click="navigateTo('sources')"
+        >
+          {{ t("nav.sources") }}
+        </button>
+        <button
+          class="slide-menu-link"
+          type="button"
+          @click="handleMenuAuth"
+        >
+          {{ isAuthenticated ? t("nav.logout") : t("nav.login") }}
+        </button>
+      </nav>
+      <div class="slide-menu-bottom">
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'admin' }"
+          type="button"
+          @click="handleMenuAdmin"
+        >
+          {{ t("nav.admin") }}
+        </button>
+      </div>
+      <div class="slide-menu-footer">
+        <p>{{ t("labels.version") }}: {{ displayVersion }}</p>
+        <p>{{ t("labels.lastUpdated") }}: {{ formattedLastUpdatedAt }}</p>
+      </div>
+    </aside>
 
     <section v-if="status" class="hero">
       <p class="updated">{{ status }}</p>
@@ -1910,22 +2170,19 @@ watch(
     </section>
 
     <section v-if="!authReady" class="hero">
-      <p class="lead">Laddar inloggningsstatus...</p>
+      <p class="lead">{{ t("labels.loadingAuth") }}</p>
     </section>
 
     <template v-else>
-      <section v-if="currentView === 'home'" class="hero">
-        <p class="kicker">Soundcheck</p>
-        <h1>Välkommen</h1>
-        <p class="lead">
-          Här samlar vi konserter från flera källor på ett ställe. Gå till
-          Spelningar för hela listan och filtrering, till Källor för datakällor
-          och till Mina Spelningar för dina personliga listor.
+      <section v-if="currentView === 'home'" class="hero hero-transparent">
+        <h1 class="home-title">{{ t("home.title") }}</h1>
+        <p class="lead home-lead">
+          {{ t("home.lead") }}
         </p>
       </section>
 
       <section v-if="currentView === 'home'" class="hero">
-        <h2>Spelningar i {{ currentMonthLabel }}</h2>
+        <h2>{{ t("home.monthHeading", { month: currentMonthLabel }) }}</h2>
 
         <div v-if="currentMonthConcerts.length" class="list compact-list home-concerts-grid">
           <article
@@ -1935,9 +2192,8 @@ watch(
           >
             <div class="meta">
               <img
-                v-if="getConcertImageUrl(concert)"
                 class="concert-image"
-                :src="getConcertImageUrl(concert)"
+                :src="getConcertDisplayImageUrl(concert)"
                 :alt="`Bild för ${concert.title}`"
                 loading="lazy"
               />
@@ -1960,7 +2216,7 @@ watch(
                   type="button"
                   @click="toggleBooking(concert)"
                 >
-                  Ska gå
+                  {{ t("actions.going") }}
                 </button>
                 <button
                   class="mini-action-button"
@@ -1968,14 +2224,14 @@ watch(
                   type="button"
                   @click="toggleSeen(concert)"
                 >
-                  Var där
+                  {{ t("actions.seen") }}
                 </button>
                 <button
                   class="mini-action-button"
                   type="button"
                   @click="downloadCalendarEvent(concert)"
                 >
-                  Lägg till i kalender
+                  {{ t("actions.addCalendar") }}
                 </button>
                 <button
                   class="mini-action-button"
@@ -1985,8 +2241,8 @@ watch(
                 >
                   {{
                     isFollowedArtist(concert.artist)
-                      ? "Följer artist"
-                      : "Följ artist"
+                      ? t("actions.followingArtist")
+                      : t("actions.followArtist")
                   }}
                 </button>
                 <button
@@ -1996,7 +2252,9 @@ watch(
                   @click="toggleFollowVenue(concert.venue)"
                 >
                   {{
-                    isFollowedVenue(concert.venue) ? "Följer scen" : "Följ scen"
+                    isFollowedVenue(concert.venue)
+                      ? t("actions.followingVenue")
+                      : t("actions.followVenue")
                   }}
                 </button>
                 <button
@@ -2004,7 +2262,7 @@ watch(
                   type="button"
                   @click="shareConcert(concert)"
                 >
-                  Dela spelning
+                  {{ t("actions.shareConcert") }}
                 </button>
                 <button
                   class="mini-action-button"
@@ -2031,13 +2289,13 @@ watch(
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Läs mer
+                {{ t("actions.readMore") }}
               </a>
             </div>
           </article>
         </div>
 
-        <p v-else class="lead">Inga spelningar hittades för aktuell månad.</p>
+        <p v-else class="lead">{{ t("home.noMonthConcerts") }}</p>
       </section>
 
       <section v-if="currentView === 'help'" class="hero source-panel">
@@ -2536,17 +2794,17 @@ watch(
               :class="{ active: myConcertsSubView === 'bookings' }"
               type="button"
               @click="myConcertsSubView = 'bookings'"
-            >
-              Ska gå
-            </button>
+                >
+                  {{ t("actions.going") }}
+                </button>
             <button
               class="nav-link"
               :class="{ active: myConcertsSubView === 'seen' }"
               type="button"
               @click="myConcertsSubView = 'seen'"
-            >
-              Var där
-            </button>
+                >
+                  {{ t("actions.seen") }}
+                </button>
           </div>
 
           <div
@@ -2635,9 +2893,8 @@ watch(
             >
               <div class="meta">
                 <img
-                  v-if="getConcertImageUrl(concert)"
                   class="concert-image"
-                  :src="getConcertImageUrl(concert)"
+                  :src="getConcertDisplayImageUrl(concert)"
                   :alt="`Bild för ${concert.title}`"
                   loading="lazy"
                 />
@@ -2674,9 +2931,9 @@ watch(
                     class="mini-action-button"
                     type="button"
                     @click="downloadCalendarEvent(concert)"
-                  >
-                    Lägg till i kalender
-                  </button>
+                >
+                  {{ t("actions.addCalendar") }}
+                </button>
                 </div>
                 <button
                   class="heart-button"
@@ -2693,7 +2950,7 @@ watch(
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Läs mer
+                  {{ t("actions.readMore") }}
                 </a>
               </div>
             </article>
@@ -2710,12 +2967,12 @@ watch(
       >
         <div class="filter-header">
           <h2>
-            {{
-              concertsSubView === "past"
-                ? "Filtrera tidigare spelningar"
-                : "Filtrera kommande spelningar"
-            }}
-          </h2>
+              {{
+                concertsSubView === "past"
+                ? (locale === "en" ? "Filter past concerts" : "Filtrera tidigare spelningar")
+                : (locale === "en" ? "Filter upcoming concerts" : "Filtrera kommande spelningar")
+              }}
+            </h2>
           <button
             class="nav-link filter-toggle"
             type="button"
@@ -2727,7 +2984,7 @@ watch(
 
         <transition name="filter-collapse">
           <div v-show="filtersExpanded" class="filter-body">
-            <p class="filter-title">Källor</p>
+            <p class="filter-title">{{ locale === "en" ? "Sources" : "Källor" }}</p>
             <div class="filter-actions">
               <button class="link-button neutral" @click="selectAllSources">
                 Välj alla källor
@@ -2753,7 +3010,7 @@ watch(
             </div>
 
             <p v-if="availableMonthNumbers.length" class="filter-title">
-              Månader
+              {{ locale === "en" ? "Months" : "Månader" }}
             </p>
             <div v-if="availableMonthNumbers.length" class="filter-actions">
               <button class="link-button neutral" @click="selectAllMonths">
@@ -2780,7 +3037,7 @@ watch(
             </div>
 
             <p v-if="availableGenreLabels.length" class="filter-title">
-              Genrer
+              {{ locale === "en" ? "Genres" : "Genrer" }}
             </p>
             <div v-if="availableGenreLabels.length" class="filter-actions">
               <button class="link-button neutral" @click="selectAllGenres">
@@ -2818,7 +3075,7 @@ watch(
               type="button"
               @click="setConcertsSubView('upcoming')"
             >
-              Framtida
+              {{ locale === "en" ? "Upcoming" : "Framtida" }}
             </button>
             <button
               class="nav-link"
@@ -2826,7 +3083,7 @@ watch(
               type="button"
               @click="setConcertsSubView('past')"
             >
-              Tidigare
+              {{ locale === "en" ? "Past" : "Tidigare" }}
             </button>
           </div>
 
@@ -2850,7 +3107,7 @@ watch(
               type="button"
               @click="setConcertsListView('cards')"
             >
-              Kortvy
+              {{ locale === "en" ? "Card view" : "Kortvy" }}
             </button>
             <button
               class="nav-link"
@@ -2858,31 +3115,37 @@ watch(
               type="button"
               @click="setConcertsListView('table')"
             >
-              Listvy
+              {{ locale === "en" ? "List view" : "Listvy" }}
             </button>
           </div>
         </div>
 
         <div class="search-panel">
-          <label class="search-label" for="concert-search">Sök spelning</label>
+          <label class="search-label" for="concert-search">{{
+            locale === "en" ? "Search concert" : "Sök spelning"
+          }}</label>
           <input
             id="concert-search"
             v-model="concertsSearch"
             class="search-input"
             type="search"
-            placeholder="Sök på artist, scen eller stad..."
+            :placeholder="
+              locale === 'en'
+                ? 'Search by artist, venue or city...'
+                : 'Sök på artist, scen eller stad...'
+            "
           />
           <div class="search-row">
             <div class="search-field">
-              <label class="search-label" for="concert-date-to"
-                >Välj datum</label
-              >
+              <label class="search-label" for="concert-date-to">{{
+                locale === "en" ? "Choose date" : "Välj datum"
+              }}</label>
               <input
                 id="concert-date-to"
                 ref="concertsDateToInput"
                 class="search-input"
                 type="text"
-                placeholder="Välj datum"
+                :placeholder="locale === 'en' ? 'Choose date' : 'Välj datum'"
                 readonly
               />
             </div>
@@ -2892,7 +3155,7 @@ watch(
               :disabled="!concertsDateTo"
               @click="clearConcertsDateTo"
             >
-              Rensa datumval
+              {{ locale === "en" ? "Clear date" : "Rensa datumval" }}
             </button>
           </div>
         </div>
@@ -2907,7 +3170,7 @@ watch(
         "
         class="hero popular-panel"
       >
-        <h2>Populära spelningar denna vecka</h2>
+        <h2>{{ locale === "en" ? "Popular concerts this week" : "Populära spelningar denna vecka" }}</h2>
         <p class="lead">
           Baserat på antal likes och bokningar från användare i Soundcheck.
         </p>
@@ -2925,7 +3188,7 @@ watch(
             >
           </li>
         </ul>
-        <p v-else class="lead">Laddar populära spelningar...</p>
+        <p v-else class="lead">{{ locale === "en" ? "Loading popular concerts..." : "Laddar populära spelningar..." }}</p>
       </section>
 
       <section
@@ -2933,7 +3196,7 @@ watch(
         class="hero shared-concert-cta"
       >
         <h2>Delad spelning</h2>
-        <p class="lead">Det här är spelningen som delas:</p>
+        <p class="lead">{{ locale === "en" ? "This is the shared concert:" : "Det här är spelningen som delas:" }}</p>
         <p class="shared-concert-summary">
           <strong>{{ sharedConcert.artist }}</strong>
           <span>{{ formatDate(sharedConcert.date) }}</span>
@@ -2956,14 +3219,14 @@ watch(
             type="button"
             @click="clearSharedConcertMode"
           >
-            Visa alla spelningar
+            {{ locale === "en" ? "Show all concerts" : "Visa alla spelningar" }}
           </button>
           <button
             class="nav-link"
             type="button"
             @click="setView('my-concerts')"
           >
-            Öppna Mina Spelningar
+            {{ t("actions.openMyConcerts") }}
           </button>
         </div>
       </section>
@@ -2984,13 +3247,11 @@ watch(
         >
           <div class="concert-tile-media">
             <img
-              v-if="getConcertImageUrl(concert)"
               class="concert-tile-image"
-              :src="getConcertImageUrl(concert)"
+              :src="getConcertDisplayImageUrl(concert)"
               :alt="`Bild för ${concert.title}`"
               loading="lazy"
             />
-            <div v-else class="concert-tile-image fallback"></div>
             <p v-if="getConcertGenre(concert)" class="concert-tile-tag">
               {{ getConcertGenre(concert) }}
             </p>
@@ -3016,23 +3277,23 @@ watch(
                 :class="{ active: isBooked(concert) }"
                 type="button"
                 @click="toggleBooking(concert)"
-              >
-                Ska gå
+                >
+                {{ t("actions.going") }}
               </button>
               <button
                 class="mini-action-button"
                 :class="{ active: isSeen(concert) }"
                 type="button"
                 @click="toggleSeen(concert)"
-              >
-                Var där
+                >
+                {{ t("actions.seen") }}
               </button>
               <button
                 class="mini-action-button"
                 type="button"
                 @click="shareConcert(concert)"
-              >
-                Dela spelning
+                >
+                {{ t("actions.shareConcert") }}
               </button>
             </div>
           </div>
@@ -3082,7 +3343,7 @@ watch(
                     type="button"
                     @click="toggleBooking(concert)"
                   >
-                    Ska gå
+                    {{ t("actions.going") }}
                   </button>
                   <button
                     class="mini-action-button"
@@ -3090,7 +3351,7 @@ watch(
                     type="button"
                     @click="toggleSeen(concert)"
                   >
-                    Var där
+                    {{ t("actions.seen") }}
                   </button>
                   <button
                     class="mini-action-button"

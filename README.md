@@ -1,142 +1,116 @@
-# Konsertnavigator
+# Soundcheck
 
-A Vue + Vite app that aggregates concert events from multiple sources into one searchable view.
+Soundcheck is a Vue + Vite web app that aggregates concerts from multiple sources into one fast, searchable experience.
 
-## What the App Does
+## Highlights
 
-- Public concert browsing with:
-  - Upcoming and past views
-  - Quick discovery chips: This Week, Weekend
-  - Social proof block: "Popular this week" based on likes + bookings
+- Concert browsing with:
+  - Upcoming/Past modes
+  - Card view and table view
   - Filters (source, month, genre)
-  - Specific date picker filter (single date) with event-day markers in the calendar
-  - Two display modes for concerts: wider card view and table view (date, artist, venue, city) with action buttons
-  - Search by artist, venue, or city
-  - Event images, genre, source name, and details link
-  - "Dela spelning" button that copies a deep-link and generates a shareable preview image
-  - Deep-link support to open a specific shared concert with a clear "Save to favorites" CTA
-  - "Add to calendar" (`.ics`) export per concert
-- User area (`My Concerts`) with:
-  - Registration and login
-  - Personal lists: Favorites, Going, Been There
+  - Single-date picker filter with highlighted event days
+  - Search by artist, venue, and city
+  - Quick discovery chips (All / This week / This weekend)
+  - Popular this week block (based on likes + bookings)
+- Rich concert cards:
+  - Image (with fallback image)
+  - Genre, source, details link
+  - Share action (deep-link + generated preview image)
+  - Add to calendar (`.ics`)
+- User area (My Concerts):
+  - Register/login
+  - Favorites, Going, Seen
   - Follow artists and venues
-  - "New from what you follow" in-app notifications
-  - Forgot-password and reset-password flow
-  - Email reminders for tomorrow's saved concerts (Favorites/Going)
-- Admin area with:
-  - Source management (add/remove)
-  - Manual update and clear actions
-  - Per-source import quality status (fetched count / error / last run)
-  - Unique registered users view
-  - Unique visitors view
-  - Admin password change
+  - Password reset flow
+- Admin area:
+  - Source add/remove
+  - Update concerts / clear concerts
+  - Import quality status per source
+  - Unique users and unique visitors
+- UI/UX:
+  - Sticky full-width header
+  - Right-side slide menu (hamburger)
+  - Language toggle (SV/EN, Swedish default)
 
-## Tech Stack
+## Tech
 
 - Frontend: Vue 3 + Vite
-- Backend: Serverless API handlers on Vercel
+- Backend: Vercel serverless API
 - Storage:
   - Production: Vercel KV (recommended)
-  - Local fallback: JSON files in `data/`
+  - Local fallback: JSON in `data/`
 
-## Local Development
+## Local Run
 
 ```bash
 npm install
 ADMIN_USERNAME=admin ADMIN_PASSWORD=secret npm run dev
 ```
 
-App URL (default): `http://localhost:5173`
+Default URL: `http://localhost:5173`
 
 ## Environment Variables
 
-### Required for admin login
+### Required (admin)
 
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH`
 
-### Recommended for production storage
+### Recommended (production storage)
 
 - `KV_REST_API_URL`
 - `KV_REST_API_TOKEN`
 
-### Optional (security/session)
+### Optional
 
 - `SESSION_SECRET`
 - `USER_SESSION_SECRET`
-
-### Optional (password reset email)
-
-- `APP_BASE_URL` (for reset links, e.g. `https://konsertnavigator.vercel.app`)
+- `APP_BASE_URL`
 - `RESEND_API_KEY`
-- `RESET_EMAIL_FROM` (e.g. `Konsertnavigator <noreply@yourdomain.com>`)
-
-### Optional (Spotify integration)
-
+- `RESET_EMAIL_FROM`
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_CLIENT_SECRET`
 
-To enable Spotify artist lookup with top tracks:
+## Deployment (Vercel)
 
-1. Create a Spotify app at https://developer.spotify.com/dashboard
-2. Get your Client ID and Client Secret
-3. Add them as environment variables
+1. Import repository in Vercel.
+2. Build command: `npm run build`.
+3. Output directory: `dist`.
+4. Add environment variables.
+5. Deploy.
 
-If Spotify credentials are missing, the feature gracefully degrades (users see an error).
+## Testing
 
-If mail variables are missing, reset links are logged on the server as a fallback.
-The same mail config is also used for concert reminder emails.
-When mail is not configured, the app runs in a logs-only test mode for reset/reminder messages.
+- E2E: Playwright (`tests/e2e`)
+- Workflow: `.github/workflows/daily-playwright.yml`
+- Triggers:
+  - push to `main`
+  - daily schedule
+  - manual run
 
-## Vercel Deployment
+Optional secret:
+- `PLAYWRIGHT_BASE_URL` (fallback: production URL)
 
-1. Import the GitHub repo in Vercel.
-2. Keep build command as `npm run build`.
-3. Ensure output is `dist` (auto-detected by Vite in most cases).
-4. Configure the environment variables above.
-5. Enable Analytics in Vercel Project Settings (`Analytics` tab) if you want dashboard metrics.
-6. Deploy.
+## API Routing
 
-## Automated E2E Tests (Playwright)
-
-- Smoke tests are defined in `tests/e2e/smoke.spec.ts`.
-- Workflow file: `.github/workflows/daily-playwright.yml`.
-- Runs:
-  - On every push to `main`
-  - Daily (scheduled)
-  - Manually (`workflow_dispatch`)
-- Optional GitHub secret:
-  - `PLAYWRIGHT_BASE_URL` (defaults to `https://konsertnavigator.vercel.app` if not set)
-
-## API Routing Notes
-
-- API is served through a single endpoint in `api/index.js`.
-- `vercel.json` rewrites `/api/:route*` to `/api?route=:route*`.
-- This keeps function count low and avoids hobby-plan function limits.
+- Single endpoint: `api/index.js`
+- `vercel.json` rewrites `/api/:route*` to `/api?route=:route*`
 
 ## Data Sources
 
-The app tries to parse concerts from:
+Supports multiple source patterns:
 
-- Standard web pages (HTML), including JSON-LD event data
-- JSON feeds (`events`, `concerts`, `items`, or array payloads)
-- WordPress custom post type event APIs (for example `wp-json/wp/v2/konsert` used by Dalhalla)
-- Source-specific fallbacks currently included for some venues/pages used in this project
+- Standard HTML pages
+- JSON feeds
+- JSON-LD event markup
+- WordPress event APIs (custom post types)
+- Source-specific fallback parsers where needed
 
-## Security Notes
+## Release Checklist (Required Before Every Commit)
 
-- Admin and user sessions use server-side signed cookies (`HttpOnly`, `SameSite=Lax`).
-- Admin endpoints are protected by admin auth.
-- User login includes rate-limiting.
-- Password reset uses time-limited hashed reset tokens.
-
-## Release Checklist (Required on Every Commit)
-
-Before pushing commits, always verify:
-
-1. README matches the current feature set and routing/deploy setup.
-2. Version in `package.json` is correct.
-3. Build succeeds locally (`npm run build`).
-
-This checklist is part of the project workflow and should be followed on every check-in.
-```
+1. Update `README.md`.
+2. Update `projekt beskrivning.md`.
+3. Update `ANALYSIS_AND_GROWTH_STRATEGY.md`.
+4. Keep Help view text aligned with current UX.
+5. Update Playwright tests for UI changes.
+6. Verify build (`npm run build`).
