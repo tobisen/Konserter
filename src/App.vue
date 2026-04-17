@@ -406,20 +406,24 @@ function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
     closeMenu();
     closeFiltersModal();
-    document.querySelectorAll(".card-menu[open]").forEach((menu) => {
-      menu.removeAttribute("open");
-    });
+    document
+      .querySelectorAll(".card-menu[open], .table-row-menu[open]")
+      .forEach((menu) => {
+        menu.removeAttribute("open");
+      });
   }
 }
 
 function handleGlobalPointerDown(event) {
   const target = event.target;
   if (!(target instanceof Element)) return;
-  if (target.closest(".card-menu")) return;
+  if (target.closest(".card-menu") || target.closest(".table-row-menu")) return;
 
-  document.querySelectorAll(".card-menu[open]").forEach((menu) => {
-    menu.removeAttribute("open");
-  });
+  document
+    .querySelectorAll(".card-menu[open], .table-row-menu[open]")
+    .forEach((menu) => {
+      menu.removeAttribute("open");
+    });
 }
 
 function navigateTo(view) {
@@ -434,11 +438,11 @@ async function handleMenuAdmin() {
 
 async function handleMenuAuth() {
   closeMenu();
-  if (isAuthenticated.value) {
-    await logout();
+  if (userAuthenticated.value) {
+    await logoutRegularUser();
     return;
   }
-  openAuthModal();
+  setView("my-concerts");
 }
 
 function setConcertsSubView(view) {
@@ -2218,7 +2222,7 @@ watch(
           type="button"
           @click="handleMenuAuth"
         >
-          {{ isAuthenticated ? t("nav.logout") : t("nav.login") }}
+          {{ userAuthenticated ? t("nav.logout") : t("nav.login") }}
         </button>
       </nav>
       <div class="slide-menu-bottom">
@@ -2406,11 +2410,11 @@ watch(
           <table class="concerts-table">
             <thead>
               <tr>
-                <th>Datum</th>
-                <th>Artist</th>
-                <th>Plats</th>
-                <th>Ort</th>
-                <th>Åtgärder</th>
+                <th class="col-date">Datum</th>
+                <th class="col-artist">Artist</th>
+                <th class="col-venue">Plats</th>
+                <th class="col-city">Ort</th>
+                <th class="col-actions">Åtgärder</th>
               </tr>
             </thead>
             <tbody>
@@ -2418,11 +2422,11 @@ watch(
                 v-for="concert in currentMonthConcerts"
                 :key="`home-row-${getConcertId(concert)}`"
               >
-                <td>{{ formatDate(concert.date) }}</td>
-                <td>{{ concert.artist }}</td>
-                <td>{{ concert.venue }}</td>
-                <td>{{ concert.city }}</td>
-                <td>
+                <td class="cell-date">{{ formatDate(concert.date) }}</td>
+                <td class="cell-artist">{{ concert.artist }}</td>
+                <td class="cell-venue">{{ concert.venue }}</td>
+                <td class="cell-city">{{ concert.city }}</td>
+                <td class="cell-actions">
                   <div class="table-actions">
                     <button
                       class="mini-action-button"
@@ -2486,6 +2490,80 @@ watch(
                       {{ t("actions.play") }}
                     </button>
                   </div>
+                  <details class="table-row-menu">
+                    <summary class="table-row-menu-toggle" aria-label="Fler åtgärder">
+                      ☰
+                    </summary>
+                    <div class="table-row-menu-list">
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isFavorite(concert) }"
+                        type="button"
+                        @click="toggleFavorite(concert)"
+                      >
+                        {{ isFavorite(concert) ? "Favorit" : "Spara" }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isBooked(concert) }"
+                        type="button"
+                        @click="toggleBooking(concert)"
+                      >
+                        {{ t("actions.going") }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        type="button"
+                        @click="downloadCalendarEvent(concert)"
+                      >
+                        {{ t("actions.addCalendar") }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        type="button"
+                        @click="shareConcert(concert)"
+                      >
+                        {{ t("actions.shareConcert") }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isFollowedArtist(concert.artist) }"
+                        type="button"
+                        @click="toggleFollowArtist(concert.artist)"
+                      >
+                        {{
+                          isFollowedArtist(concert.artist)
+                            ? t("actions.followingArtist")
+                            : t("actions.followArtist")
+                        }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isFollowedVenue(concert.venue) }"
+                        type="button"
+                        @click="toggleFollowVenue(concert.venue)"
+                      >
+                        {{
+                          isFollowedVenue(concert.venue)
+                            ? t("actions.followingVenue")
+                            : t("actions.followVenue")
+                        }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        type="button"
+                        @click="openSpotifyModal(concert.artist)"
+                      >
+                        {{ t("actions.play") }}
+                      </button>
+                      <p class="table-row-menu-info table-row-menu-info-city">
+                        {{ locale === "en" ? "City" : "Ort" }}: {{ concert.city }}
+                      </p>
+                      <p class="table-row-menu-info table-row-menu-info-venue">
+                        {{ locale === "en" ? "Venue" : "Plats" }}: {{ concert.venue }}
+                      </p>
+                    </div>
+                  </details>
                 </td>
               </tr>
             </tbody>
@@ -3615,13 +3693,13 @@ watch(
         class="hero concerts-table-wrap"
       >
         <table class="concerts-table">
-          <thead>
-            <tr>
-              <th>Datum</th>
-              <th>Artist</th>
-              <th>Plats</th>
-              <th>Ort</th>
-              <th>Åtgärder</th>
+            <thead>
+              <tr>
+              <th class="col-date">Datum</th>
+              <th class="col-artist">Artist</th>
+              <th class="col-venue">Plats</th>
+              <th class="col-city">Ort</th>
+              <th class="col-actions">Åtgärder</th>
             </tr>
           </thead>
           <tbody>
@@ -3629,11 +3707,11 @@ watch(
               v-for="concert in sortedFilteredConcerts"
               :key="`concert-row-${getConcertId(concert)}`"
             >
-              <td>{{ formatDate(concert.date) }}</td>
-              <td>{{ concert.artist }}</td>
-              <td>{{ concert.venue }}</td>
-              <td>{{ concert.city }}</td>
-              <td>
+              <td class="cell-date">{{ formatDate(concert.date) }}</td>
+              <td class="cell-artist">{{ concert.artist }}</td>
+              <td class="cell-venue">{{ concert.venue }}</td>
+              <td class="cell-city">{{ concert.city }}</td>
+              <td class="cell-actions">
                 <div class="table-actions">
                   <button
                     class="mini-action-button"
@@ -3683,6 +3761,66 @@ watch(
                     Dela
                   </button>
                 </div>
+                <details class="table-row-menu">
+                  <summary class="table-row-menu-toggle" aria-label="Fler åtgärder">
+                    ☰
+                  </summary>
+                  <div class="table-row-menu-list">
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFavorite(concert) }"
+                      type="button"
+                      @click="toggleFavorite(concert)"
+                    >
+                      {{ isFavorite(concert) ? "Favorit" : "Spara" }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isBooked(concert) }"
+                      type="button"
+                      @click="toggleBooking(concert)"
+                    >
+                      {{ t("actions.going") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isSeen(concert) }"
+                      type="button"
+                      @click="toggleSeen(concert)"
+                    >
+                      {{ t("actions.seen") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedArtist(concert.artist) }"
+                      type="button"
+                      @click="toggleFollowArtist(concert.artist)"
+                    >
+                      {{ isFollowedArtist(concert.artist) ? "Följer artist" : "Följ artist" }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedVenue(concert.venue) }"
+                      type="button"
+                      @click="toggleFollowVenue(concert.venue)"
+                    >
+                      {{ isFollowedVenue(concert.venue) ? "Följer scen" : "Följ scen" }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="shareConcert(concert)"
+                    >
+                      Dela
+                    </button>
+                    <p class="table-row-menu-info table-row-menu-info-city">
+                      {{ locale === "en" ? "City" : "Ort" }}: {{ concert.city }}
+                    </p>
+                    <p class="table-row-menu-info table-row-menu-info-venue">
+                      {{ locale === "en" ? "Venue" : "Plats" }}: {{ concert.venue }}
+                    </p>
+                  </div>
+                </details>
               </td>
             </tr>
           </tbody>
