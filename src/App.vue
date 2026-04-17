@@ -122,6 +122,14 @@ function initConcertsDateToPicker() {
     onChange: (selectedDates, dateStr) => {
       concertsDateTo.value = dateStr || "";
     },
+    onDayCreate: (_dObj, _dStr, _fp, dayElem) => {
+      const dateObj = dayElem?.dateObj;
+      if (!dateObj) return;
+      const dayKey = toLocalDateKey(dateObj);
+      if (concertDayKeySetForCurrentView.value.has(dayKey)) {
+        dayElem.classList.add("has-event-day");
+      }
+    },
   });
 }
 
@@ -250,6 +258,13 @@ const displayVersion = computed(
 function getConcertMonth(concert) {
   const date = getConcertDate(concert);
   return date ? date.getMonth() : null;
+}
+
+function toLocalDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 const currentMonthLabel = computed(() => {
@@ -389,9 +404,7 @@ function matchesQuickDiscoverFilter(concert, mode) {
 
 const filteredConcertsBase = computed(() => {
   const query = normalizeText(concertsSearch.value);
-  const dateToLimit = concertsDateTo.value
-    ? new Date(`${concertsDateTo.value}T23:59:59.999`)
-    : null;
+  const selectedDateKey = concertsDateTo.value || null;
 
   return concertsForCurrentView.value.filter((concert) => {
     const sourceIncluded = !deselectedSources.value.includes(
@@ -407,7 +420,8 @@ const filteredConcertsBase = computed(() => {
     const searchIncluded = !query || searchable.includes(query);
     const concertDate = getConcertDate(concert);
     const dateIncluded =
-      !dateToLimit || (concertDate && concertDate.getTime() <= dateToLimit.getTime());
+      !selectedDateKey ||
+      (concertDate && toLocalDateKey(concertDate) === selectedDateKey);
 
     return sourceIncluded && monthIncluded && genreIncluded && searchIncluded && dateIncluded;
   });
@@ -512,6 +526,15 @@ const groupedByYearAndMonth = computed(() => {
           ),
         })),
     }));
+});
+
+const concertDayKeySetForCurrentView = computed(() => {
+  const keys = concertsForCurrentView.value
+    .map((concert) => getConcertDate(concert))
+    .filter(Boolean)
+    .map((date) => toLocalDateKey(date));
+
+  return new Set(keys);
 });
 
 const sharedConcert = computed(() => {
@@ -1701,6 +1724,10 @@ watch(currentView, async (view) => {
   destroyConcertsDateToPicker();
 });
 
+watch(concertsForCurrentView, () => {
+  concertsDateToPicker?.redraw();
+});
+
 onUnmounted(() => {
   destroyConcertsDateToPicker();
 });
@@ -2022,8 +2049,9 @@ watch(
               <p>
                 Visa kommande/tidigare spelningar, använd snabbfilter (Denna
                 vecka, I helgen), filtrera på källa/månad/genre, sök på
-                artist/scen/stad, se populära spelningar denna vecka,
-                dela en spelning med direktlänk, och klicka 🎵 för Spotify
+                artist/scen/stad, välj ett specifikt datum i kalendern (med
+                markerade eventdagar), se populära spelningar denna vecka, dela
+                en spelning med direktlänk, och klicka 🎵 för Spotify
                 artist-info.
               </p>
             </div>
@@ -2814,7 +2842,7 @@ watch(
           <div class="search-row">
             <div class="search-field">
               <label class="search-label" for="concert-date-to"
-                >Datum till</label
+                >Välj datum</label
               >
               <input
                 id="concert-date-to"
@@ -2831,7 +2859,7 @@ watch(
               :disabled="!concertsDateTo"
               @click="clearConcertsDateTo"
             >
-              Rensa datum
+              Rensa datumval
             </button>
           </div>
         </div>

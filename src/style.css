@@ -460,6 +460,22 @@ h3 {
   box-shadow: 0 0 0 2px rgba(255, 59, 48, 0.25);
 }
 
+.flatpickr-day.has-event-day {
+  position: relative;
+}
+
+.flatpickr-day.has-event-day::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ff8a00;
+  transform: translateX(-50%);
+}
+
 .filter-toggle {
   min-width: 154px;
   text-align: center;

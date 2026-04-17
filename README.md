@@ -9,6 +9,7 @@ A Vue + Vite app that aggregates concert events from multiple sources into one s
   - Quick discovery chips: This Week, Weekend
   - Social proof block: "Popular this week" based on likes + bookings
   - Filters (source, month, genre)
+  - Specific date picker filter (single date) with event-day markers in the calendar
   - Search by artist, venue, or city
   - Event images, genre, source name, and details link
   - "Dela spelning" button that copies a deep-link and generates a shareable preview image

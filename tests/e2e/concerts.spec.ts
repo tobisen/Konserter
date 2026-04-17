@@ -9,6 +9,7 @@ test.describe("Concerts view", () => {
       page.getByRole("heading", { name: "Filtrera kommande spelningar" }),
     ).toBeVisible();
     await expect(page.getByLabel("Sök spelning")).toBeVisible();
+    await expect(page.getByLabel("Välj datum")).toBeVisible();
   });
 
   test("can toggle upcoming and past tabs", async ({ page }) => {
