@@ -3,9 +3,10 @@ import vue from '@vitejs/plugin-vue'
 import { handleApiRequest } from './server/api.js'
 import { readFileSync } from 'node:fs'
 
-function resolveAppVersion() {
+function resolveBuildMeta() {
   let appVersion = '0.0.0'
   let build = 0
+  let builtAt = ''
 
   try {
     const packageRaw = readFileSync('./package.json', 'utf8')
@@ -21,12 +22,21 @@ function resolveAppVersion() {
     if (Number.isInteger(meta?.build) && meta.build >= 0) {
       build = meta.build
     }
+    if (typeof meta?.builtAt === 'string' && meta.builtAt) {
+      builtAt = meta.builtAt
+    }
   } catch {
     build = 0
+    builtAt = ''
   }
 
-  return `${appVersion}+build.${build}`
+  return {
+    version: `${appVersion}+build.${build}`,
+    builtAt
+  }
 }
+
+const buildMeta = resolveBuildMeta()
 
 function apiPlugin() {
   return {
@@ -55,6 +65,7 @@ function apiPlugin() {
 export default defineConfig({
   plugins: [vue(), apiPlugin()],
   define: {
-    __APP_VERSION__: JSON.stringify(resolveAppVersion())
+    __APP_VERSION__: JSON.stringify(buildMeta.version),
+    __APP_BUILD_AT__: JSON.stringify(buildMeta.builtAt)
   }
 })

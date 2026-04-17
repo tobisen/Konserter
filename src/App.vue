@@ -43,7 +43,22 @@ const adminMailStatus = ref({ configured: false, mode: "logs_only" });
 const popularItems = ref([]);
 const popularLoading = ref(false);
 
-const currentView = ref("home");
+const allowedViews = new Set([
+  "home",
+  "concerts",
+  "my-concerts",
+  "help",
+  "sources",
+  "admin",
+]);
+
+function resolveInitialView() {
+  if (typeof window === "undefined") return "home";
+  const saved = window.localStorage.getItem("soundcheck_view") || "";
+  return allowedViews.has(saved) ? saved : "home";
+}
+
+const currentView = ref(resolveInitialView());
 const showAuthModal = ref(false);
 const locale = ref(
   typeof window !== "undefined" &&
@@ -145,8 +160,9 @@ const i18n = {
     actions: {
       going: "Ska gå",
       seen: "Var där",
-      addCalendar: "Lägg till i kalender",
-      shareConcert: "Dela spelning",
+      addCalendar: "Kalender",
+      shareConcert: "Dela",
+      play: "♫",
       followArtist: "Följ artist",
       followingArtist: "Följer artist",
       followVenue: "Följ scen",
@@ -192,8 +208,9 @@ const i18n = {
     actions: {
       going: "Going",
       seen: "Seen",
-      addCalendar: "Add to calendar",
-      shareConcert: "Share concert",
+      addCalendar: "Calendar",
+      shareConcert: "Share",
+      play: "♫",
       followArtist: "Follow artist",
       followingArtist: "Following artist",
       followVenue: "Follow venue",
@@ -230,8 +247,8 @@ function t(path, params = {}) {
   return text;
 }
 
-function toggleLocale() {
-  locale.value = locale.value === "sv" ? "en" : "sv";
+function setLocale(nextLocale) {
+  locale.value = nextLocale;
 }
 
 function initConcertsDateToPicker() {
@@ -283,6 +300,7 @@ const monthYearFormatter = computed(
     }),
 );
 const appVersion = __APP_VERSION__;
+const appBuildAt = __APP_BUILD_AT__;
 const updatedAtFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
@@ -348,7 +366,11 @@ function getMonthLabel(monthNumber) {
 }
 
 function setView(view) {
+  if (!allowedViews.has(view)) return;
   currentView.value = view;
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem("soundcheck_view", view);
+  }
 
   if (view === "admin" && isAuthenticated.value) {
     loadAdminCounters();
@@ -367,7 +389,20 @@ function closeMenu() {
 function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
     closeMenu();
+    document.querySelectorAll(".card-menu[open]").forEach((menu) => {
+      menu.removeAttribute("open");
+    });
   }
+}
+
+function handleGlobalPointerDown(event) {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest(".card-menu")) return;
+
+  document.querySelectorAll(".card-menu[open]").forEach((menu) => {
+    menu.removeAttribute("open");
+  });
 }
 
 function navigateTo(view) {
@@ -420,9 +455,8 @@ async function handleAdminButton() {
 
 const userAuthenticated = computed(() => Boolean(appUser.value));
 const formattedLastUpdatedAt = computed(() => {
-  if (!lastUpdatedAt.value) return t("misc.neverUpdated");
-
-  const date = new Date(lastUpdatedAt.value);
+  if (!appBuildAt) return t("misc.neverUpdated");
+  const date = new Date(appBuildAt);
   if (Number.isNaN(date.getTime())) return t("misc.unknownTime");
   return updatedAtFormatter.value.format(date);
 });
@@ -1870,17 +1904,18 @@ async function submitPasswordChange() {
 
 onMounted(async () => {
   window.addEventListener("keydown", handleGlobalKeydown);
+  window.addEventListener("pointerdown", handleGlobalPointerDown);
   const url = new URL(window.location.href);
   const tokenFromUrl = url.searchParams.get("resetToken");
   const sharedConcertFromUrl = url.searchParams.get("concert");
   if (tokenFromUrl) {
     resetToken.value = tokenFromUrl;
     showResetForm.value = true;
-    currentView.value = "my-concerts";
+    setView("my-concerts");
   }
   if (sharedConcertFromUrl) {
     sharedConcertId.value = sharedConcertFromUrl;
-    currentView.value = "concerts";
+    setView("concerts");
   }
 
   try {
@@ -1932,6 +1967,7 @@ watch(
 
 onUnmounted(() => {
   window.removeEventListener("keydown", handleGlobalKeydown);
+  window.removeEventListener("pointerdown", handleGlobalPointerDown);
   destroyConcertsDateToPicker();
 });
 
@@ -1953,7 +1989,7 @@ watch(
     >
       <section class="modal-card">
         <div class="auth-header">
-          <h2>🎵 Spotify - {{ spotifyArtist }}</h2>
+          <h2>♫ Spotify - {{ spotifyArtist }}</h2>
           <button class="link-button neutral" @click="closeSpotifyModal">
             Stäng
           </button>
@@ -2016,7 +2052,7 @@ watch(
                   rel="noopener noreferrer"
                   class="mini-action-button"
                 >
-                  ▶ Preview
+                  ▷ Preview
                 </a>
                 <a
                   v-if="track.url"
@@ -2063,14 +2099,26 @@ watch(
           {{ t("nav.myConcerts") }}
         </button>
       </nav>
-      <button
-        class="locale-toggle"
-        type="button"
-        :aria-label="locale === 'sv' ? 'Switch to English' : 'Byt till svenska'"
-        @click="toggleLocale"
-      >
-        {{ locale === "sv" ? "SV" : "EN" }}
-      </button>
+      <div class="locale-switch" role="group" aria-label="Språk">
+        <button
+          class="locale-option"
+          :class="{ active: locale === 'sv' }"
+          type="button"
+          aria-label="Byt till svenska"
+          @click="setLocale('sv')"
+        >
+          SV
+        </button>
+        <button
+          class="locale-option"
+          :class="{ active: locale === 'en' }"
+          type="button"
+          aria-label="Switch to English"
+          @click="setLocale('en')"
+        >
+          EN
+        </button>
+      </div>
       <button
         class="menu-toggle"
         type="button"
@@ -2205,72 +2253,88 @@ watch(
               <h3>{{ concert.artist }}</h3>
               <p class="title">{{ concert.title }}</p>
               <p class="venue">{{ concert.venue }}</p>
-              <p v-if="getConcertGenre(concert)" class="genre">
-                {{ getConcertGenre(concert) }}
-              </p>
+              <p class="genre">{{ getConcertGenreLabel(concert) }}</p>
               <p class="source">{{ getConcertSourceName(concert) }}</p>
-              <div class="mini-actions">
-                <button
-                  class="mini-action-button"
-                  :class="{ active: isBooked(concert) }"
-                  type="button"
-                  @click="toggleBooking(concert)"
-                >
-                  {{ t("actions.going") }}
-                </button>
-                <button
-                  class="mini-action-button"
-                  :class="{ active: isSeen(concert) }"
-                  type="button"
-                  @click="toggleSeen(concert)"
-                >
-                  {{ t("actions.seen") }}
-                </button>
-                <button
-                  class="mini-action-button"
-                  type="button"
-                  @click="downloadCalendarEvent(concert)"
-                >
-                  {{ t("actions.addCalendar") }}
-                </button>
-                <button
-                  class="mini-action-button"
-                  :class="{ active: isFollowedArtist(concert.artist) }"
-                  type="button"
-                  @click="toggleFollowArtist(concert.artist)"
-                >
-                  {{
-                    isFollowedArtist(concert.artist)
-                      ? t("actions.followingArtist")
-                      : t("actions.followArtist")
-                  }}
-                </button>
-                <button
-                  class="mini-action-button"
-                  :class="{ active: isFollowedVenue(concert.venue) }"
-                  type="button"
-                  @click="toggleFollowVenue(concert.venue)"
-                >
-                  {{
-                    isFollowedVenue(concert.venue)
-                      ? t("actions.followingVenue")
-                      : t("actions.followVenue")
-                  }}
-                </button>
-                <button
-                  class="mini-action-button"
-                  type="button"
-                  @click="shareConcert(concert)"
-                >
-                  {{ t("actions.shareConcert") }}
-                </button>
-                <button
-                  class="mini-action-button"
-                  type="button"
-                  @click="openSpotifyModal(concert.artist)"
-                >
-                  🎵
-                </button>
+              <div class="card-footer">
+                <div class="mini-actions card-footer-main">
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isBooked(concert) }"
+                    type="button"
+                    @click="toggleBooking(concert)"
+                  >
+                    {{ t("actions.going") }}
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    type="button"
+                    @click="downloadCalendarEvent(concert)"
+                  >
+                    {{ t("actions.addCalendar") }}
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    type="button"
+                    @click="shareConcert(concert)"
+                  >
+                    {{ t("actions.shareConcert") }}
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    type="button"
+                    @click="openSpotifyModal(concert.artist)"
+                  >
+                    {{ t("actions.play") }}
+                  </button>
+                </div>
+                <details class="card-menu">
+                  <summary class="card-menu-toggle" aria-label="Fler åtgärder">
+                    ☰
+                  </summary>
+                  <div class="card-menu-list">
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isSeen(concert) }"
+                      type="button"
+                      @click="toggleSeen(concert)"
+                    >
+                      {{ t("actions.seen") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedArtist(concert.artist) }"
+                      type="button"
+                      @click="toggleFollowArtist(concert.artist)"
+                    >
+                      {{
+                        isFollowedArtist(concert.artist)
+                          ? t("actions.followingArtist")
+                          : t("actions.followArtist")
+                      }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedVenue(concert.venue) }"
+                      type="button"
+                      @click="toggleFollowVenue(concert.venue)"
+                    >
+                      {{
+                        isFollowedVenue(concert.venue)
+                          ? t("actions.followingVenue")
+                          : t("actions.followVenue")
+                      }}
+                    </button>
+                    <a
+                      v-if="getConcertDetailsUrl(concert)"
+                      class="mini-action-button readmore-button"
+                      :href="getConcertDetailsUrl(concert)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ t("actions.readMore") }}
+                    </a>
+                  </div>
+                </details>
               </div>
               <button
                 class="heart-button"
@@ -2282,15 +2346,6 @@ watch(
               >
                 {{ isFavorite(concert) ? "♥" : "♡" }}
               </button>
-              <a
-                v-if="getConcertDetailsUrl(concert)"
-                class="readmore"
-                :href="getConcertDetailsUrl(concert)"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ t("actions.readMore") }}
-              </a>
             </div>
           </article>
         </div>
@@ -2324,15 +2379,15 @@ watch(
                 markerade eventdagar), växla mellan kortvy och tabellvy (med
                 snabbtnappar i båda vyerna),
                 se populära spelningar denna vecka, dela en spelning med
-                direktlänk, och klicka 🎵 för Spotify artist-info.
+                direktlänk, och klicka ♫ för Spotify artist-info.
               </p>
             </div>
           </li>
           <li>
             <div>
-              <strong>🎵 Spotify</strong>
+              <strong>♫ Spotify</strong>
               <p>
-                Klicka på 🎵-knappen på en spelning för att se artistens top 5
+                Klicka på ♫-knappen på en spelning för att se artistens top 5
                 låtar på Spotify med preview-länkar och popularitet.
               </p>
             </div>
@@ -2906,34 +2961,88 @@ watch(
                 <h3>{{ concert.artist }}</h3>
                 <p class="title">{{ concert.title }}</p>
                 <p class="venue">{{ concert.venue }}</p>
-                <p v-if="getConcertGenre(concert)" class="genre">
-                  {{ getConcertGenre(concert) }}
-                </p>
+                <p class="genre">{{ getConcertGenreLabel(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
-                <div class="mini-actions">
-                  <button
-                    class="mini-action-button"
-                    :class="{ active: isBooked(concert) }"
-                    type="button"
-                    @click="toggleBooking(concert)"
-                  >
-                    Ska gå
-                  </button>
-                  <button
-                    class="mini-action-button"
-                    :class="{ active: isSeen(concert) }"
-                    type="button"
-                    @click="toggleSeen(concert)"
-                  >
-                    Var där
-                  </button>
-                  <button
-                    class="mini-action-button"
-                    type="button"
-                    @click="downloadCalendarEvent(concert)"
-                >
-                  {{ t("actions.addCalendar") }}
-                </button>
+                <div class="card-footer">
+                  <div class="mini-actions card-footer-main">
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isBooked(concert) }"
+                      type="button"
+                      @click="toggleBooking(concert)"
+                    >
+                      {{ t("actions.going") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="downloadCalendarEvent(concert)"
+                    >
+                      {{ t("actions.addCalendar") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="shareConcert(concert)"
+                    >
+                      {{ t("actions.shareConcert") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="openSpotifyModal(concert.artist)"
+                    >
+                      {{ t("actions.play") }}
+                    </button>
+                  </div>
+                  <details class="card-menu">
+                    <summary class="card-menu-toggle" aria-label="Fler åtgärder">
+                      ☰
+                    </summary>
+                    <div class="card-menu-list">
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isSeen(concert) }"
+                        type="button"
+                        @click="toggleSeen(concert)"
+                      >
+                        {{ t("actions.seen") }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isFollowedArtist(concert.artist) }"
+                        type="button"
+                        @click="toggleFollowArtist(concert.artist)"
+                      >
+                        {{
+                          isFollowedArtist(concert.artist)
+                            ? t("actions.followingArtist")
+                            : t("actions.followArtist")
+                        }}
+                      </button>
+                      <button
+                        class="mini-action-button"
+                        :class="{ active: isFollowedVenue(concert.venue) }"
+                        type="button"
+                        @click="toggleFollowVenue(concert.venue)"
+                      >
+                        {{
+                          isFollowedVenue(concert.venue)
+                            ? t("actions.followingVenue")
+                            : t("actions.followVenue")
+                        }}
+                      </button>
+                      <a
+                        v-if="getConcertDetailsUrl(concert)"
+                        class="mini-action-button readmore-button"
+                        :href="getConcertDetailsUrl(concert)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {{ t("actions.readMore") }}
+                      </a>
+                    </div>
+                  </details>
                 </div>
                 <button
                   class="heart-button"
@@ -2943,15 +3052,6 @@ watch(
                 >
                   {{ isFavorite(concert) ? "♥" : "♡" }}
                 </button>
-                <a
-                  v-if="getConcertDetailsUrl(concert)"
-                  class="readmore"
-                  :href="getConcertDetailsUrl(concert)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {{ t("actions.readMore") }}
-                </a>
               </div>
             </article>
           </div>
@@ -3252,9 +3352,7 @@ watch(
               :alt="`Bild för ${concert.title}`"
               loading="lazy"
             />
-            <p v-if="getConcertGenre(concert)" class="concert-tile-tag">
-              {{ getConcertGenre(concert) }}
-            </p>
+            <p class="concert-tile-tag">{{ getConcertGenreLabel(concert) }}</p>
             <button
               class="heart-button tile-heart"
               :class="{ active: isFavorite(concert) }"
@@ -3271,30 +3369,86 @@ watch(
             <p class="venue">{{ concert.venue }}</p>
             <p>{{ concert.city }}</p>
             <p class="source">{{ formatDate(concert.date) }}</p>
-            <div class="mini-actions">
-              <button
-                class="mini-action-button"
-                :class="{ active: isBooked(concert) }"
-                type="button"
-                @click="toggleBooking(concert)"
+            <div class="card-footer">
+              <div class="mini-actions card-footer-main">
+                <button
+                  class="mini-action-button"
+                  :class="{ active: isBooked(concert) }"
+                  type="button"
+                  @click="toggleBooking(concert)"
                 >
-                {{ t("actions.going") }}
-              </button>
-              <button
-                class="mini-action-button"
-                :class="{ active: isSeen(concert) }"
-                type="button"
-                @click="toggleSeen(concert)"
+                  {{ t("actions.going") }}
+                </button>
+                <button
+                  class="mini-action-button"
+                  type="button"
+                  @click="downloadCalendarEvent(concert)"
                 >
-                {{ t("actions.seen") }}
-              </button>
-              <button
-                class="mini-action-button"
-                type="button"
-                @click="shareConcert(concert)"
+                  {{ t("actions.addCalendar") }}
+                </button>
+                <button
+                  class="mini-action-button"
+                  type="button"
+                  @click="shareConcert(concert)"
                 >
-                {{ t("actions.shareConcert") }}
-              </button>
+                  {{ t("actions.shareConcert") }}
+                </button>
+                <button
+                  class="mini-action-button"
+                  type="button"
+                  @click="openSpotifyModal(concert.artist)"
+                >
+                  {{ t("actions.play") }}
+                </button>
+              </div>
+              <details class="card-menu">
+                <summary class="card-menu-toggle" aria-label="Fler åtgärder">
+                  ☰
+                </summary>
+                <div class="card-menu-list">
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isSeen(concert) }"
+                    type="button"
+                    @click="toggleSeen(concert)"
+                  >
+                    {{ t("actions.seen") }}
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isFollowedArtist(concert.artist) }"
+                    type="button"
+                    @click="toggleFollowArtist(concert.artist)"
+                  >
+                    {{
+                      isFollowedArtist(concert.artist)
+                        ? t("actions.followingArtist")
+                        : t("actions.followArtist")
+                    }}
+                  </button>
+                  <button
+                    class="mini-action-button"
+                    :class="{ active: isFollowedVenue(concert.venue) }"
+                    type="button"
+                    @click="toggleFollowVenue(concert.venue)"
+                  >
+                    {{
+                      isFollowedVenue(concert.venue)
+                        ? t("actions.followingVenue")
+                        : t("actions.followVenue")
+                    }}
+                  </button>
+                  <a
+                    v-if="getConcertDetailsUrl(concert)"
+                    class="mini-action-button readmore-button"
+                    :href="getConcertDetailsUrl(concert)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ t("actions.readMore") }}
+                  </a>
+                </div>
+              </details>
             </div>
           </div>
         </article>

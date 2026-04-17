@@ -18,7 +18,8 @@ async function run() {
   }
 
   const next = {
-    build: build + 1
+    build: build + 1,
+    builtAt: new Date().toISOString()
   }
 
   await mkdir(path.dirname(metaPath), { recursive: true })
