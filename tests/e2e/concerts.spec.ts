@@ -2,8 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Concerts view", () => {
   test("concerts view has filters and search", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: /^Spelningar$/ }).click();
+    await page.goto("/spelningar");
 
     await expect(
       page.getByRole("heading", { name: "Filtrera kommande spelningar" }),
@@ -15,8 +14,7 @@ test.describe("Concerts view", () => {
   });
 
   test("can switch between card and table view", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: /^Spelningar$/ }).click();
+    await page.goto("/spelningar");
 
     await page.getByRole("button", { name: /^Listvy$/ }).click();
     await expect(page.getByRole("columnheader", { name: "Datum" })).toBeVisible();
@@ -31,8 +29,7 @@ test.describe("Concerts view", () => {
   });
 
   test("can toggle upcoming and past tabs", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: /^Spelningar$/ }).click();
+    await page.goto("/spelningar");
 
     await page.getByRole("button", { name: /^Tidigare$/ }).click();
     await expect(page.getByRole("button", { name: /^Tidigare$/ })).toHaveClass(
@@ -46,8 +43,7 @@ test.describe("Concerts view", () => {
   });
 
   test("search field accepts input", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: /^Spelningar$/ }).click();
+    await page.goto("/spelningar");
 
     const search = page.getByLabel("Sök spelning");
     await search.fill("uppsala");
@@ -55,16 +51,24 @@ test.describe("Concerts view", () => {
   });
 
   test("Spotify button appears on concert cards", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/spelningar");
 
-    const spotifyButton = page.getByRole("button", { name: "🎵" }).first();
+    const spotifyButton = page.getByRole("button", { name: "♫" }).first();
     await expect(spotifyButton).toBeVisible();
   });
 
-  test("can open Spotify modal for artist", async ({ page }) => {
-    await page.goto("/");
+  test("favorite star button appears on concert cards", async ({ page }) => {
+    await page.goto("/spelningar");
 
-    const spotifyButton = page.getByRole("button", { name: "🎵" }).first();
+    const starButton = page.getByRole("button", { name: /Ta bort favorit|Spara favorit/ }).first();
+    await expect(starButton).toBeVisible();
+    await expect(starButton).toContainText(/★|☆/);
+  });
+
+  test("can open Spotify modal for artist", async ({ page }) => {
+    await page.goto("/spelningar");
+
+    const spotifyButton = page.getByRole("button", { name: "♫" }).first();
     await spotifyButton.click();
 
     const spotifyModal = page.locator(".modal-card").first();

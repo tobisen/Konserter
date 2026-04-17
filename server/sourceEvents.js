@@ -953,6 +953,150 @@ async function fetchDalhallaConcertsFromWpApi(sourceUrl) {
   return concerts
 }
 
+function parseNalenTribeEvent(event, sourceUrl) {
+  const title = cleanupText(
+    event?.title?.rendered || event?.title || event?.name
+  )
+  const artist = cleanupText(
+    event?.performer?.name || event?.artist || title
+  )
+  const date = pickDateTextFromUnknown(event)
+  if (!title || !artist || !date) {
+    return null
+  }
+
+  const venue = cleanupText(
+    event?.venue?.venue || event?.venue?.name || event?.location?.name
+  ) || 'Nalen'
+  const city = cleanupText(
+    event?.venue?.city || event?.location?.address?.addressLocality
+  ) || 'Stockholm'
+
+  return {
+    artist,
+    title,
+    date,
+    venue,
+    city,
+    genre: pickFirstText(event?.genre, event?.categories?.[0]?.name),
+    detailsUrl: normalizeUrlLike(event?.url || event?.link) || sourceUrl.toString(),
+    imageUrl: pickImageUrlFromUnknown(
+      event?.image?.url || event?.image || event?.featured_image
+    )
+  }
+}
+
+function parseNalenWpPost(post, sourceUrl) {
+  const title = cleanupText(post?.title?.rendered || post?.title)
+  const date = pickDateTextFromUnknown(post)
+  if (!title || !date) {
+    return null
+  }
+
+  const detailsUrl = normalizeUrlLike(post?.link) || sourceUrl.toString()
+  const contentText = stripHtmlTags(post?.content?.rendered)
+  const venue =
+    pickFirstText(
+      post?.venue,
+      post?.acf?.venue,
+      post?.location?.name,
+      contentText.includes('Nalen') ? 'Nalen' : ''
+    ) || 'Nalen'
+
+  const city =
+    pickFirstText(
+      post?.city,
+      post?.acf?.city,
+      post?.location?.address?.addressLocality
+    ) || 'Stockholm'
+
+  return {
+    artist: pickFirstText(post?.artist, post?.acf?.artist, title) || title,
+    title,
+    date,
+    venue,
+    city,
+    genre: pickFirstText(post?.genre, post?.acf?.genre),
+    detailsUrl,
+    imageUrl: pickImageUrlFromUnknown(
+      post?.yoast_head_json?.og_image?.[0]?.url ||
+        post?.yoast_head_json?.twitter_image ||
+        post?.acf?.image ||
+        post?.featured_media_url
+    )
+  }
+}
+
+async function fetchNalenConcertsFromApis(sourceUrl) {
+  if (!sourceUrl.hostname.includes('nalen.com')) {
+    return []
+  }
+
+  const headers = {
+    'User-Agent': 'KonserterBot/1.0 (+https://local.app)'
+  }
+
+  const concerts = []
+  const seen = new Set()
+
+  const addConcert = (event) => {
+    const key = `${event.artist}|${event.venue}|${event.date}`
+    if (seen.has(key)) return
+    seen.add(key)
+    concerts.push(event)
+  }
+
+  const tribeEndpoint = `${sourceUrl.origin}/wp-json/tribe/events/v1/events?per_page=100&status=publish`
+  try {
+    const response = await fetch(tribeEndpoint, { headers })
+    if (response.ok) {
+      const payload = await response.json().catch(() => null)
+      const events = Array.isArray(payload?.events) ? payload.events : []
+      for (const event of events) {
+        const normalized = parseNalenTribeEvent(event, sourceUrl)
+        if (normalized) addConcert(normalized)
+      }
+    }
+  } catch {
+    // Ignore and continue with generic WP endpoints.
+  }
+
+  const wpTypes = ['event', 'events', 'konsert', 'konserter', 'tribe_events']
+
+  for (const postType of wpTypes) {
+    for (let page = 1; page <= 4; page += 1) {
+      const endpoint = `${sourceUrl.origin}/wp-json/wp/v2/${postType}?per_page=100&page=${page}&status=publish&_embed`
+      let response
+      try {
+        response = await fetch(endpoint, { headers })
+      } catch {
+        break
+      }
+
+      if (!response.ok) {
+        break
+      }
+
+      const posts = await response.json().catch(() => [])
+      if (!Array.isArray(posts) || posts.length === 0) {
+        break
+      }
+
+      for (const post of posts) {
+        const normalized = parseNalenWpPost(post, sourceUrl)
+        if (normalized) addConcert(normalized)
+      }
+
+      const totalPages = Number(response.headers.get('x-wp-totalpages') || 1)
+      if (page >= totalPages) {
+        break
+      }
+    }
+  }
+
+  return concerts
+}
+
 export async function fetchConcertsFromUrl(sourceUrlRaw) {
   let sourceUrl
 
@@ -1001,6 +1145,13 @@ export async function fetchConcertsFromUrl(sourceUrlRaw) {
     const dalhallaConcerts = await fetchDalhallaConcertsFromWpApi(sourceUrl)
     if (dalhallaConcerts.length > 0) {
       concerts = dalhallaConcerts
+    }
+  }
+
+  if (concerts.length === 0) {
+    const nalenConcerts = await fetchNalenConcertsFromApis(sourceUrl)
+    if (nalenConcerts.length > 0) {
+      concerts = nalenConcerts
     }
   }
 

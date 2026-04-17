@@ -40,6 +40,7 @@ const adminSubView = ref("sources");
 const adminUsers = ref([]);
 const adminVisitors = ref([]);
 const adminMailStatus = ref({ configured: false, mode: "logs_only" });
+const adminUserDeleteId = ref("");
 const popularItems = ref([]);
 const popularLoading = ref(false);
 
@@ -1470,6 +1471,37 @@ async function loadAdminUsers() {
   adminUsers.value = payload.users || [];
 }
 
+async function deleteAdminUser(user) {
+  const userId = String(user?.id || "").trim();
+  const username = String(user?.username || "").trim();
+  if (!userId) return;
+
+  const confirmed = window.confirm(
+    `Radera användaren ${username || userId}? Detta tar bort favoriter, bokningar, sedda spelningar och hela kontot permanent.`,
+  );
+  if (!confirmed) return;
+
+  adminUserDeleteId.value = userId;
+  sourceStatus.value = "";
+
+  try {
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "Kunde inte radera användaren.");
+    }
+    sourceStatus.value =
+      payload.message || "Användaren och alla poster är borttagna.";
+    await loadAdminUsers();
+  } catch (error) {
+    sourceStatus.value = error.message || "Kunde inte radera användaren.";
+  } finally {
+    adminUserDeleteId.value = "";
+  }
+}
+
 async function loadAdminVisitors() {
   const response = await fetch("/api/admin/visitors");
   const payload = await response.json().catch(() => ({}));
@@ -2362,7 +2394,7 @@ watch(
                 :aria-label="isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'"
                 @click="toggleFavorite(concert)"
               >
-                {{ isFavorite(concert) ? "♥" : "♡" }}
+                {{ isFavorite(concert) ? "★" : "☆" }}
               </button>
             </div>
 
@@ -2674,8 +2706,8 @@ watch(
             <div>
               <strong>Mina Spelningar</strong>
               <p>
-                Skapa konto, logga in, spara favoriter, markera Ska gå/Var där
-                och lägg till i kalender.
+                Skapa konto, logga in, få välkomstmail, spara favoriter,
+                markera Ska gå/Var där och lägg till i kalender.
               </p>
             </div>
           </li>
@@ -2684,7 +2716,7 @@ watch(
               <strong>Admin</strong>
               <p>
                 Hantera källor, kör uppdatering, töm konserter, se
-                importkvalitet och följ användare/besökare.
+                importkvalitet, följ användare/besökare och radera användare.
               </p>
             </div>
           </li>
@@ -2884,9 +2916,28 @@ watch(
 
           <template v-else-if="adminSubView === 'users'">
             <h2>Unika användare</h2>
-            <ul v-if="adminUsers.length" class="source-list source-name-list">
-              <li v-for="username in adminUsers" :key="username">
-                <strong>{{ username }}</strong>
+            <ul v-if="adminUsers.length" class="source-list source-status-list">
+              <li v-for="user in adminUsers" :key="user.id">
+                <div>
+                  <strong>{{ user.username }}</strong>
+                  <p v-if="user.email">{{ user.email }}</p>
+                  <p>
+                    Favoriter: {{ user.favoritesCount }} | Bokningar:
+                    {{ user.bookingsCount }} | Sedda: {{ user.seenCount }}
+                  </p>
+                </div>
+                <button
+                  class="link-button danger"
+                  type="button"
+                  :disabled="adminUserDeleteId === user.id"
+                  @click="deleteAdminUser(user)"
+                >
+                  {{
+                    adminUserDeleteId === user.id
+                      ? "Raderar..."
+                      : "Radera användare"
+                  }}
+                </button>
               </li>
             </ul>
             <p v-else class="lead">Inga användare registrerade ännu.</p>
@@ -3330,7 +3381,7 @@ watch(
                   aria-label="Ta bort favorit"
                   @click="toggleFavorite(concert)"
                 >
-                  {{ isFavorite(concert) ? "♥" : "♡" }}
+                  {{ isFavorite(concert) ? "★" : "☆" }}
                 </button>
               </div>
             </article>
@@ -3643,7 +3694,7 @@ watch(
               :aria-label="isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'"
               @click="toggleFavorite(concert)"
             >
-              {{ isFavorite(concert) ? "♥" : "♡" }}
+              {{ isFavorite(concert) ? "★" : "☆" }}
             </button>
           </div>
 

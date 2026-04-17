@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://konsertnavigator.vercel.app'
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://soundcheck.fun'
 
 export default defineConfig({
   testDir: './tests/e2e',

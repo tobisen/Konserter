@@ -34,7 +34,7 @@ jobs:
           PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}
         run: |
           if [ -z "$PLAYWRIGHT_BASE_URL" ]; then
-            export PLAYWRIGHT_BASE_URL="https://konsertnavigator.vercel.app"
+            export PLAYWRIGHT_BASE_URL="https://soundcheck.fun"
           fi
           npm run test:e2e
 

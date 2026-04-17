@@ -19,6 +19,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Add to calendar (`.ics`)
 - User area (My Concerts):
   - Register/login
+  - Welcome email on successful registration (when mail is configured)
   - Favorites, Going, Seen
   - Follow artists and venues
   - Password reset flow via email link (30 min token)
@@ -27,6 +28,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Update concerts / clear concerts
   - Import quality status per source
   - Unique users and unique visitors
+  - Delete user accounts (including their saved lists)
 - UI/UX:
   - Sticky full-width header
   - Right-side slide menu (hamburger)

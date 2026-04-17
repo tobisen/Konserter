@@ -717,15 +717,52 @@ async function handleGetAdminUsers(request, response) {
   if (!user) return;
 
   const users = await loadUsersFromStore();
-  const uniqueUsernames = [
-    ...new Set(
-      users.map((entry) => String(entry.username || "").trim()).filter(Boolean),
-    ),
-  ].sort((a, b) => a.localeCompare(b, "sv-SE"));
+  const items = users
+    .map((entry) => ({
+      id: String(entry?.id || "").trim(),
+      username: String(entry?.username || "").trim(),
+      email: String(entry?.email || "").trim(),
+      favoritesCount: Array.isArray(entry?.favorites) ? entry.favorites.length : 0,
+      bookingsCount: Array.isArray(entry?.bookings) ? entry.bookings.length : 0,
+      seenCount: Array.isArray(entry?.seen) ? entry.seen.length : 0,
+    }))
+    .filter((entry) => entry.id && entry.username)
+    .sort((a, b) => a.username.localeCompare(b.username, "sv-SE"));
 
   sendJson(response, 200, {
-    users: uniqueUsernames,
-    count: uniqueUsernames.length,
+    users: items,
+    count: items.length,
+  });
+}
+
+async function handleDeleteAdminUser(request, response, userId) {
+  const user = requireAuth(request, response);
+  if (!user) return;
+
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) {
+    sendJson(response, 400, { error: "Användar-id saknas." });
+    return;
+  }
+
+  const users = await loadUsersFromStore();
+  const existing = users.find(
+    (entry) => String(entry?.id || "").trim() === normalizedUserId,
+  );
+
+  if (!existing) {
+    sendJson(response, 404, { error: "Användaren hittades inte." });
+    return;
+  }
+
+  const nextUsers = users.filter(
+    (entry) => String(entry?.id || "").trim() !== normalizedUserId,
+  );
+  await saveUsersToStore(nextUsers);
+
+  sendJson(response, 200, {
+    ok: true,
+    message: "Användaren och alla sparade poster har tagits bort.",
   });
 }
 
@@ -1360,6 +1397,12 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === "/api/admin/users" && request.method === "GET") {
     await handleGetAdminUsers(request, response);
+    return;
+  }
+
+  if (pathname.startsWith("/api/admin/users/") && request.method === "DELETE") {
+    const userId = decodeURIComponent(pathname.slice("/api/admin/users/".length));
+    await handleDeleteAdminUser(request, response, userId);
     return;
   }
 

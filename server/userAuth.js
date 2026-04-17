@@ -287,6 +287,9 @@ export async function handleUserRegister(request, response, body) {
   }
 
   await saveUsersToStore([...users, newUser])
+  sendWelcomeEmail(request, newUser).catch((error) => {
+    console.error('[WelcomeEmailError]', error?.message || error)
+  })
   const token = createSessionToken(newUser.id)
 
   response.setHeader(
@@ -379,34 +382,83 @@ export function isMailDeliveryConfigured() {
   return Boolean(resendApiKey && fromEmail)
 }
 
-async function sendResetPasswordEmail(email, resetLink) {
+async function sendEmailViaResend({ to, subject, html }) {
   const resendApiKey = String(process.env.RESEND_API_KEY || '').trim()
   const fromEmail = String(process.env.RESET_EMAIL_FROM || '').trim()
 
-  if (resendApiKey && fromEmail) {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [email],
-        subject: 'Återställ ditt lösenord',
-        html: `<p>Klicka på länken för att återställa lösenordet:</p><p><a href="${resetLink}">${resetLink}</a></p><p>Länken gäller i 30 minuter.</p>`
-      })
+  if (!resendApiKey || !fromEmail) {
+    throw new Error('Mailleverans är inte konfigurerad.')
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: [to],
+      subject,
+      html
     })
+  })
 
-    if (!response.ok) {
-      const payload = await response.text().catch(() => '')
-      throw new Error(`Kunde inte skicka återställningsmail (${response.status}): ${payload}`)
-    }
+  if (!response.ok) {
+    const payload = await response.text().catch(() => '')
+    throw new Error(`Kunde inte skicka mail (${response.status}): ${payload}`)
+  }
+}
 
+function getAppBaseUrl(request) {
+  const explicitBase = String(process.env.APP_BASE_URL || '').trim()
+  const fallbackBase = 'http://localhost:5173'
+  const detectedBase = resolveRequestOrigin(request)
+  return (explicitBase || detectedBase || fallbackBase).replace(/\/$/, '')
+}
+
+async function sendResetPasswordEmail(email, resetLink) {
+  if (isMailDeliveryConfigured()) {
+    await sendEmailViaResend({
+      to: email,
+      subject: 'Återställ ditt lösenord',
+      html: `<p>Klicka på länken för att återställa lösenordet:</p><p><a href="${resetLink}">${resetLink}</a></p><p>Länken gäller i 30 minuter.</p>`
+    })
     return
   }
 
   console.info(`[PasswordReset] ${email} -> ${resetLink}`)
+}
+
+async function sendWelcomeEmail(request, user) {
+  if (!isMailDeliveryConfigured()) {
+    console.info(`[WelcomeEmail] Skip (mail not configured) for ${user?.email || 'unknown'}`)
+    return
+  }
+
+  const homeUrl = getAppBaseUrl(request)
+  const username = String(user?.username || 'vän').trim()
+
+  await sendEmailViaResend({
+    to: user.email,
+    subject: 'Välkommen till Soundcheck',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0f1626;color:#f4f8ff;border:1px solid #2f3b57;border-radius:12px;">
+        <h1 style="margin:0 0 10px;color:#f8b84f;letter-spacing:0.03em;">SOUNDCHECK</h1>
+        <p style="margin:0 0 16px;font-size:18px;">Hej ${username}, kul att du är här.</p>
+        <p style="margin:0 0 16px;line-height:1.5;">
+          Ditt konto är nu aktivt. Du kan börja spara favoriter, markera spelningar du ska gå på
+          och bygga din egen konsertlista.
+        </p>
+        <a href="${homeUrl}" style="display:inline-block;background:#f8b84f;color:#101726;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700;">
+          Öppna Soundcheck
+        </a>
+        <p style="margin:18px 0 0;font-size:13px;color:#aeb9d2;">
+          Vi ses längst fram vid scenen.
+        </p>
+      </div>
+    `
+  })
 }
 
 export async function handleUserForgotPassword(request, response, body) {
