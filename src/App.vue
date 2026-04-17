@@ -119,8 +119,9 @@ const concertsSearch = ref("");
 const concertsDateTo = ref("");
 const quickDiscoverMode = ref("all");
 const concertsListView = ref("cards");
+const homeListView = ref("cards");
 const concertsDateToInput = ref(null);
-const filtersExpanded = ref(false);
+const filtersModalOpen = ref(false);
 const concertsSubView = ref("upcoming");
 const sharedConcertId = ref("");
 const shareStatus = ref("");
@@ -389,6 +390,7 @@ function closeMenu() {
 function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
     closeMenu();
+    closeFiltersModal();
     document.querySelectorAll(".card-menu[open]").forEach((menu) => {
       menu.removeAttribute("open");
     });
@@ -432,8 +434,12 @@ function setConcertsListView(view) {
   concertsListView.value = view;
 }
 
-function toggleFiltersExpanded() {
-  filtersExpanded.value = !filtersExpanded.value;
+function openFiltersModal() {
+  filtersModalOpen.value = true;
+}
+
+function closeFiltersModal() {
+  filtersModalOpen.value = false;
 }
 
 function openAuthModal() {
@@ -2230,31 +2236,63 @@ watch(
       </section>
 
       <section v-if="currentView === 'home'" class="hero">
-        <h2>{{ t("home.monthHeading", { month: currentMonthLabel }) }}</h2>
+        <div class="section-head-row">
+          <h2>{{ t("home.monthHeading", { month: currentMonthLabel }) }}</h2>
+          <div class="view-mode-toggle">
+            <button
+              class="view-mode-option"
+              :class="{ active: homeListView === 'cards' }"
+              type="button"
+              @click="homeListView = 'cards'"
+            >
+              {{ locale === "en" ? "Card view" : "Kortvy" }}
+            </button>
+            <button
+              class="view-mode-option"
+              :class="{ active: homeListView === 'table' }"
+              type="button"
+              @click="homeListView = 'table'"
+            >
+              {{ locale === "en" ? "List view" : "Listvy" }}
+            </button>
+          </div>
+        </div>
 
-        <div v-if="currentMonthConcerts.length" class="list compact-list home-concerts-grid">
+        <section
+          v-if="currentMonthConcerts.length && homeListView === 'cards'"
+          class="concert-cards-grid"
+        >
           <article
             v-for="concert in currentMonthConcerts"
-            :key="`home-${concert.artist}-${concert.date}-${concert.venue}`"
-            class="card"
+            :key="`home-card-${getConcertId(concert)}`"
+            class="concert-tile"
           >
-            <div class="meta">
+            <div class="concert-tile-media">
               <img
-                class="concert-image"
+                class="concert-tile-image"
                 :src="getConcertDisplayImageUrl(concert)"
                 :alt="`Bild för ${concert.title}`"
                 loading="lazy"
               />
-              <p>{{ formatDate(concert.date) }}</p>
-              <p>{{ concert.city }}</p>
+              <p class="concert-tile-tag">{{ getConcertGenreLabel(concert) }}</p>
+              <button
+                class="heart-button tile-heart"
+                :class="{ active: isFavorite(concert) }"
+                :aria-label="isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'"
+                @click="toggleFavorite(concert)"
+              >
+                {{ isFavorite(concert) ? "♥" : "♡" }}
+              </button>
             </div>
 
-            <div class="content">
+            <div class="concert-tile-body">
               <h3>{{ concert.artist }}</h3>
-              <p class="title">{{ concert.title }}</p>
-              <p class="venue">{{ concert.venue }}</p>
-              <p class="genre">{{ getConcertGenreLabel(concert) }}</p>
-              <p class="source">{{ getConcertSourceName(concert) }}</p>
+              <p class="venue-line">
+                <span class="venue-city"
+                  >{{ concert.venue }}{{ concert.city ? ` · ${concert.city}` : "" }}</span
+                >
+                <span class="concert-date">{{ formatDate(concert.date) }}</span>
+              </p>
               <div class="card-footer">
                 <div class="mini-actions card-footer-main">
                   <button
@@ -2324,31 +2362,114 @@ watch(
                           : t("actions.followVenue")
                       }}
                     </button>
-                    <a
-                      v-if="getConcertDetailsUrl(concert)"
-                      class="mini-action-button readmore-button"
-                      :href="getConcertDetailsUrl(concert)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {{ t("actions.readMore") }}
-                    </a>
                   </div>
                 </details>
               </div>
-              <button
-                class="heart-button"
-                :class="{ active: isFavorite(concert) }"
-                :aria-label="
-                  isFavorite(concert) ? 'Ta bort favorit' : 'Spara favorit'
-                "
-                @click="toggleFavorite(concert)"
+              <a
+                v-if="getConcertDetailsUrl(concert)"
+                class="readmore card-readmore"
+                :href="getConcertDetailsUrl(concert)"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {{ isFavorite(concert) ? "♥" : "♡" }}
-              </button>
+                {{ t("actions.readMore") }}
+              </a>
             </div>
           </article>
-        </div>
+        </section>
+
+        <section
+          v-if="currentMonthConcerts.length && homeListView === 'table'"
+          class="hero concerts-table-wrap"
+        >
+          <table class="concerts-table">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Artist</th>
+                <th>Plats</th>
+                <th>Ort</th>
+                <th>Åtgärder</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="concert in currentMonthConcerts"
+                :key="`home-row-${getConcertId(concert)}`"
+              >
+                <td>{{ formatDate(concert.date) }}</td>
+                <td>{{ concert.artist }}</td>
+                <td>{{ concert.venue }}</td>
+                <td>{{ concert.city }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFavorite(concert) }"
+                      type="button"
+                      @click="toggleFavorite(concert)"
+                    >
+                      {{ isFavorite(concert) ? "Favorit" : "Spara" }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isBooked(concert) }"
+                      type="button"
+                      @click="toggleBooking(concert)"
+                    >
+                      {{ t("actions.going") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="downloadCalendarEvent(concert)"
+                    >
+                      {{ t("actions.addCalendar") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="shareConcert(concert)"
+                    >
+                      {{ t("actions.shareConcert") }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedArtist(concert.artist) }"
+                      type="button"
+                      @click="toggleFollowArtist(concert.artist)"
+                    >
+                      {{
+                        isFollowedArtist(concert.artist)
+                          ? t("actions.followingArtist")
+                          : t("actions.followArtist")
+                      }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedVenue(concert.venue) }"
+                      type="button"
+                      @click="toggleFollowVenue(concert.venue)"
+                    >
+                      {{
+                        isFollowedVenue(concert.venue)
+                          ? t("actions.followingVenue")
+                          : t("actions.followVenue")
+                      }}
+                    </button>
+                    <button
+                      class="mini-action-button"
+                      type="button"
+                      @click="openSpotifyModal(concert.artist)"
+                    >
+                      {{ t("actions.play") }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
 
         <p v-else class="lead">{{ t("home.noMonthConcerts") }}</p>
       </section>
@@ -2953,14 +3074,16 @@ watch(
                   :alt="`Bild för ${concert.title}`"
                   loading="lazy"
                 />
-                <p>{{ formatDate(concert.date) }}</p>
-                <p>{{ concert.city }}</p>
               </div>
 
               <div class="content">
                 <h3>{{ concert.artist }}</h3>
-                <p class="title">{{ concert.title }}</p>
-                <p class="venue">{{ concert.venue }}</p>
+                <p class="venue-line">
+                  <span class="venue-city"
+                    >{{ concert.venue }}{{ concert.city ? ` · ${concert.city}` : "" }}</span
+                  >
+                  <span class="concert-date">{{ formatDate(concert.date) }}</span>
+                </p>
                 <p class="genre">{{ getConcertGenreLabel(concert) }}</p>
                 <p class="source">{{ getConcertSourceName(concert) }}</p>
                 <div class="card-footer">
@@ -3020,9 +3143,9 @@ watch(
                             : t("actions.followArtist")
                         }}
                       </button>
-                      <button
-                        class="mini-action-button"
-                        :class="{ active: isFollowedVenue(concert.venue) }"
+                    <button
+                      class="mini-action-button"
+                      :class="{ active: isFollowedVenue(concert.venue) }"
                         type="button"
                         @click="toggleFollowVenue(concert.venue)"
                       >
@@ -3032,18 +3155,18 @@ watch(
                             : t("actions.followVenue")
                         }}
                       </button>
-                      <a
-                        v-if="getConcertDetailsUrl(concert)"
-                        class="mini-action-button readmore-button"
-                        :href="getConcertDetailsUrl(concert)"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {{ t("actions.readMore") }}
-                      </a>
                     </div>
                   </details>
                 </div>
+                <a
+                  v-if="getConcertDetailsUrl(concert)"
+                  class="readmore card-readmore"
+                  :href="getConcertDetailsUrl(concert)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ t("actions.readMore") }}
+                </a>
                 <button
                   class="heart-button"
                   :class="{ active: isFavorite(concert) }"
@@ -3060,37 +3183,136 @@ watch(
         </template>
       </section>
 
-      <section
-        v-if="currentView === 'concerts'"
-        class="hero source-filter"
-        :class="{ collapsed: !filtersExpanded }"
-      >
-        <div class="filter-header">
-          <h2>
-              {{
-                concertsSubView === "past"
-                ? (locale === "en" ? "Filter past concerts" : "Filtrera tidigare spelningar")
-                : (locale === "en" ? "Filter upcoming concerts" : "Filtrera kommande spelningar")
-              }}
-            </h2>
-          <button
-            class="nav-link filter-toggle"
-            type="button"
-            @click="toggleFiltersExpanded"
-          >
-            {{ filtersExpanded ? "Fäll ihop filter" : "Visa filter" }}
-          </button>
+      <section v-if="currentView === 'concerts'" class="hero discovery-panel">
+        <div class="discovery-top">
+          <div class="discovery-controls">
+            <div class="concerts-subview-toggle" role="group" :aria-label="locale === 'en' ? 'Concert timeframe' : 'Tidsfilter för spelningar'">
+              <button
+                class="concerts-subview-option"
+                :class="{ active: concertsSubView === 'upcoming' }"
+                type="button"
+                @click="setConcertsSubView('upcoming')"
+              >
+                {{ locale === "en" ? "Upcoming" : "Framtida" }}
+              </button>
+              <button
+                class="concerts-subview-option"
+                :class="{ active: concertsSubView === 'past' }"
+                type="button"
+                @click="setConcertsSubView('past')"
+              >
+                {{ locale === "en" ? "Past" : "Tidigare" }}
+              </button>
+            </div>
+
+            <div v-if="!sharedConcertId" class="quick-filters-toggle" role="group" :aria-label="locale === 'en' ? 'Quick filters' : 'Snabbfilter'">
+              <button
+                v-for="option in quickDiscoverOptions"
+                :key="option.id"
+                class="quick-filter-option"
+                :class="{ active: quickDiscoverMode === option.id }"
+                type="button"
+                @click="quickDiscoverMode = option.id"
+              >
+                {{ option.label }} ({{ quickFilterCounts[option.id] || 0 }})
+              </button>
+            </div>
+
+            <div class="view-mode-toggle">
+              <button
+                class="view-mode-option"
+                :class="{ active: concertsListView === 'cards' }"
+                type="button"
+                @click="setConcertsListView('cards')"
+              >
+                {{ locale === "en" ? "Card view" : "Kortvy" }}
+              </button>
+              <button
+                class="view-mode-option"
+                :class="{ active: concertsListView === 'table' }"
+                type="button"
+                @click="setConcertsListView('table')"
+              >
+                {{ locale === "en" ? "List view" : "Listvy" }}
+              </button>
+            </div>
+            <button
+              class="view-mode-option filter-modal-trigger"
+              type="button"
+              @click="openFiltersModal"
+            >
+              {{ locale === "en" ? "Filters" : "Visa filter" }}
+            </button>
+          </div>
         </div>
 
-        <transition name="filter-collapse">
-          <div v-show="filtersExpanded" class="filter-body">
+        <div class="search-panel">
+          <div class="search-table">
+            <p class="search-label">
+              {{ locale === "en" ? "Search concert" : "Sök spelning" }}
+            </p>
+            <p class="search-label">
+              {{ locale === "en" ? "Choose date" : "Välj datum" }}
+            </p>
+            <input
+              id="concert-search"
+              v-model="concertsSearch"
+              class="search-input"
+              type="search"
+              :placeholder="
+                locale === 'en'
+                  ? 'Search by artist, venue or city...'
+                  : 'Sök på artist, scen eller stad...'
+              "
+            />
+            <div class="search-date-actions">
+              <input
+                id="concert-date-to"
+                ref="concertsDateToInput"
+                class="search-input search-input-date"
+                type="text"
+                :placeholder="locale === 'en' ? 'Choose date' : 'Välj datum'"
+                readonly
+              />
+              <button
+                class="nav-link search-clear-date"
+                type="button"
+                :disabled="!concertsDateTo"
+                @click="clearConcertsDateTo"
+              >
+                {{ locale === "en" ? "Clear date" : "Rensa datum" }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        v-if="currentView === 'concerts' && filtersModalOpen"
+        class="modal-backdrop"
+        @click.self="closeFiltersModal"
+      >
+        <div class="modal-card filter-modal-card">
+          <div class="auth-header">
+            <h2>
+              {{
+                concertsSubView === "past"
+                  ? (locale === "en" ? "Filter past concerts" : "Filtrera tidigare spelningar")
+                  : (locale === "en" ? "Filter upcoming concerts" : "Filtrera kommande spelningar")
+              }}
+            </h2>
+            <button class="link-button neutral" type="button" @click="closeFiltersModal">
+              {{ locale === "en" ? "Close" : "Stäng" }}
+            </button>
+          </div>
+          <div class="filter-body">
             <p class="filter-title">{{ locale === "en" ? "Sources" : "Källor" }}</p>
             <div class="filter-actions">
               <button class="link-button neutral" @click="selectAllSources">
-                Välj alla källor
+                {{ locale === "en" ? "Select all sources" : "Välj alla källor" }}
               </button>
               <button class="link-button neutral" @click="deselectAllSources">
-                Välj inga källor
+                {{ locale === "en" ? "Select no sources" : "Välj inga källor" }}
               </button>
             </div>
             <div class="filter-options">
@@ -3114,10 +3336,10 @@ watch(
             </p>
             <div v-if="availableMonthNumbers.length" class="filter-actions">
               <button class="link-button neutral" @click="selectAllMonths">
-                Välj alla månader
+                {{ locale === "en" ? "Select all months" : "Välj alla månader" }}
               </button>
               <button class="link-button neutral" @click="deselectAllMonths">
-                Välj inga månader
+                {{ locale === "en" ? "Select no months" : "Välj inga månader" }}
               </button>
             </div>
             <div v-if="availableMonthNumbers.length" class="filter-options">
@@ -3141,10 +3363,10 @@ watch(
             </p>
             <div v-if="availableGenreLabels.length" class="filter-actions">
               <button class="link-button neutral" @click="selectAllGenres">
-                Välj alla genrer
+                {{ locale === "en" ? "Select all genres" : "Välj alla genrer" }}
               </button>
               <button class="link-button neutral" @click="deselectAllGenres">
-                Välj inga genrer
+                {{ locale === "en" ? "Select no genres" : "Välj inga genrer" }}
               </button>
             </div>
             <div v-if="availableGenreLabels.length" class="filter-options">
@@ -3162,101 +3384,6 @@ watch(
                 <span>{{ genreLabel }}</span>
               </label>
             </div>
-          </div>
-        </transition>
-      </section>
-
-      <section v-if="currentView === 'concerts'" class="hero discovery-panel">
-        <div class="discovery-top">
-          <div class="main-nav concerts-submenu">
-            <button
-              class="nav-link"
-              :class="{ active: concertsSubView === 'upcoming' }"
-              type="button"
-              @click="setConcertsSubView('upcoming')"
-            >
-              {{ locale === "en" ? "Upcoming" : "Framtida" }}
-            </button>
-            <button
-              class="nav-link"
-              :class="{ active: concertsSubView === 'past' }"
-              type="button"
-              @click="setConcertsSubView('past')"
-            >
-              {{ locale === "en" ? "Past" : "Tidigare" }}
-            </button>
-          </div>
-
-          <div v-if="!sharedConcertId" class="quick-filters">
-            <button
-              v-for="option in quickDiscoverOptions"
-              :key="option.id"
-              class="quick-filter-button"
-              :class="{ active: quickDiscoverMode === option.id }"
-              type="button"
-              @click="quickDiscoverMode = option.id"
-            >
-              {{ option.label }} ({{ quickFilterCounts[option.id] || 0 }})
-            </button>
-          </div>
-
-          <div class="view-mode-switch">
-            <button
-              class="nav-link"
-              :class="{ active: concertsListView === 'cards' }"
-              type="button"
-              @click="setConcertsListView('cards')"
-            >
-              {{ locale === "en" ? "Card view" : "Kortvy" }}
-            </button>
-            <button
-              class="nav-link"
-              :class="{ active: concertsListView === 'table' }"
-              type="button"
-              @click="setConcertsListView('table')"
-            >
-              {{ locale === "en" ? "List view" : "Listvy" }}
-            </button>
-          </div>
-        </div>
-
-        <div class="search-panel">
-          <label class="search-label" for="concert-search">{{
-            locale === "en" ? "Search concert" : "Sök spelning"
-          }}</label>
-          <input
-            id="concert-search"
-            v-model="concertsSearch"
-            class="search-input"
-            type="search"
-            :placeholder="
-              locale === 'en'
-                ? 'Search by artist, venue or city...'
-                : 'Sök på artist, scen eller stad...'
-            "
-          />
-          <div class="search-row">
-            <div class="search-field">
-              <label class="search-label" for="concert-date-to">{{
-                locale === "en" ? "Choose date" : "Välj datum"
-              }}</label>
-              <input
-                id="concert-date-to"
-                ref="concertsDateToInput"
-                class="search-input"
-                type="text"
-                :placeholder="locale === 'en' ? 'Choose date' : 'Välj datum'"
-                readonly
-              />
-            </div>
-            <button
-              class="nav-link"
-              type="button"
-              :disabled="!concertsDateTo"
-              @click="clearConcertsDateTo"
-            >
-              {{ locale === "en" ? "Clear date" : "Rensa datumval" }}
-            </button>
           </div>
         </div>
       </section>
@@ -3365,10 +3492,12 @@ watch(
 
           <div class="concert-tile-body">
             <h3>{{ concert.artist }}</h3>
-            <p class="title">{{ concert.title }}</p>
-            <p class="venue">{{ concert.venue }}</p>
-            <p>{{ concert.city }}</p>
-            <p class="source">{{ formatDate(concert.date) }}</p>
+            <p class="venue-line">
+              <span class="venue-city"
+                >{{ concert.venue }}{{ concert.city ? ` · ${concert.city}` : "" }}</span
+              >
+              <span class="concert-date">{{ formatDate(concert.date) }}</span>
+            </p>
             <div class="card-footer">
               <div class="mini-actions card-footer-main">
                 <button
@@ -3436,20 +3565,20 @@ watch(
                       isFollowedVenue(concert.venue)
                         ? t("actions.followingVenue")
                         : t("actions.followVenue")
-                    }}
-                  </button>
-                  <a
-                    v-if="getConcertDetailsUrl(concert)"
-                    class="mini-action-button readmore-button"
-                    :href="getConcertDetailsUrl(concert)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{ t("actions.readMore") }}
-                  </a>
+                      }}
+                    </button>
                 </div>
               </details>
             </div>
+            <a
+              v-if="getConcertDetailsUrl(concert)"
+              class="readmore card-readmore"
+              :href="getConcertDetailsUrl(concert)"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ t("actions.readMore") }}
+            </a>
           </div>
         </article>
       </section>
