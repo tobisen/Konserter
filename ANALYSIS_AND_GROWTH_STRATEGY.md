@@ -16,6 +16,8 @@
 10. Direct inbound feedback channel via contact form.
 11. Better route persistence and deep-link reliability on reload.
 12. Stronger retention via branded reminder/follow-match email digest.
+13. SEO foundation (route metadata + sitemap + robots) for organic discovery.
+14. Weekly multi-city newsletter for recurring re-engagement.
 
 ### Risks / Gaps
 

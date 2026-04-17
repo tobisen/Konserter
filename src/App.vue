@@ -308,6 +308,73 @@ function t(path, params = {}) {
   return text;
 }
 
+function upsertMeta(selector, attribute, value) {
+  if (typeof document === "undefined") return;
+  let el = document.head.querySelector(selector);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attribute, selector.includes('property="') ? selector.match(/property="([^"]+)"/)?.[1] || "" : selector.match(/name="([^"]+)"/)?.[1] || "");
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", value);
+}
+
+function setCanonical(url) {
+  if (typeof document === "undefined") return;
+  let link = document.head.querySelector('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.setAttribute("rel", "canonical");
+    document.head.appendChild(link);
+  }
+  link.setAttribute("href", url);
+}
+
+function getSeoForView(view) {
+  const isEn = locale.value === "en";
+  const titles = {
+    home: isEn ? "Soundcheck | Live Music in Uppsala" : "Soundcheck | Spelningar i Uppsala",
+    concerts: isEn ? "Concerts | Soundcheck" : "Spelningar | Soundcheck",
+    "my-concerts": isEn ? "My Concerts | Soundcheck" : "Mina Spelningar | Soundcheck",
+    help: isEn ? "Help | Soundcheck" : "Hjälp | Soundcheck",
+    contact: isEn ? "Contact | Soundcheck" : "Kontakt | Soundcheck",
+    sources: isEn ? "Sources | Soundcheck" : "Källor | Soundcheck",
+    admin: "Admin | Soundcheck",
+  };
+  const descriptions = {
+    home: isEn
+      ? "Soundcheck collects concerts and live music in one place so you can discover more, faster."
+      : "Soundcheck samlar konserter och spelningar på ett ställe så du hittar nästa kväll snabbare.",
+    concerts: isEn
+      ? "Browse upcoming and past concerts. Filter by source, month, genre and date."
+      : "Bläddra bland kommande och tidigare spelningar. Filtrera på källa, månad, genre och datum.",
+    "my-concerts": isEn
+      ? "Save favorites, mark bookings and track seen concerts."
+      : "Spara favoriter, markera bokningar och håll koll på sedda spelningar.",
+    help: isEn ? "How Soundcheck works." : "Så fungerar Soundcheck.",
+    contact: isEn ? "Send feedback or suggestions to Soundcheck." : "Skicka feedback eller förslag till Soundcheck.",
+    sources: isEn ? "See active concert sources used by Soundcheck." : "Se aktiva källor som används av Soundcheck.",
+    admin: isEn ? "Admin tools for Soundcheck." : "Adminverktyg för Soundcheck.",
+  };
+  return {
+    title: titles[view] || "Soundcheck",
+    description: descriptions[view] || descriptions.home,
+  };
+}
+
+function updateSeo() {
+  if (typeof window === "undefined") return;
+  const seo = getSeoForView(currentView.value);
+  document.title = seo.title;
+  upsertMeta('meta[name="description"]', "name", seo.description);
+  upsertMeta('meta[property="og:title"]', "property", seo.title);
+  upsertMeta('meta[property="og:description"]', "property", seo.description);
+  upsertMeta('meta[property="og:url"]', "property", window.location.href);
+  upsertMeta('meta[name="twitter:title"]', "name", seo.title);
+  upsertMeta('meta[name="twitter:description"]', "name", seo.description);
+  setCanonical(window.location.href);
+}
+
 function setLocale(nextLocale) {
   locale.value = nextLocale;
 }
@@ -2105,6 +2172,7 @@ onMounted(async () => {
     sharedConcertId.value = sharedConcertFromUrl;
     setView("concerts", { replaceUrl: true });
   }
+  updateSeo();
 
   try {
     await trackVisitor();
@@ -2124,6 +2192,7 @@ onMounted(async () => {
 });
 
 watch(currentView, async (view) => {
+  updateSeo();
   if (view === "concerts") {
     await nextTick();
     initConcertsDateToPicker();
@@ -2149,6 +2218,7 @@ watch(
       await nextTick();
       initConcertsDateToPicker();
     }
+    updateSeo();
   },
   { immediate: true },
 );
@@ -2787,7 +2857,8 @@ watch(
                 Skapa konto, logga in, få välkomstmail, spara favoriter,
                 markera Ska gå/Var där och lägg till i kalender. Du får även
                 mailnotiser om sparade/bokade spelningar och nya matchningar på
-                artister/scener du följer.
+                artister/scener du följer, samt ett veckoutskick med spelningar
+                från flera städer.
               </p>
             </div>
           </li>

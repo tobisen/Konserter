@@ -4,11 +4,12 @@ test.describe("Concerts view", () => {
   test("concerts view has filters and search", async ({ page }) => {
     await page.goto("/spelningar");
 
+    await page.getByRole("button", { name: /^Visa filter$/ }).click();
     await expect(
       page.getByRole("heading", { name: "Filtrera kommande spelningar" }),
     ).toBeVisible();
-    await expect(page.getByLabel("Sök spelning")).toBeVisible();
-    await expect(page.getByLabel("Välj datum")).toBeVisible();
+    await expect(page.locator("#concert-search")).toBeVisible();
+    await expect(page.locator("#concert-date-to")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Kortvy$/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Listvy$/ })).toBeVisible();
   });
@@ -45,7 +46,7 @@ test.describe("Concerts view", () => {
   test("search field accepts input", async ({ page }) => {
     await page.goto("/spelningar");
 
-    const search = page.getByLabel("Sök spelning");
+    const search = page.locator("#concert-search");
     await search.fill("uppsala");
     await expect(search).toHaveValue("uppsala");
   });

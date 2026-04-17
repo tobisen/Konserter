@@ -438,6 +438,18 @@ function getTomorrowStockholmDateKey() {
   return getStockholmDateKey(stockholmNow);
 }
 
+function getStockholmNowDate() {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Europe/Stockholm" }),
+  );
+}
+
+function getDateDaysAhead(baseDate, daysAhead) {
+  const next = new Date(baseDate);
+  next.setDate(next.getDate() + daysAhead);
+  return next;
+}
+
 function buildConcertReminderLine(concert, listTags) {
   const dateText = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Stockholm",
@@ -521,6 +533,38 @@ function buildConcertDigestEmailHtml({
       <div style="padding:22px 24px 24px;">
         ${tomorrowSection}
         ${followSection}
+        <a href="${escapeHtml(appUrl)}" style="display:inline-block;background:linear-gradient(135deg,#ffb84f,#ff8a00);color:#101726;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:800;letter-spacing:0.03em;">
+          ÖPPNA SOUNDCHECK
+        </a>
+      </div>
+    </div>
+  `;
+}
+
+function buildWeeklyNewsletterEmailHtml({ username, items, appUrl, citySummary }) {
+  const backgroundImageUrl = `${String(appUrl || "").replace(/\/$/, "")}/background-concert.jpg`;
+  return `
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;background:#0d131f;color:#f4f8ff;border:1px solid #2f3b57;border-radius:14px;overflow:hidden;">
+      <div style="padding:26px 24px;background:linear-gradient(rgba(8,11,18,0.58),rgba(8,11,18,0.72)),url('${backgroundImageUrl}') center/cover no-repeat;">
+        <p style="margin:0 0 6px;color:#f8b84f;font-weight:800;letter-spacing:0.08em;">SOUNDCHECK</p>
+        <h1 style="margin:0;font-size:30px;line-height:1.1;color:#ffffff;">Veckans spelningar i flera städer</h1>
+        <p style="margin:12px 0 0;max-width:560px;color:#dce5f7;font-size:15px;line-height:1.45;">
+          Hej ${escapeHtml(username || "vän")}! Här är ett urval från den kommande veckan${citySummary ? `: ${escapeHtml(citySummary)}` : ""}.
+        </p>
+      </div>
+      <div style="padding:22px 24px 24px;">
+        <ul style="margin:0 0 18px;padding-left:18px;">
+          ${items
+            .map((item) => {
+              const details = item.detailsUrl
+                ? ` <a href="${escapeHtml(item.detailsUrl)}" style="color:#72d4ff;">Läs mer</a>`
+                : "";
+              return `<li style="margin-bottom:8px;">
+                <strong>${escapeHtml(item.artist)}</strong> · ${escapeHtml(formatConcertDateLabel(item.date))} · ${escapeHtml(item.venue)}, ${escapeHtml(item.city)}${details}
+              </li>`;
+            })
+            .join("")}
+        </ul>
         <a href="${escapeHtml(appUrl)}" style="display:inline-block;background:linear-gradient(135deg,#ffb84f,#ff8a00);color:#101726;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:800;letter-spacing:0.03em;">
           ÖPPNA SOUNDCHECK
         </a>
@@ -835,6 +879,110 @@ async function sendUserConcertNotifications(newConcerts = []) {
   };
 }
 
+async function sendWeeklyNewsletter() {
+  const users = await loadUsersFromStore();
+  const concerts = await loadConcertsFromFile();
+  const meta = await loadMetaFromStore();
+  const newsletterLog =
+    meta?.newsletterLog && typeof meta.newsletterLog === "object"
+      ? meta.newsletterLog
+      : {};
+  const nextNewsletterLog = { ...newsletterLog };
+
+  const stockholmNow = getStockholmNowDate();
+  const weekEnd = getDateDaysAhead(stockholmNow, 7);
+  const weekKey = `${getStockholmDateKey(stockholmNow)}_${getStockholmDateKey(weekEnd)}`;
+  const appUrl = String(process.env.APP_BASE_URL || "https://soundcheck.fun").replace(
+    /\/$/,
+    "",
+  );
+  const sentAt = new Date().toISOString();
+
+  const upcomingWeek = concerts
+    .filter((concert) => {
+      const d = parseConcertDate(concert.date);
+      if (!d) return false;
+      return d >= stockholmNow && d <= weekEnd;
+    })
+    .sort((a, b) => parseConcertDate(a.date) - parseConcertDate(b.date));
+
+  if (!upcomingWeek.length) {
+    return { weekKey, usersNotified: 0, emailsSent: 0, concertsIncluded: 0 };
+  }
+
+  const selectedItems = upcomingWeek.slice(0, 20);
+  const cityCounts = new Map();
+  for (const item of selectedItems) {
+    const city = String(item.city || "Okänd ort").trim();
+    cityCounts.set(city, (cityCounts.get(city) || 0) + 1);
+  }
+  const citySummary = [...cityCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([city, count]) => `${city} (${count})`)
+    .join(", ");
+
+  let usersNotified = 0;
+  let emailsSent = 0;
+
+  for (const user of users) {
+    const email = String(user?.email || "").trim();
+    if (!email) continue;
+
+    const dedupeKey = `${weekKey}:${user.id}`;
+    if (nextNewsletterLog[dedupeKey]) continue;
+
+    const textBody =
+      `Hej ${user.username || ""},\n\n` +
+      `Det här händer på Soundcheck denna vecka i flera städer.\n\n` +
+      selectedItems
+        .map(
+          (item) =>
+            `- ${item.artist} (${formatConcertDateLabel(item.date)}) på ${item.venue}, ${item.city}`,
+        )
+        .join("\n") +
+      `\n\nÖppna Soundcheck: ${appUrl}`;
+
+    const htmlBody = buildWeeklyNewsletterEmailHtml({
+      username: user.username || "",
+      items: selectedItems,
+      appUrl,
+      citySummary,
+    });
+
+    await sendReminderEmail(
+      email,
+      "Veckans spelningar på Soundcheck",
+      textBody,
+      htmlBody,
+    );
+
+    nextNewsletterLog[dedupeKey] = sentAt;
+    usersNotified += 1;
+    emailsSent += 1;
+  }
+
+  const oldestAllowed = Date.now() - 120 * 24 * 60 * 60 * 1000;
+  const prunedNewsletterLog = Object.fromEntries(
+    Object.entries(nextNewsletterLog).filter(([, value]) => {
+      const asTime = new Date(value).getTime();
+      return Number.isFinite(asTime) && asTime >= oldestAllowed;
+    }),
+  );
+
+  await saveMetaToStore({
+    ...meta,
+    newsletterLog: prunedNewsletterLog,
+  });
+
+  return {
+    weekKey,
+    usersNotified,
+    emailsSent,
+    concertsIncluded: selectedItems.length,
+  };
+}
+
 async function handleCronUpdateConcerts(request, response, url) {
   if (!isCronAuthorized(request, url)) {
     sendJson(response, 401, { error: "Unauthorized cron request." });
@@ -853,6 +1001,23 @@ async function handleCronUpdateConcerts(request, response, url) {
   sendJson(response, updateResult.statusCode, {
     ...updateResult.payload,
     reminders: reminderResult,
+  });
+}
+
+async function handleCronWeeklyNewsletter(request, response, url) {
+  if (!isCronAuthorized(request, url)) {
+    sendJson(response, 401, { error: "Unauthorized cron request." });
+    return;
+  }
+
+  const newsletterResult = await sendWeeklyNewsletter().catch((error) => ({
+    error:
+      error instanceof Error ? error.message : "Unknown weekly newsletter error",
+  }));
+
+  sendJson(response, 200, {
+    ok: true,
+    newsletter: newsletterResult,
   });
 }
 
@@ -1468,6 +1633,11 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === "/api/cron/update-concerts" && request.method === "GET") {
     await handleCronUpdateConcerts(request, response, url);
+    return;
+  }
+
+  if (pathname === "/api/cron/weekly-newsletter" && request.method === "GET") {
+    await handleCronWeeklyNewsletter(request, response, url);
     return;
   }
 

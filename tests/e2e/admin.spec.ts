@@ -10,6 +10,7 @@ test.describe("Admin guard and info", () => {
     await expect(
       page.getByText("Du behöver logga in som admin för att se denna vy."),
     ).toBeVisible();
+    await page.getByRole("button", { name: /^Logga in$/ }).click();
     await expect(page.getByRole("heading", { name: "Admin-inloggning" })).toBeVisible();
   });
 });

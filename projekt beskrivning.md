@@ -33,6 +33,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Shareable concert deep-links and preview image generation.
 - Calendar export (`.ics`).
 - Contact page with a public contact form in the main menu.
+- SEO baseline with dynamic metadata by route plus sitemap/robots.
 
 ### 3. My Concerts
 
@@ -44,6 +45,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Branded email digest for:
   - saved/booked concerts happening tomorrow
   - new concerts matching followed artists/venues
+- Weekly multi-city newsletter digest.
 
 ### 4. Admin Experience
 

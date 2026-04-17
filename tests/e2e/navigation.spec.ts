@@ -9,7 +9,7 @@ test.describe('Navigation', () => {
     await page.addInitScript(() => localStorage.setItem('soundcheck_locale', 'sv'))
     await page.goto('/')
 
-    await expect(page.getByRole('button', { name: /^SOUNDCHECK$/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Soundcheck$/i })).toBeVisible()
     await expect(page.locator('.header-quick-nav').getByRole('button', { name: /^Spelningar$/ })).toBeVisible()
     await expect(page.locator('.header-quick-nav').getByRole('button', { name: /^Mina Spelningar$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^SV$/ })).toBeVisible()
