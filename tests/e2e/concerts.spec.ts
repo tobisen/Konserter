@@ -1,44 +1,48 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Concerts view", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("soundcheck_locale", "sv"));
+  });
+
   test("concerts view has filters and search", async ({ page }) => {
     await page.goto("/spelningar");
 
-    await page.getByRole("button", { name: /^Visa filter$/ }).click();
+    await page.getByRole("button", { name: /Visa filter|Filters/i }).click();
     await expect(
-      page.getByRole("heading", { name: "Filtrera kommande spelningar" }),
+      page.getByRole("heading", { name: /Filtrera kommande spelningar|Filter upcoming concerts/i }),
     ).toBeVisible();
     await expect(page.locator("#concert-search")).toBeVisible();
     await expect(page.locator("#concert-date-to")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Kortvy$/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Listvy$/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Kortvy|Card view/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Listvy|List view/i })).toBeVisible();
   });
 
   test("can switch between card and table view", async ({ page }) => {
     await page.goto("/spelningar");
 
-    await page.getByRole("button", { name: /^Listvy$/ }).click();
-    await expect(page.getByRole("columnheader", { name: "Datum" })).toBeVisible();
+    await page.getByRole("button", { name: /Listvy|List view/i }).click();
+    await expect(page.getByRole("columnheader", { name: /Datum|Date/i })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Artist" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Plats" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Ort" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Åtgärder" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: /Plats|Venue/i })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: /Ort|City/i })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: /Åtgärder|Actions/i })).toBeVisible();
     await expect(page.locator(".table-actions .mini-action-button").first()).toBeVisible();
 
-    await page.getByRole("button", { name: /^Kortvy$/ }).click();
+    await page.getByRole("button", { name: /Kortvy|Card view/i }).click();
     await expect(page.locator(".concert-cards-grid")).toBeVisible();
   });
 
   test("can toggle upcoming and past tabs", async ({ page }) => {
     await page.goto("/spelningar");
 
-    await page.getByRole("button", { name: /^Tidigare$/ }).click();
-    await expect(page.getByRole("button", { name: /^Tidigare$/ })).toHaveClass(
+    await page.getByRole("button", { name: /Tidigare|Past/i }).click();
+    await expect(page.getByRole("button", { name: /Tidigare|Past/i })).toHaveClass(
       /active/,
     );
 
-    await page.getByRole("button", { name: /^Framtida$/ }).click();
-    await expect(page.getByRole("button", { name: /^Framtida$/ })).toHaveClass(
+    await page.getByRole("button", { name: /Framtida|Upcoming/i }).click();
+    await expect(page.getByRole("button", { name: /Framtida|Upcoming/i })).toHaveClass(
       /active/,
     );
   });

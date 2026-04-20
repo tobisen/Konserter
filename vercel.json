@@ -13,6 +13,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/installningar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/index.html"
+    },
+    {
       "source": "/hjalp",
       "destination": "/index.html"
     },
@@ -26,6 +34,14 @@
     },
     {
       "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/unsubscribe",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/avprenumerera",
       "destination": "/index.html"
     }
   ],

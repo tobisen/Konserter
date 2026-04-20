@@ -467,6 +467,24 @@ h3 {
   gap: 12px;
 }
 
+.preference-box {
+  display: grid;
+  gap: 10px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
 .auth-header {
   display: flex;
   align-items: center;

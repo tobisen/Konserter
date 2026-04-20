@@ -60,6 +60,18 @@ export async function resetPassword(token, newPassword) {
   return parseJson(response)
 }
 
+export async function changeUserPassword(currentPassword, newPassword) {
+  const response = await fetch('/api/users/change-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ currentPassword, newPassword })
+  })
+
+  return parseJson(response)
+}
+
 export async function logoutUser() {
   const response = await fetch('/api/users/logout', {
     method: 'POST'
@@ -84,6 +96,38 @@ export async function loadUserLists() {
     followedArtists: payload.followedArtists || [],
     followedVenues: payload.followedVenues || []
   }
+}
+
+export async function loadUserPreferences() {
+  const response = await fetch('/api/users/preferences')
+  const payload = await parseJson(response)
+  return {
+    newsletterEnabled: payload.newsletterEnabled !== false,
+    reminderEmailsEnabled: payload.reminderEmailsEnabled !== false
+  }
+}
+
+export async function updateUserPreferences(preferences) {
+  const response = await fetch('/api/users/preferences', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(preferences || {})
+  })
+
+  const payload = await parseJson(response)
+  return {
+    newsletterEnabled: payload.newsletterEnabled !== false,
+    reminderEmailsEnabled: payload.reminderEmailsEnabled !== false
+  }
+}
+
+export async function unsubscribeByToken(token) {
+  const response = await fetch(
+    `/api/users/unsubscribe?token=${encodeURIComponent(token || '')}`
+  )
+  return parseJson(response)
 }
 
 export async function loadUserFollows() {

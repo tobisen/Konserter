@@ -18,6 +18,7 @@
 12. Stronger retention via branded reminder/follow-match email digest.
 13. SEO foundation (route metadata + sitemap + robots) for organic discovery.
 14. Weekly multi-city newsletter for recurring re-engagement.
+15. User-controlled unsubscribe/preferences for newsletter and reminder digests.
 
 ### Risks / Gaps
 
@@ -43,6 +44,7 @@
 4. Measurement
 - Track key events (view concert, favorite, booking, share click).
 - Build a weekly KPI review habit.
+- Add unsubscribe-rate and email-delivery metrics to monitor content quality.
 
 ## Distribution Plan (Uppsala + 5-10 mil)
 

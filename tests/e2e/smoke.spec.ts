@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("homepage basic smoke", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("soundcheck_locale", "sv"));
   await page.goto("/");
-  await expect(page.getByRole("button", { name: /^Soundcheck$/i })).toBeVisible();
+  await expect(page.locator(".brand-block")).toBeVisible();
   await expect(
     page.locator(".header-quick-nav").getByRole("button", { name: /^Spelningar$/ }),
   ).toBeVisible();

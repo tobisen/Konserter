@@ -25,6 +25,8 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Password reset flow via email link (30 min token)
   - Branded email digest with reminders for saved/booked concerts and new follow matches
   - Weekly newsletter: “Veckans spelningar på Soundcheck” (multi-city digest)
+  - Email preferences for newsletter and reminder digests (while keeping welcome/reset emails enabled)
+  - Unsubscribe flow via dedicated unsubscribe page and secure token links in newsletter/reminder emails
 - Admin area:
   - Source add/remove
   - Update concerts / clear concerts
@@ -109,7 +111,7 @@ Optional secret:
 
 - Single endpoint: `api/index.js`
 - `vercel.json` rewrites `/api/:route*` to `/api?route=:route*`
-- SPA rewrites for app views (`/spelningar`, `/mina-spelningar`, `/hjalp`, `/kontakt`, `/kallor`, `/admin`) to support hard reload on the same page.
+- SPA rewrites for app views (`/spelningar`, `/mina-spelningar`, `/hjalp`, `/kontakt`, `/kallor`, `/admin`, `/unsubscribe`) to support hard reload on the same page.
 - Static SEO files: `public/robots.txt` and `public/sitemap.xml`
 
 ## Data Sources

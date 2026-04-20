@@ -46,6 +46,11 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
   - saved/booked concerts happening tomorrow
   - new concerts matching followed artists/venues
 - Weekly multi-city newsletter digest.
+- User-managed email preferences:
+  - Newsletter on/off
+  - Reminder digest on/off
+  - Welcome + password-reset emails always allowed
+- Unsubscribe page linked directly from newsletter and reminder emails.
 
 ### 4. Admin Experience
 

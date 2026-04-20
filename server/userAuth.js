@@ -49,6 +49,13 @@ function hashResetToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
+function normalizeNotificationPreferences(user) {
+  return {
+    newsletterEnabled: user?.newsletterEnabled !== false,
+    reminderEmailsEnabled: user?.reminderEmailsEnabled !== false
+  }
+}
+
 function getClientIp(request) {
   return (
     request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -169,10 +176,12 @@ function buildSessionCookie(token, ttlSeconds) {
 }
 
 function sanitizeUser(user) {
+  const notificationPreferences = normalizeNotificationPreferences(user)
   return {
     id: user.id,
     username: user.username,
-    email: user.email || null
+    email: user.email || null,
+    notificationPreferences
   }
 }
 
@@ -283,7 +292,9 @@ export async function handleUserRegister(request, response, body) {
     bookings: [],
     seen: [],
     followedArtists: [],
-    followedVenues: []
+    followedVenues: [],
+    newsletterEnabled: true,
+    reminderEmailsEnabled: true
   }
 
   await saveUsersToStore([...users, newUser])
@@ -567,6 +578,52 @@ export async function handleUserResetPassword(request, response, body) {
     return
   }
 
+  const nextUsers = users.map((entry) =>
+    entry.id === user.id
+      ? {
+          ...entry,
+          passwordHash: hashPassword(newPassword),
+          resetTokenHash: null,
+          resetTokenExpiresAt: null
+        }
+      : entry
+  )
+
+  await saveUsersToStore(nextUsers)
+  response.statusCode = 200
+  response.setHeader('Content-Type', 'application/json')
+  response.end(JSON.stringify({ ok: true }))
+}
+
+export async function handleUserChangePassword(request, response, body) {
+  const user = await requireAppUser(request, response)
+  if (!user) return
+
+  const currentPassword = String(body?.currentPassword || '')
+  const newPassword = String(body?.newPassword || '')
+
+  if (!currentPassword || !newPassword) {
+    response.statusCode = 400
+    response.setHeader('Content-Type', 'application/json')
+    response.end(JSON.stringify({ error: 'Nuvarande och nytt lösenord måste anges.' }))
+    return
+  }
+
+  if (newPassword.length < 8) {
+    response.statusCode = 400
+    response.setHeader('Content-Type', 'application/json')
+    response.end(JSON.stringify({ error: 'Lösenordet måste vara minst 8 tecken.' }))
+    return
+  }
+
+  if (user.passwordHash !== hashPassword(currentPassword)) {
+    response.statusCode = 401
+    response.setHeader('Content-Type', 'application/json')
+    response.end(JSON.stringify({ error: 'Nuvarande lösenord är fel.' }))
+    return
+  }
+
+  const users = await loadUsersFromStore()
   const nextUsers = users.map((entry) =>
     entry.id === user.id
       ? {

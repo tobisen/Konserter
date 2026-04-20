@@ -14,6 +14,7 @@ import {
 } from "./auth.js";
 import {
   handleUserForgotPassword,
+  handleUserChangePassword,
   handleUserLogin,
   handleUserLogout,
   handleUserMe,
@@ -478,11 +479,98 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function getUnsubscribeSecret() {
+  return (
+    String(process.env.USER_SESSION_SECRET || "").trim() ||
+    String(process.env.SESSION_SECRET || "").trim() ||
+    "dev-user-session-secret-change-me"
+  );
+}
+
+function encodeBase64Url(value) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function decodeBase64Url(value) {
+  const padded = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const missing = padded.length % 4;
+  const finalValue = missing ? padded + "=".repeat(4 - missing) : padded;
+  return Buffer.from(finalValue, "base64").toString("utf8");
+}
+
+function signUnsubscribePayload(payloadString) {
+  return crypto
+    .createHmac("sha256", getUnsubscribeSecret())
+    .update(payloadString)
+    .digest("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function createUnsubscribeToken(userId, type) {
+  const payload = {
+    uid: String(userId || ""),
+    type: String(type || ""),
+    exp: Date.now() + 180 * 24 * 60 * 60 * 1000,
+  };
+  const payloadPart = encodeBase64Url(JSON.stringify(payload));
+  const signaturePart = signUnsubscribePayload(payloadPart);
+  return `${payloadPart}.${signaturePart}`;
+}
+
+function verifyUnsubscribeToken(token) {
+  if (!token || typeof token !== "string" || !token.includes(".")) return null;
+  const [payloadPart, signaturePart] = token.split(".");
+  if (!payloadPart || !signaturePart) return null;
+  const expected = signUnsubscribePayload(payloadPart);
+  const a = Buffer.from(signaturePart);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(payloadPart));
+    const exp = Number(payload?.exp || 0);
+    const uid = String(payload?.uid || "").trim();
+    const type = String(payload?.type || "").trim();
+    if (!uid || !type || !Number.isFinite(exp) || exp < Date.now()) return null;
+    if (type !== "newsletter" && type !== "reminders") return null;
+    return { userId: uid, type };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeNotificationPreferences(user) {
+  return {
+    newsletterEnabled: user?.newsletterEnabled !== false,
+    reminderEmailsEnabled: user?.reminderEmailsEnabled !== false,
+  };
+}
+
+function normalizePreferencesInput(input) {
+  const next = {};
+  if (Object.prototype.hasOwnProperty.call(input || {}, "newsletterEnabled")) {
+    next.newsletterEnabled = Boolean(input.newsletterEnabled);
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(input || {}, "reminderEmailsEnabled")
+  ) {
+    next.reminderEmailsEnabled = Boolean(input.reminderEmailsEnabled);
+  }
+  return next;
+}
+
 function buildConcertDigestEmailHtml({
   username,
   tomorrowItems,
   followItems,
   appUrl,
+  unsubscribeUrl,
 }) {
   const backgroundImageUrl = `${String(appUrl || "").replace(/\/$/, "")}/background-concert.jpg`;
   const tomorrowSection =
@@ -536,12 +624,22 @@ function buildConcertDigestEmailHtml({
         <a href="${escapeHtml(appUrl)}" style="display:inline-block;background:linear-gradient(135deg,#ffb84f,#ff8a00);color:#101726;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:800;letter-spacing:0.03em;">
           ÖPPNA SOUNDCHECK
         </a>
+        <p style="margin:14px 0 0;font-size:12px;color:#aeb9d2;">
+          Vill du pausa dessa notiser?
+          <a href="${escapeHtml(unsubscribeUrl)}" style="color:#72d4ff;">Avprenumerera här</a>.
+        </p>
       </div>
     </div>
   `;
 }
 
-function buildWeeklyNewsletterEmailHtml({ username, items, appUrl, citySummary }) {
+function buildWeeklyNewsletterEmailHtml({
+  username,
+  items,
+  appUrl,
+  citySummary,
+  unsubscribeUrl,
+}) {
   const backgroundImageUrl = `${String(appUrl || "").replace(/\/$/, "")}/background-concert.jpg`;
   return `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;background:#0d131f;color:#f4f8ff;border:1px solid #2f3b57;border-radius:14px;overflow:hidden;">
@@ -568,6 +666,10 @@ function buildWeeklyNewsletterEmailHtml({ username, items, appUrl, citySummary }
         <a href="${escapeHtml(appUrl)}" style="display:inline-block;background:linear-gradient(135deg,#ffb84f,#ff8a00);color:#101726;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:800;letter-spacing:0.03em;">
           ÖPPNA SOUNDCHECK
         </a>
+        <p style="margin:14px 0 0;font-size:12px;color:#aeb9d2;">
+          Vill du pausa veckobrevet?
+          <a href="${escapeHtml(unsubscribeUrl)}" style="color:#72d4ff;">Avprenumerera här</a>.
+        </p>
       </div>
     </div>
   `;
@@ -725,6 +827,8 @@ async function sendUserConcertNotifications(newConcerts = []) {
   for (const user of users) {
     const email = String(user?.email || "").trim();
     if (!email) continue;
+    const notificationPreferences = normalizeNotificationPreferences(user);
+    if (!notificationPreferences.reminderEmailsEnabled) continue;
 
     const favoriteIds = Array.isArray(user.favorites) ? user.favorites : [];
     const bookingIds = Array.isArray(user.bookings) ? user.bookings : [];
@@ -822,13 +926,19 @@ async function sendUserConcertNotifications(newConcerts = []) {
     const textBody =
       `Hej ${user.username || ""},\n\n` +
       `${textSections.join("\n\n")}\n\n` +
-      "Öppna Soundcheck för full överblick.";
+      `Öppna Soundcheck för full överblick: ${appUrl}\n` +
+      `Avprenumerera notiser: ${appUrl}/unsubscribe?token=${encodeURIComponent(
+        createUnsubscribeToken(user.id, "reminders"),
+      )}`;
 
     const htmlBody = buildConcertDigestEmailHtml({
       username: user.username || "",
       tomorrowItems: reminderItems,
       followItems,
       appUrl,
+      unsubscribeUrl: `${appUrl}/unsubscribe?token=${encodeURIComponent(
+        createUnsubscribeToken(user.id, "reminders"),
+      )}`,
     });
 
     await sendReminderEmail(
@@ -928,6 +1038,8 @@ async function sendWeeklyNewsletter() {
   for (const user of users) {
     const email = String(user?.email || "").trim();
     if (!email) continue;
+    const notificationPreferences = normalizeNotificationPreferences(user);
+    if (!notificationPreferences.newsletterEnabled) continue;
 
     const dedupeKey = `${weekKey}:${user.id}`;
     if (nextNewsletterLog[dedupeKey]) continue;
@@ -941,13 +1053,19 @@ async function sendWeeklyNewsletter() {
             `- ${item.artist} (${formatConcertDateLabel(item.date)}) på ${item.venue}, ${item.city}`,
         )
         .join("\n") +
-      `\n\nÖppna Soundcheck: ${appUrl}`;
+      `\n\nÖppna Soundcheck: ${appUrl}\n` +
+      `Avprenumerera veckobrev: ${appUrl}/unsubscribe?token=${encodeURIComponent(
+        createUnsubscribeToken(user.id, "newsletter"),
+      )}`;
 
     const htmlBody = buildWeeklyNewsletterEmailHtml({
       username: user.username || "",
       items: selectedItems,
       appUrl,
       citySummary,
+      unsubscribeUrl: `${appUrl}/unsubscribe?token=${encodeURIComponent(
+        createUnsubscribeToken(user.id, "newsletter"),
+      )}`,
     });
 
     await sendReminderEmail(
@@ -1271,6 +1389,64 @@ async function handleGetUserLists(request, response) {
   if (!user) return;
 
   sendJson(response, 200, normalizeUserLists(user));
+}
+
+async function handleGetUserPreferences(request, response) {
+  const user = await requireAppUser(request, response);
+  if (!user) return;
+  sendJson(response, 200, normalizeNotificationPreferences(user));
+}
+
+async function handleUpdateUserPreferences(request, response, body) {
+  const user = await requireAppUser(request, response);
+  if (!user) return;
+
+  const updates = normalizePreferencesInput(body);
+  if (!Object.keys(updates).length) {
+    sendJson(response, 400, { error: "Inga giltiga inställningar skickades." });
+    return;
+  }
+
+  const users = await loadUsersFromStore();
+  const nextUsers = users.map((entry) =>
+    entry.id === user.id ? { ...entry, ...updates } : entry,
+  );
+  await saveUsersToStore(nextUsers);
+  const updated = nextUsers.find((entry) => entry.id === user.id) || user;
+  sendJson(response, 200, normalizeNotificationPreferences(updated));
+}
+
+async function handleUnsubscribeByToken(request, response, token) {
+  const verified = verifyUnsubscribeToken(token);
+  if (!verified) {
+    sendJson(response, 400, { error: "Ogiltig eller utgången avprenumereringslänk." });
+    return;
+  }
+
+  const users = await loadUsersFromStore();
+  const existing = users.find((entry) => String(entry?.id || "") === verified.userId);
+  if (!existing) {
+    sendJson(response, 404, { error: "Användaren hittades inte." });
+    return;
+  }
+
+  const updates =
+    verified.type === "newsletter"
+      ? { newsletterEnabled: false }
+      : { reminderEmailsEnabled: false };
+
+  const nextUsers = users.map((entry) =>
+    entry.id === existing.id ? { ...entry, ...updates } : entry,
+  );
+  await saveUsersToStore(nextUsers);
+  sendJson(response, 200, {
+    ok: true,
+    preference: verified.type,
+    preferences: normalizeNotificationPreferences({
+      ...existing,
+      ...updates,
+    }),
+  });
 }
 
 function normalizeFollowType(value) {
@@ -1711,6 +1887,18 @@ export async function handleApiRequest(request, response) {
     return;
   }
 
+  if (pathname === "/api/users/change-password" && request.method === "POST") {
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+      return;
+    }
+    await handleUserChangePassword(request, response, body);
+    return;
+  }
+
   if (pathname === "/api/users/logout" && request.method === "POST") {
     handleUserLogout(request, response);
     return;
@@ -1813,6 +2001,17 @@ export async function handleApiRequest(request, response) {
     return;
   }
 
+  if (pathname === "/api/users/preferences" && request.method === "GET") {
+    await handleGetUserPreferences(request, response);
+    return;
+  }
+
+  if (pathname === "/api/users/unsubscribe" && request.method === "GET") {
+    const token = String(url.searchParams.get("token") || "").trim();
+    await handleUnsubscribeByToken(request, response, token);
+    return;
+  }
+
   if (pathname === "/api/users/follows" && request.method === "GET") {
     await handleGetUserFollows(request, response);
     return;
@@ -1859,6 +2058,18 @@ export async function handleApiRequest(request, response) {
       String(body?.listType || ""),
       String(body?.concertId || ""),
     );
+    return;
+  }
+
+  if (pathname === "/api/users/preferences" && request.method === "POST") {
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+      return;
+    }
+    await handleUpdateUserPreferences(request, response, body);
     return;
   }
 

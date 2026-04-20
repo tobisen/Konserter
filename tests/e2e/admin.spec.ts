@@ -7,10 +7,14 @@ test.describe("Admin guard and info", () => {
 
     await page.getByRole("heading", { name: /^Admin$/ }).waitFor({ timeout: 5000 });
 
+    const adminSection = page.locator("section.hero").filter({
+      has: page.getByRole("heading", { name: /^Admin$/ }),
+    });
+
     await expect(
-      page.getByText("Du behöver logga in som admin för att se denna vy."),
+      adminSection.getByText("Du behöver logga in som admin för att se denna vy."),
     ).toBeVisible();
-    await page.getByRole("button", { name: /^Logga in$/ }).click();
-    await expect(page.getByRole("heading", { name: "Admin-inloggning" })).toBeVisible();
+    await adminSection.getByRole("button", { name: /^Logga in$/ }).click();
+    await expect(page.getByRole("heading", { name: /Admin-inloggning|Admin login/i })).toBeVisible();
   });
 });

@@ -19,6 +19,8 @@ import {
   getUserSession,
   loadUserFollows,
   loadUserLists,
+  loadUserPreferences,
+  changeUserPassword,
   loginUser,
   logoutUser,
   removeUserFollow,
@@ -26,6 +28,8 @@ import {
   registerUser,
   resetPassword,
   removeFromUserList,
+  unsubscribeByToken,
+  updateUserPreferences,
 } from "./services/userStore";
 
 const concerts = ref([]);
@@ -48,20 +52,24 @@ const allowedViews = new Set([
   "home",
   "concerts",
   "my-concerts",
+  "settings",
   "help",
   "contact",
   "sources",
   "admin",
+  "unsubscribe",
 ]);
 
 const viewToPath = {
   home: "/",
   concerts: "/spelningar",
   "my-concerts": "/mina-spelningar",
+  settings: "/installningar",
   help: "/hjalp",
   contact: "/kontakt",
   sources: "/kallor",
   admin: "/admin",
+  unsubscribe: "/unsubscribe",
 };
 
 const pathToView = Object.fromEntries(
@@ -79,7 +87,11 @@ function getViewFromCurrentUrl() {
   const url = new URL(window.location.href);
   const viewFromQuery = String(url.searchParams.get("view") || "").trim();
   if (allowedViews.has(viewFromQuery)) return viewFromQuery;
-  return pathToView[normalizePathname(url.pathname)] || "";
+  const normalizedPath = normalizePathname(url.pathname);
+  if (normalizedPath === "/unsubscribe" || normalizedPath === "/avprenumerera") {
+    return "unsubscribe";
+  }
+  return pathToView[normalizedPath] || "";
 }
 
 function resolveInitialView() {
@@ -124,6 +136,18 @@ const bookingIds = ref([]);
 const seenIds = ref([]);
 const followedArtists = ref([]);
 const followedVenues = ref([]);
+const userPreferences = ref({
+  newsletterEnabled: true,
+  reminderEmailsEnabled: true,
+});
+const preferencesSaving = ref(false);
+const userPasswordCurrent = ref("");
+const userPasswordNext = ref("");
+const userPasswordConfirm = ref("");
+const showUserPasswordCurrent = ref(false);
+const showUserPasswordNext = ref(false);
+const showUserPasswordConfirm = ref(false);
+const userPasswordSaving = ref(false);
 const myConcertsSubView = ref("favorites");
 const favoritesSort = ref("date_asc");
 const forgotEmail = ref("");
@@ -164,6 +188,10 @@ const concertsSubView = ref("upcoming");
 const sharedConcertId = ref("");
 const shareStatus = ref("");
 const isMenuOpen = ref(false);
+const unsubscribeToken = ref("");
+const unsubscribeLoading = ref(false);
+const unsubscribeStatus = ref("");
+const unsubscribeError = ref("");
 let concertsDateToPicker = null;
 
 const quickDiscoverOptions = computed(() => [
@@ -178,6 +206,7 @@ const i18n = {
       home: "Hem",
       concerts: "Spelningar",
       myConcerts: "Mina Spelningar",
+      settings: "Inställningar",
       help: "Hjälp",
       contact: "Kontakt",
       sources: "Källor",
@@ -237,6 +266,7 @@ const i18n = {
       home: "Home",
       concerts: "Concerts",
       myConcerts: "My Concerts",
+      settings: "Settings",
       help: "Help",
       contact: "Contact",
       sources: "Sources",
@@ -336,10 +366,12 @@ function getSeoForView(view) {
     home: isEn ? "Soundcheck | Live Music in Uppsala" : "Soundcheck | Spelningar i Uppsala",
     concerts: isEn ? "Concerts | Soundcheck" : "Spelningar | Soundcheck",
     "my-concerts": isEn ? "My Concerts | Soundcheck" : "Mina Spelningar | Soundcheck",
+    settings: isEn ? "Settings | Soundcheck" : "Inställningar | Soundcheck",
     help: isEn ? "Help | Soundcheck" : "Hjälp | Soundcheck",
     contact: isEn ? "Contact | Soundcheck" : "Kontakt | Soundcheck",
     sources: isEn ? "Sources | Soundcheck" : "Källor | Soundcheck",
     admin: "Admin | Soundcheck",
+    unsubscribe: isEn ? "Unsubscribe | Soundcheck" : "Avprenumerera | Soundcheck",
   };
   const descriptions = {
     home: isEn
@@ -351,10 +383,14 @@ function getSeoForView(view) {
     "my-concerts": isEn
       ? "Save favorites, mark bookings and track seen concerts."
       : "Spara favoriter, markera bokningar och håll koll på sedda spelningar.",
+    settings: isEn
+      ? "Manage account email and password settings."
+      : "Hantera kontots e-post- och lösenordsinställningar.",
     help: isEn ? "How Soundcheck works." : "Så fungerar Soundcheck.",
     contact: isEn ? "Send feedback or suggestions to Soundcheck." : "Skicka feedback eller förslag till Soundcheck.",
     sources: isEn ? "See active concert sources used by Soundcheck." : "Se aktiva källor som används av Soundcheck.",
     admin: isEn ? "Admin tools for Soundcheck." : "Adminverktyg för Soundcheck.",
+    unsubscribe: isEn ? "Unsubscribe from email updates." : "Avprenumerera från e-postutskick.",
   };
   return {
     title: titles[view] || "Soundcheck",
@@ -1114,6 +1150,13 @@ function applyUserLists(lists) {
   followedVenues.value = lists.followedVenues || [];
 }
 
+function applyUserPreferences(preferences) {
+  userPreferences.value = {
+    newsletterEnabled: preferences?.newsletterEnabled !== false,
+    reminderEmailsEnabled: preferences?.reminderEmailsEnabled !== false,
+  };
+}
+
 function isFollowedArtist(artistName) {
   const normalized = normalizeText(artistName);
   if (!normalized) return false;
@@ -1736,6 +1779,7 @@ async function checkUserAuth() {
       const follows = await loadUserFollows();
       followedArtists.value = follows.followedArtists || [];
       followedVenues.value = follows.followedVenues || [];
+      applyUserPreferences(await loadUserPreferences());
     } else {
       applyUserLists({
         favorites: [],
@@ -1743,6 +1787,10 @@ async function checkUserAuth() {
         seen: [],
         followedArtists: [],
         followedVenues: [],
+      });
+      applyUserPreferences({
+        newsletterEnabled: true,
+        reminderEmailsEnabled: true,
       });
     }
   } catch {
@@ -1753,6 +1801,10 @@ async function checkUserAuth() {
       seen: [],
       followedArtists: [],
       followedVenues: [],
+    });
+    applyUserPreferences({
+      newsletterEnabled: true,
+      reminderEmailsEnabled: true,
     });
   } finally {
     userAuthReady.value = true;
@@ -1808,6 +1860,7 @@ async function loginRegularUser() {
     const follows = await loadUserFollows();
     followedArtists.value = follows.followedArtists || [];
     followedVenues.value = follows.followedVenues || [];
+    applyUserPreferences(await loadUserPreferences());
     userStatus.value = `Inloggad som ${payload.user.username}.`;
   } catch (error) {
     userError.value = error.message || "Kunde inte logga in.";
@@ -1835,6 +1888,7 @@ async function registerRegularUser() {
     const follows = await loadUserFollows();
     followedArtists.value = follows.followedArtists || [];
     followedVenues.value = follows.followedVenues || [];
+    applyUserPreferences(await loadUserPreferences());
     userStatus.value = `Konto skapat och inloggat som ${payload.user.username}.`;
   } catch (error) {
     userError.value = error.message || "Kunde inte skapa konto.";
@@ -1886,7 +1940,85 @@ async function logoutRegularUser() {
     followedArtists: [],
     followedVenues: [],
   });
+  applyUserPreferences({
+    newsletterEnabled: true,
+    reminderEmailsEnabled: true,
+  });
   userStatus.value = "Du är utloggad från användarkontot.";
+}
+
+async function saveUserPreferences() {
+  if (!userAuthenticated.value) return;
+  preferencesSaving.value = true;
+  userError.value = "";
+  userStatus.value = "";
+  try {
+    const next = await updateUserPreferences(userPreferences.value);
+    applyUserPreferences(next);
+    userStatus.value = "Mailinställningar uppdaterade.";
+  } catch (error) {
+    userError.value = error.message || "Kunde inte spara mailinställningar.";
+  } finally {
+    preferencesSaving.value = false;
+  }
+}
+
+async function saveUserPassword() {
+  if (!userAuthenticated.value) return;
+
+  userError.value = "";
+  userStatus.value = "";
+
+  if (
+    !userPasswordCurrent.value ||
+    !userPasswordNext.value ||
+    !userPasswordConfirm.value
+  ) {
+    userError.value = "Fyll i alla lösenordsfält.";
+    return;
+  }
+
+  if (userPasswordNext.value !== userPasswordConfirm.value) {
+    userError.value = "Nytt lösenord och bekräftelse matchar inte.";
+    return;
+  }
+
+  userPasswordSaving.value = true;
+  try {
+    await changeUserPassword(userPasswordCurrent.value, userPasswordNext.value);
+    userPasswordCurrent.value = "";
+    userPasswordNext.value = "";
+    userPasswordConfirm.value = "";
+    userStatus.value = "Lösenordet uppdaterades.";
+  } catch (error) {
+    userError.value = error.message || "Kunde inte byta lösenord.";
+  } finally {
+    userPasswordSaving.value = false;
+  }
+}
+
+async function submitUnsubscribe() {
+  const token = String(unsubscribeToken.value || "").trim();
+  if (!token) {
+    unsubscribeError.value = "Unsubscribe-token saknas.";
+    return;
+  }
+
+  unsubscribeLoading.value = true;
+  unsubscribeError.value = "";
+  unsubscribeStatus.value = "";
+  try {
+    const payload = await unsubscribeByToken(token);
+    unsubscribeStatus.value =
+      payload?.preference === "newsletter"
+        ? "Veckobrev är nu avstängt för kontot."
+        : "Påminnelsemail är nu avstängt för kontot.";
+  } catch (error) {
+    unsubscribeError.value =
+      error.message || "Kunde inte avprenumerera med länken.";
+  } finally {
+    unsubscribeLoading.value = false;
+  }
 }
 
 async function submitContactForm() {
@@ -2162,11 +2294,16 @@ onMounted(async () => {
   window.addEventListener("pointerdown", handleGlobalPointerDown);
   const url = new URL(window.location.href);
   const tokenFromUrl = url.searchParams.get("resetToken");
+  const unsubscribeTokenFromUrl = url.searchParams.get("token");
   const sharedConcertFromUrl = url.searchParams.get("concert");
   if (tokenFromUrl) {
     resetToken.value = tokenFromUrl;
     showResetForm.value = true;
     setView("my-concerts", { replaceUrl: true });
+  }
+  if (unsubscribeTokenFromUrl && getViewFromCurrentUrl() === "unsubscribe") {
+    unsubscribeToken.value = unsubscribeTokenFromUrl;
+    await submitUnsubscribe();
   }
   if (sharedConcertFromUrl) {
     sharedConcertId.value = sharedConcertFromUrl;
@@ -2452,6 +2589,14 @@ watch(
           @click="navigateTo('sources')"
         >
           {{ t("nav.sources") }}
+        </button>
+        <button
+          class="slide-menu-link"
+          :class="{ active: currentView === 'settings' }"
+          type="button"
+          @click="navigateTo('settings')"
+        >
+          {{ t("nav.settings") }}
         </button>
         <button
           class="slide-menu-link"
@@ -2858,7 +3003,8 @@ watch(
                 markera Ska gå/Var där och lägg till i kalender. Du får även
                 mailnotiser om sparade/bokade spelningar och nya matchningar på
                 artister/scener du följer, samt ett veckoutskick med spelningar
-                från flera städer.
+                från flera städer. Som inloggad kan du stänga av veckobrev och
+                påminnelser, och alla notismail har länk till avprenumerering.
               </p>
             </div>
           </li>
@@ -3580,6 +3726,140 @@ watch(
 
           <p v-else class="lead">Inga spelningar i vald kategori ännu.</p>
         </template>
+      </section>
+
+      <section v-if="currentView === 'settings'" class="hero source-panel">
+        <h2>Inställningar</h2>
+
+        <template v-if="!userAuthenticated">
+          <p class="lead">
+            Du behöver vara inloggad för att hantera inställningar.
+          </p>
+          <button class="refresh" type="button" @click="setView('my-concerts')">
+            Gå till inloggning
+          </button>
+        </template>
+
+        <template v-else>
+          <p class="lead">
+            Hantera e-postnotiser och byt lösenord för ditt användarkonto.
+          </p>
+
+          <section class="hero preference-box">
+            <h3>E-postinställningar</h3>
+            <p class="lead">
+              Välj om du vill få veckobrev och påminnelser. Välkomstmail och
+              lösenordsåterställning skickas alltid.
+            </p>
+            <label class="checkbox-row">
+              <input
+                v-model="userPreferences.newsletterEnabled"
+                type="checkbox"
+              />
+              <span>Veckobrev</span>
+            </label>
+            <label class="checkbox-row">
+              <input
+                v-model="userPreferences.reminderEmailsEnabled"
+                type="checkbox"
+              />
+              <span>Påminnelser om bokningar/favoriter</span>
+            </label>
+            <button
+              class="refresh"
+              type="button"
+              :disabled="preferencesSaving"
+              @click="saveUserPreferences"
+            >
+              {{ preferencesSaving ? "Sparar..." : "Spara mailinställningar" }}
+            </button>
+          </section>
+
+          <section class="hero preference-box">
+            <h3>Byt lösenord</h3>
+            <div class="password-field">
+              <input
+                v-model="userPasswordCurrent"
+                :type="showUserPasswordCurrent ? 'text' : 'password'"
+                placeholder="Nuvarande lösenord"
+                autocomplete="current-password"
+              />
+              <button
+                class="toggle-password"
+                type="button"
+                @click="showUserPasswordCurrent = !showUserPasswordCurrent"
+              >
+                {{ showUserPasswordCurrent ? "Dölj" : "Visa" }}
+              </button>
+            </div>
+            <div class="password-field">
+              <input
+                v-model="userPasswordNext"
+                :type="showUserPasswordNext ? 'text' : 'password'"
+                placeholder="Nytt lösenord"
+                autocomplete="new-password"
+              />
+              <button
+                class="toggle-password"
+                type="button"
+                @click="showUserPasswordNext = !showUserPasswordNext"
+              >
+                {{ showUserPasswordNext ? "Dölj" : "Visa" }}
+              </button>
+            </div>
+            <div class="password-field">
+              <input
+                v-model="userPasswordConfirm"
+                :type="showUserPasswordConfirm ? 'text' : 'password'"
+                placeholder="Bekräfta nytt lösenord"
+                autocomplete="new-password"
+              />
+              <button
+                class="toggle-password"
+                type="button"
+                @click="showUserPasswordConfirm = !showUserPasswordConfirm"
+              >
+                {{ showUserPasswordConfirm ? "Dölj" : "Visa" }}
+              </button>
+            </div>
+            <button
+              class="refresh"
+              type="button"
+              :disabled="userPasswordSaving"
+              @click="saveUserPassword"
+            >
+              {{ userPasswordSaving ? "Sparar..." : "Byt lösenord" }}
+            </button>
+          </section>
+
+          <p v-if="userError" class="updated">{{ userError }}</p>
+          <p v-if="userStatus" class="updated">{{ userStatus }}</p>
+        </template>
+      </section>
+
+      <section v-if="currentView === 'unsubscribe'" class="hero source-panel">
+        <h2>Avprenumerera mail</h2>
+        <p class="lead">
+          Den här sidan används av länkar i veckobrev och påminnelsemail.
+        </p>
+        <label class="field-group">
+          <span>Unsubscribe-token</span>
+          <input
+            v-model="unsubscribeToken"
+            type="text"
+            placeholder="Token från e-postlänken"
+          />
+        </label>
+        <button
+          class="refresh"
+          type="button"
+          :disabled="unsubscribeLoading"
+          @click="submitUnsubscribe"
+        >
+          {{ unsubscribeLoading ? "Avprenumererar..." : "Avprenumerera" }}
+        </button>
+        <p v-if="unsubscribeStatus" class="updated">{{ unsubscribeStatus }}</p>
+        <p v-if="unsubscribeError" class="updated">{{ unsubscribeError }}</p>
       </section>
 
       <section v-if="currentView === 'concerts'" class="hero discovery-panel">
