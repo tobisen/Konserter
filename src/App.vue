@@ -3011,7 +3011,7 @@ watch(
               <strong>Spelningar</strong>
               <p>
                 Visa kommande/tidigare spelningar, använd snabbfilter (Denna
-                vecka, I helgen), filtrera på källa/månad/genre, sök på
+                vecka, I helgen, Senast tillagda), filtrera på källa/månad/genre, sök på
                 artist/scen/stad, välj ett specifikt datum i kalendern (med
                 markerade eventdagar), växla mellan kortvy och tabellvy (med
                 snabbtnappar i båda vyerna),

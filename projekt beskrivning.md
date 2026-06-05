@@ -29,11 +29,13 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Card and table display modes.
 - Filters by source, month, genre.
 - Single-date picker (with event-day markers).
+- Quick discovery tabs for All, This week, This weekend, and Latest added.
 - Search by artist, venue, city.
 - Shareable concert deep-links and preview image generation.
 - Calendar export (`.ics`).
 - Contact page with a public contact form in the main menu.
 - SEO baseline with dynamic metadata by route plus sitemap/robots.
+- "Latest added" view that shows the concerts from the latest import batch where new additions were found.
 
 ### 3. My Concerts
 
@@ -67,6 +69,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Right-side slide menu (hamburger navigation).
 - Header quick actions for Concerts/My Concerts.
 - Language toggle (SV/EN, Swedish default).
+- Help text aligned with the current app flow, including the new Latest added view.
 - Rock-inspired visual theme and concert-first layout.
 
 ## Technical Stack

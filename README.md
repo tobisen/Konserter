@@ -10,8 +10,9 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Filters (source, month, genre)
   - Single-date picker filter with highlighted event days
   - Search by artist, venue, and city
-  - Quick discovery chips (All / This week / This weekend)
+  - Quick discovery chips (All / This week / This weekend / Latest added)
   - Popular this week block (based on likes + bookings)
+  - "Latest added" view showing the concerts from the latest import batch that produced new additions
 - Rich concert cards:
   - Image (with fallback image)
   - Genre, source, details link
@@ -107,6 +108,8 @@ If these are missing in production, forgot-password returns an explicit configur
 Optional secret:
 - `PLAYWRIGHT_BASE_URL` (fallback: production URL)
 
+Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts`.
+
 ## API Routing
 
 - Single endpoint: `api/index.js`
@@ -129,6 +132,7 @@ Supports multiple source patterns:
 1. Update `README.md`.
 2. Update `projekt beskrivning.md`.
 3. Update `ANALYSIS_AND_GROWTH_STRATEGY.md`.
-4. Keep Help view text aligned with current UX.
-5. Update Playwright tests for UI changes.
-6. Verify build (`npm run build`).
+4. Update `build-meta.json`.
+5. Keep Help view text aligned with current UX.
+6. Update Playwright tests for UI changes.
+7. Verify build (`npm run build`).

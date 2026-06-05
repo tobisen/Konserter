@@ -19,6 +19,7 @@
 13. SEO foundation (route metadata + sitemap + robots) for organic discovery.
 14. Weekly multi-city newsletter for recurring re-engagement.
 15. User-controlled unsubscribe/preferences for newsletter and reminder digests.
+16. A "Latest added" discovery lane that surfaces the newest import batch with actual additions.
 
 ### Risks / Gaps
 
@@ -45,6 +46,7 @@
 - Track key events (view concert, favorite, booking, share click).
 - Build a weekly KPI review habit.
 - Add unsubscribe-rate and email-delivery metrics to monitor content quality.
+- Track engagement on the new Latest added view to see whether users prefer newest imports over date-based discovery.
 
 ## Distribution Plan (Uppsala + 5-10 mil)
 
