@@ -11,7 +11,9 @@ export async function loadStoredConcerts() {
   const payload = await parseJson(response)
   return {
     concerts: payload.concerts || [],
-    lastUpdatedAt: payload.lastUpdatedAt || null
+    lastUpdatedAt: payload.lastUpdatedAt || null,
+    latestAddedAt: payload.latestAddedAt || null,
+    latestAddedConcertIds: payload.latestAddedConcertIds || []
   }
 }
 
@@ -27,6 +29,8 @@ export async function updateConcertsFromSources() {
     addedCount: payload.addedCount || 0,
     errors: payload.errors || [],
     lastUpdatedAt: payload.lastUpdatedAt || null,
+    latestAddedAt: payload.latestAddedAt || null,
+    latestAddedConcertIds: payload.latestAddedConcertIds || [],
     sourceStatus: payload.sourceStatus || []
   }
 }
@@ -40,6 +44,8 @@ export async function clearStoredConcerts() {
 
   return {
     concerts: payload.concerts || [],
-    clearedCount: payload.clearedCount || 0
+    clearedCount: payload.clearedCount || 0,
+    latestAddedAt: payload.latestAddedAt || null,
+    latestAddedConcertIds: payload.latestAddedConcertIds || []
   }
 }

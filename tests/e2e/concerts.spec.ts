@@ -16,6 +16,7 @@ test.describe("Concerts view", () => {
     await expect(page.locator("#concert-date-to")).toBeVisible();
     await expect(page.getByRole("button", { name: /Kortvy|Card view/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Listvy|List view/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Senast tillagda|Latest added/i })).toBeVisible();
   });
 
   test("can switch between card and table view", async ({ page }) => {

@@ -34,6 +34,8 @@ import {
 
 const concerts = ref([]);
 const lastUpdatedAt = ref(null);
+const latestAddedAt = ref(null);
+const latestAddedConcertIds = ref([]);
 const sources = ref([]);
 const loading = ref(false);
 const status = ref("");
@@ -198,6 +200,10 @@ const quickDiscoverOptions = computed(() => [
   { id: "all", label: locale.value === "en" ? "All" : "Alla" },
   { id: "week", label: locale.value === "en" ? "This week" : "Denna vecka" },
   { id: "weekend", label: locale.value === "en" ? "This weekend" : "I helgen" },
+  {
+    id: "latest",
+    label: locale.value === "en" ? "Latest added" : "Senast tillagda",
+  },
 ]);
 
 const i18n = {
@@ -832,11 +838,24 @@ function matchesQuickDiscoverFilter(concert, mode) {
   return true;
 }
 
-const filteredConcertsBase = computed(() => {
+const latestAddedConcertIdSet = computed(
+  () => new Set(latestAddedConcertIds.value.filter(Boolean)),
+);
+
+const latestAddedConcerts = computed(() => {
+  const ids = latestAddedConcertIdSet.value;
+  if (!ids.size) return [];
+
+  return concerts.value.filter((concert) => ids.has(getConcertId(concert)));
+});
+
+function getConcertsForQuickMode(mode) {
+  const baseConcerts =
+    mode === "latest" ? latestAddedConcerts.value : concertsForCurrentView.value;
   const query = normalizeText(concertsSearch.value);
   const selectedDateKey = concertsDateTo.value || null;
 
-  return concertsForCurrentView.value.filter((concert) => {
+  return baseConcerts.filter((concert) => {
     const sourceIncluded = !deselectedSources.value.includes(
       getConcertSourceName(concert),
     );
@@ -853,19 +872,26 @@ const filteredConcertsBase = computed(() => {
       !selectedDateKey ||
       (concertDate && toLocalDateKey(concertDate) === selectedDateKey);
 
-    return sourceIncluded && monthIncluded && genreIncluded && searchIncluded && dateIncluded;
+    const quickIncluded =
+      mode === "latest" ? true : matchesQuickDiscoverFilter(concert, mode);
+
+    return (
+      sourceIncluded &&
+      monthIncluded &&
+      genreIncluded &&
+      searchIncluded &&
+      dateIncluded &&
+      quickIncluded
+    );
   });
-});
+}
 
 const quickFilterCounts = computed(() => {
-  const base = filteredConcertsBase.value;
   return {
-    all: base.length,
-    week: base.filter((concert) => matchesQuickDiscoverFilter(concert, "week"))
-      .length,
-    weekend: base.filter((concert) =>
-      matchesQuickDiscoverFilter(concert, "weekend"),
-    ).length,
+    all: getConcertsForQuickMode("all").length,
+    week: getConcertsForQuickMode("week").length,
+    weekend: getConcertsForQuickMode("weekend").length,
+    latest: getConcertsForQuickMode("latest").length,
   };
 });
 
@@ -877,9 +903,7 @@ const filteredConcerts = computed(() => {
     return shared ? [shared] : [];
   }
 
-  return filteredConcertsBase.value.filter((concert) =>
-    matchesQuickDiscoverFilter(concert, quickDiscoverMode.value),
-  );
+  return getConcertsForQuickMode(quickDiscoverMode.value);
 });
 
 const sortedFilteredConcerts = computed(() => {
@@ -2076,6 +2100,10 @@ async function refreshConcerts() {
   const result = await loadStoredConcerts();
   concerts.value = result.concerts;
   lastUpdatedAt.value = result.lastUpdatedAt;
+  latestAddedAt.value = result.latestAddedAt || null;
+  latestAddedConcertIds.value = Array.isArray(result.latestAddedConcertIds)
+    ? result.latestAddedConcertIds
+    : [];
 }
 
 async function refreshPopularConcerts() {
@@ -2104,6 +2132,10 @@ async function updateConcerts() {
     concerts.value = result.concerts;
     fetchErrors.value = result.errors;
     lastUpdatedAt.value = result.lastUpdatedAt || lastUpdatedAt.value;
+    latestAddedAt.value = result.latestAddedAt || latestAddedAt.value;
+    latestAddedConcertIds.value = Array.isArray(result.latestAddedConcertIds)
+      ? result.latestAddedConcertIds
+      : latestAddedConcertIds.value;
     sourceImportStatus.value = result.sourceStatus || sourceImportStatus.value;
 
     if (result.addedCount > 0) {
@@ -2142,6 +2174,8 @@ async function clearConcerts() {
   try {
     const result = await clearStoredConcerts();
     concerts.value = result.concerts;
+    latestAddedAt.value = result.latestAddedAt || null;
+    latestAddedConcertIds.value = [];
     status.value = `Rensade ${result.clearedCount} konserter från listan.`;
   } catch (error) {
     status.value = error.message || "Kunde inte tömma konserter.";
@@ -4070,6 +4104,35 @@ watch(
       <section
         v-if="
           currentView === 'concerts' &&
+          quickDiscoverMode === 'latest' &&
+          !sharedConcertId
+        "
+        class="hero latest-panel"
+      >
+        <h2>{{ locale === "en" ? "Latest added" : "Senast tillagda" }}</h2>
+        <p class="lead">
+          {{
+            latestAddedConcerts.length
+              ? (locale === "en"
+                  ? "Shows from the latest import where new concerts were found."
+                  : "Spelningar från senaste importen där nya konserter hittades.")
+              : (locale === "en"
+                  ? "No added concerts have been recorded yet."
+                  : "Inga tillagda spelningar har registrerats ännu.")
+          }}
+        </p>
+        <p v-if="latestAddedAt" class="updated">
+          {{
+            locale === "en"
+              ? "Latest batch with new concerts"
+              : "Senaste batch med nya spelningar"
+          }}: {{ formatStatusDate(latestAddedAt) }}
+        </p>
+      </section>
+
+      <section
+        v-if="
+          currentView === 'concerts' &&
           concertsSubView === 'upcoming' &&
           !sharedConcertId &&
           (popularThisWeekConcerts.length || popularLoading)
@@ -4411,9 +4474,11 @@ watch(
       >
         <p class="lead">
           {{
-            concertsSubView === "past"
-              ? "Inga passerade spelningar hittades."
-              : "Inga kommande spelningar hittades."
+            quickDiscoverMode === "latest"
+              ? "Inga senast tillagda spelningar hittades."
+              : concertsSubView === "past"
+                ? "Inga passerade spelningar hittades."
+                : "Inga kommande spelningar hittades."
           }}
         </p>
       </section>

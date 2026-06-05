@@ -168,6 +168,10 @@ async function handleGetConcerts(response) {
   sendJson(response, 200, {
     concerts,
     lastUpdatedAt: meta.lastUpdatedAt || null,
+    latestAddedAt: meta.latestAddedAt || null,
+    latestAddedConcertIds: Array.isArray(meta.latestAddedConcertIds)
+      ? meta.latestAddedConcertIds
+      : [],
   });
 }
 
@@ -357,6 +361,14 @@ async function runConcertUpdate() {
   const additions = incomingConcerts.filter(
     (concert) => !existingIds.has(createStableId(concert)),
   );
+  const latestAddedAt =
+    additions.length > 0 ? updateTimestamp : meta?.latestAddedAt || null;
+  const latestAddedConcertIds =
+    additions.length > 0
+      ? additions.map(createStableId)
+      : Array.isArray(meta?.latestAddedConcertIds)
+        ? meta.latestAddedConcertIds
+        : [];
 
   const merged = [...currentConcerts, ...additions].sort(
     (a, b) => parseConcertDate(a.date) - parseConcertDate(b.date),
@@ -370,6 +382,8 @@ async function runConcertUpdate() {
   await saveMetaToStore({
     ...meta,
     lastUpdatedAt: updateTimestamp,
+    latestAddedAt,
+    latestAddedConcertIds,
     sourceRuns: {
       ...(meta?.sourceRuns && typeof meta.sourceRuns === "object"
         ? meta.sourceRuns
@@ -387,6 +401,8 @@ async function runConcertUpdate() {
       addedCount: additions.length,
       errors,
       lastUpdatedAt: updateTimestamp,
+      latestAddedAt,
+      latestAddedConcertIds,
       sourceStatus: sources.map((source) => ({
         sourceId: source.id,
         sourceName: source.name,
@@ -1144,11 +1160,19 @@ async function handleClearConcerts(request, response) {
   if (!user) return;
 
   const currentConcerts = await loadConcertsFromFile();
+  const meta = await loadMetaFromStore();
   await saveConcertsToFile([]);
+  await saveMetaToStore({
+    ...meta,
+    latestAddedAt: null,
+    latestAddedConcertIds: [],
+  });
 
   sendJson(response, 200, {
     concerts: [],
     clearedCount: currentConcerts.length,
+    latestAddedAt: null,
+    latestAddedConcertIds: [],
   });
 }
 
