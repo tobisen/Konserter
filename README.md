@@ -110,7 +110,7 @@ Optional secret:
 - `PLAYWRIGHT_BASE_URL` (fallback: production URL)
 
 Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts`.
-API smoke tests also check that invalid source-event URLs return readable error messages.
+API smoke tests also check that invalid source-event URLs return readable error messages, and now cover the Dog Bar and Kulturoasen source parsers too.
 
 ## API Routing
 
@@ -127,7 +127,7 @@ Supports multiple source patterns:
 - JSON feeds
 - JSON-LD event markup
 - WordPress event APIs (custom post types)
-- Source-specific fallback parsers where needed
+- Source-specific fallback parsers where needed (for example Dog Bar poster pages and Kulturoasen's event list / event pages)
 
 ## Release Checklist (Required Before Every Commit)
 

@@ -21,6 +21,7 @@
 15. User-controlled unsubscribe/preferences for newsletter and reminder digests.
 16. A "Latest added" discovery lane that surfaces the newest import batch with actual additions.
 17. Clearer source-update error messages that make failed imports easier to diagnose.
+18. Expanded venue coverage with new custom parsers for Dog Bar Uppsala and Kulturoasen.
 
 ### Risks / Gaps
 
@@ -28,6 +29,7 @@
 2. Limited geo coverage beyond Uppsala region.
 3. Onboarding/discovery still depends on manual growth channels.
 4. Full bilingual coverage is in progress and should be continuously validated.
+5. Custom source parsers need ongoing maintenance when venue layouts change.
 
 ## 30-Day Priorities
 
@@ -35,6 +37,7 @@
 - Add parser health metrics by source.
 - Add retry logic and parser diagnostics for failed imports.
 - Keep surfaced import errors descriptive so broken sources are easier to fix quickly.
+- Keep expanding the source-specific parser library so important venues keep working even when their CMS output differs.
 
 2. Product polish
 - Complete full SV/EN localization pass for every user-visible string.

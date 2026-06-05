@@ -17,7 +17,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 ### 1. Aggregation and Normalization
 
 - Ingestion from HTML, JSON, JSON-LD, and WordPress event APIs.
-- Source-specific parser fallbacks for selected venues.
+- Source-specific parser fallbacks for selected venues, including poster-style listing pages and event archives.
 - Normalized concert model:
   - artist, title, date, venue, city
   - optional genre, details URL, image URL
@@ -37,6 +37,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Contact page with a public contact form in the main menu.
 - SEO baseline with dynamic metadata by route plus sitemap/robots.
 - "Latest added" view that shows the concerts from the latest import batch where new additions were found.
+- New source coverage for Dog Bar Uppsala and Kulturoasen, using lightweight source-specific parsers where their markup differs from the standard event feeds.
 
 ### 3. My Concerts
 

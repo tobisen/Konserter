@@ -32,4 +32,36 @@ test.describe('Public API smoke', () => {
     const payload = await response.json()
     expect(String(payload.error || '')).toContain('Ogiltig käll-URL')
   })
+
+  test('GET /api/source-events can read Dog Bar events', async ({ request, baseURL }) => {
+    const response = await request.get(
+      `${baseURL}/api/source-events?url=${encodeURIComponent('https://dogbaruppsala.se/evenemang')}`
+    )
+    expect(response.ok()).toBeTruthy()
+
+    const payload = await response.json()
+    expect(Array.isArray(payload.concerts)).toBeTruthy()
+    expect(payload.concerts.length).toBeGreaterThan(0)
+    expect(
+      payload.concerts.some((concert) =>
+        String(concert.detailsUrl || '').includes('dogbaruppsala.se')
+      )
+    ).toBeTruthy()
+  })
+
+  test('GET /api/source-events can read Kulturoasen events', async ({ request, baseURL }) => {
+    const response = await request.get(
+      `${baseURL}/api/source-events?url=${encodeURIComponent('https://www.kulturoasen.se/')}`
+    )
+    expect(response.ok()).toBeTruthy()
+
+    const payload = await response.json()
+    expect(Array.isArray(payload.concerts)).toBeTruthy()
+    expect(payload.concerts.length).toBeGreaterThan(0)
+    expect(
+      payload.concerts.some((concert) =>
+        String(concert.detailsUrl || '').includes('kulturoasen.se/events/')
+      )
+    ).toBeTruthy()
+  })
 })

@@ -509,6 +509,120 @@ function parseNalenEventsFromHtml(html, sourceUrl = null) {
   return concerts
 }
 
+function parseDogbarEventTitle(text) {
+  const cleaned = cleanupText(text)
+  const match = cleaned.match(/^(.*\S)\s+(\d{1,2})\/(\d{1,2})-(20\d{2})$/)
+  if (!match) return null
+
+  const artist = cleanupText(match[1])
+  const day = Number(match[2])
+  const month = Number(match[3])
+  const year = Number(match[4])
+
+  if (!artist || !Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+    return null
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day, 18, 0))
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return {
+    artist,
+    date: date.toISOString()
+  }
+}
+
+function parseDogbarEventsFromHtml(html, sourceUrl = null) {
+  if (!sourceUrl?.hostname?.includes('dogbaruppsala.se')) {
+    return []
+  }
+
+  const images = [...html.matchAll(/<img\b[^>]*>/gi)]
+  const concerts = []
+  const seen = new Set()
+
+  for (const imageMatch of images) {
+    const imageTag = imageMatch[0]
+    const label = pickFirstText(
+      imageTag.match(/\btitle="([^"]+)"/i)?.[1],
+      imageTag.match(/\balt="([^"]+)"/i)?.[1]
+    )
+
+    const parsed = parseDogbarEventTitle(label)
+    if (!parsed) continue
+
+    const detailsUrl = sourceUrl.toString()
+    const imageUrl = normalizeUrlLike(imageTag.match(/\bsrc="([^"]+)"/i)?.[1])
+    const key = `${parsed.artist}|${parsed.date}`
+
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    concerts.push({
+      artist: parsed.artist,
+      title: parsed.artist,
+      date: parsed.date,
+      venue: 'Dog Bar',
+      city: 'Uppsala',
+      genre: '',
+      detailsUrl,
+      imageUrl
+    })
+  }
+
+  return concerts
+}
+
+function parseKulturoasenEventsFromHtml(html, sourceUrl = null) {
+  if (!sourceUrl?.hostname?.includes('kulturoasen.se')) {
+    return []
+  }
+
+  const itemPattern =
+    /<h3[^>]*class="[^"]*dem_event_title[^"]*"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>\s*<\/h3>\s*<p class="dem_event_date_time">([\s\S]*?)<\/p>/gi
+  const concerts = []
+  const seen = new Set()
+  let match = itemPattern.exec(html)
+
+  while (match) {
+    const href = normalizeUrlLike(match[1])
+    const title = cleanupText(stripHtmlTags(match[2]))
+    const dateText = cleanupText(stripHtmlTags(match[3]))
+    const date = parseSwedishDateWithRollingYear(dateText)
+
+    if (!href || !title || !date) {
+      match = itemPattern.exec(html)
+      continue
+    }
+
+    const snippet = html.slice(Math.max(0, match.index - 1200), match.index)
+    const imageMatches = [...snippet.matchAll(/<img\b[^>]*src="([^"]+)"/gi)]
+    const imageUrl = normalizeUrlLike(imageMatches.at(-1)?.[1])
+    const venue = cleanupText(dateText.match(/\bpå\s+(.+)$/i)?.[1]) || 'Kulturoasen'
+    const key = `${title}|${date}`
+
+    if (!seen.has(key)) {
+      seen.add(key)
+      concerts.push({
+        artist: title,
+        title,
+        date,
+        venue,
+        city: 'Uppsala',
+        genre: '',
+        detailsUrl: href,
+        imageUrl
+      })
+    }
+
+    match = itemPattern.exec(html)
+  }
+
+  return concerts
+}
+
 function parseConcertsFromJsonPayload(payload) {
   const rawEvents = pickEventsPayload(payload)
   return rawEvents
@@ -567,6 +681,16 @@ function parseConcertsFromHtml(html, sourceUrl = null) {
     return fromNalenHtml
   }
 
+  const fromDogbarHtml = parseDogbarEventsFromHtml(html, sourceUrl)
+  if (fromDogbarHtml.length > 0) {
+    return fromDogbarHtml
+  }
+
+  const fromKulturoasenHtml = parseKulturoasenEventsFromHtml(html, sourceUrl)
+  if (fromKulturoasenHtml.length > 0) {
+    return fromKulturoasenHtml
+  }
+
   return parseKaliberEventsFromHtml(html, sourceUrl)
 }
 
@@ -601,7 +725,7 @@ const SWEDISH_MONTHS = {
 }
 
 function parseSwedishDateFromText(text, fallbackYear) {
-  const cleaned = cleanupText(text)
+  const cleaned = cleanupText(text).replace(/[,]+/g, ' ')
   const pattern =
     /(\d{1,2})\s+([a-zåäö.]+)(?:\s+(20\d{2}))?(?:[^\d]{0,20}(?:(?:kl\.?|klockan)\s*)?(\d{1,2})[:.](\d{2}))?/i
 
@@ -613,7 +737,7 @@ function parseSwedishDateFromText(text, fallbackYear) {
   const day = Number(match[1])
   const monthKey = String(match[2] || '')
     .toLowerCase()
-    .replace(/\.$/, '')
+    .replace(/[.,]$/, '')
   const month = SWEDISH_MONTHS[monthKey]
   const year = match[3] ? Number(match[3]) : fallbackYear
   const hour = match[4] ? Number(match[4]) : 20
@@ -955,6 +1079,60 @@ async function fetchParksResortsPageDataConcerts(sourceUrl) {
   return parseParksResortsConcertsFromPageData(payload, city)
 }
 
+function parseKulturoasenEventPageHtml(html, sourceUrl, fallbackTitle = '') {
+  const title = cleanupText(
+    html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i)?.[1] ||
+      fallbackTitle
+  )
+  const dateBlock = html.match(
+    /<h3[^>]*>\s*<b>\s*Datum\s*<\/b>\s*<\/h3>\s*<p>([\s\S]*?)<\/p>/i
+  )
+  const dateText = cleanupText(stripHtmlTags(dateBlock?.[1]))
+  const date = parseSwedishDateWithRollingYear(dateText)
+
+  const venueBlock = html.match(
+    /<h3[^>]*>\s*Spelplats\s*<\/h3>\s*([\s\S]*?)(?:<\/div>\s*<\/div>|<\/div>)/i
+  )
+  const venue = pickFirstText(stripHtmlTags(venueBlock?.[1])) || 'Kulturoasen'
+
+  if (!title || !date) {
+    return null
+  }
+
+  return {
+    title,
+    date,
+    venue
+  }
+}
+
+function parseKulturoasenWpPost(post, pageHtml, sourceUrl) {
+  const title = cleanupText(post?.title?.rendered)
+  const pageData = parseKulturoasenEventPageHtml(pageHtml, sourceUrl, title)
+  if (!pageData?.date) {
+    return null
+  }
+
+  const detailsUrl = normalizeUrlLike(post?.link) || sourceUrl.toString()
+  const imageUrl = normalizeUrlLike(
+    post?._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+      post?._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.large?.source_url ||
+      post?._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
+      post?._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.thumbnail?.source_url
+  )
+
+  return {
+    artist: title || pageData.title,
+    title: title || pageData.title,
+    date: pageData.date,
+    venue: pageData.venue || 'Kulturoasen',
+    city: 'Uppsala',
+    genre: '',
+    detailsUrl,
+    imageUrl
+  }
+}
+
 function parseDalhallaConcertFromWpPost(post, sourceUrl) {
   const title = cleanupText(post?.title?.rendered)
   const detailsUrl = normalizeUrlLike(post?.link)
@@ -1019,6 +1197,74 @@ async function fetchDalhallaConcertsFromWpApi(sourceUrl) {
       const normalized = parseDalhallaConcertFromWpPost(post, sourceUrl)
       if (!normalized) continue
 
+      const key = `${normalized.artist}|${normalized.date}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      concerts.push(normalized)
+    }
+
+    page += 1
+  }
+
+  return concerts
+}
+
+async function fetchKulturoasenConcertsFromWpApi(sourceUrl) {
+  if (!sourceUrl.hostname.includes('kulturoasen.se')) {
+    return []
+  }
+
+  const concerts = []
+  const seen = new Set()
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages && page <= 4) {
+    const endpoint = `${sourceUrl.origin}/wp-json/wp/v2/dp_events?per_page=100&page=${page}&status=publish&_embed`
+    const response = await fetch(endpoint, {
+      headers: {
+        'User-Agent': 'KonserterBot/1.0 (+https://local.app)'
+      }
+    })
+
+    if (!response.ok) {
+      break
+    }
+
+    const pageItems = await response.json().catch(() => [])
+    if (!Array.isArray(pageItems) || pageItems.length === 0) {
+      break
+    }
+
+    totalPages = Number(response.headers.get('x-wp-totalpages') || totalPages || 1)
+
+    const pageConcerts = await Promise.all(
+      pageItems.map(async (post) => {
+        const detailsUrl = normalizeUrlLike(post?.link)
+        if (!detailsUrl) return null
+
+        let pageHtml = ''
+        try {
+          const pageResponse = await fetch(detailsUrl, {
+            headers: {
+              'User-Agent': 'KonserterBot/1.0 (+https://local.app)'
+            }
+          })
+
+          if (!pageResponse.ok) {
+            return null
+          }
+
+          pageHtml = await pageResponse.text()
+        } catch {
+          return null
+        }
+
+        return parseKulturoasenWpPost(post, pageHtml, sourceUrl)
+      })
+    )
+
+    for (const normalized of pageConcerts.filter(Boolean)) {
       const key = `${normalized.artist}|${normalized.date}`
       if (seen.has(key)) continue
       seen.add(key)
@@ -1230,6 +1476,13 @@ export async function fetchConcertsFromUrl(sourceUrlRaw) {
     const nalenConcerts = await fetchNalenConcertsFromApis(sourceUrl)
     if (nalenConcerts.length > 0) {
       concerts = nalenConcerts
+    }
+  }
+
+  if (concerts.length === 0) {
+    const kulturoasenConcerts = await fetchKulturoasenConcertsFromWpApi(sourceUrl)
+    if (kulturoasenConcerts.length > 0) {
+      concerts = kulturoasenConcerts
     }
   }
 
