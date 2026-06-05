@@ -320,13 +320,22 @@ async function runConcertUpdate() {
   }
 
   const currentConcerts = await loadConcertsFromFile();
+  const meta = await loadMetaFromStore();
 
   const sourceResults = await Promise.allSettled(
     sources.map(async (source) => {
-      const fetched = await fetchConcertsFromUrl(source.url);
-      return fetched
-        .map((concert) => normalizeIncomingConcert(concert, source.name))
-        .filter(isValidConcert);
+      try {
+        const fetched = await fetchConcertsFromUrl(source.url);
+        return fetched
+          .map((concert) => normalizeIncomingConcert(concert, source.name))
+          .filter(isValidConcert);
+      } catch (error) {
+        const sourceError = new Error(
+          `${source.name}: ${error instanceof Error ? error.message : "okänt fel"}`
+        );
+        sourceError.cause = error;
+        throw sourceError;
+      }
     }),
   );
 
@@ -377,8 +386,6 @@ async function runConcertUpdate() {
   if (additions.length > 0) {
     await saveConcertsToFile(merged);
   }
-
-  const meta = await loadMetaFromStore();
   await saveMetaToStore({
     ...meta,
     lastUpdatedAt: updateTimestamp,
@@ -415,8 +422,16 @@ async function runConcertUpdate() {
 }
 
 async function handleUpdateConcerts(request, response) {
-  const result = await runConcertUpdate();
-  sendJson(response, result.statusCode, result.payload);
+  try {
+    const result = await runConcertUpdate();
+    sendJson(response, result.statusCode, result.payload);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Okänt fel vid uppdatering av konserter.";
+    sendJson(response, 500, {
+      error: message,
+    });
+  }
 }
 
 function isCronAuthorized(request, url) {

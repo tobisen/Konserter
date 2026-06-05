@@ -24,4 +24,12 @@ test.describe('Public API smoke', () => {
     const payload = await response.json()
     expect(String(payload.error || '')).toContain('url')
   })
+
+  test('GET /api/source-events with invalid url returns a readable error', async ({ request, baseURL }) => {
+    const response = await request.get(`${baseURL}/api/source-events?url=not-a-valid-url`)
+    expect(response.status()).toBe(500)
+
+    const payload = await response.json()
+    expect(String(payload.error || '')).toContain('Ogiltig käll-URL')
+  })
 })

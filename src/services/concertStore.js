@@ -1,7 +1,18 @@
 async function parseJson(response) {
-  const payload = await response.json().catch(() => ({}))
+  const rawText = await response.text().catch(() => '')
+  let payload = {}
+
+  if (rawText) {
+    try {
+      payload = JSON.parse(rawText)
+    } catch {
+      payload = { error: rawText }
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(payload.error || 'Okänt fel')
+    const message = payload.error || rawText || `HTTP ${response.status}`
+    throw new Error(message)
   }
   return payload
 }

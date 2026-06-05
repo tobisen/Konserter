@@ -22,6 +22,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
   - artist, title, date, venue, city
   - optional genre, details URL, image URL
 - Stable concert IDs and additive merge updates.
+- Better error reporting when a source fails during import or returns invalid data.
 
 ### 2. Public Experience
 
@@ -60,6 +61,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Source add/remove.
 - Update/clear concerts.
 - Import quality monitor per source.
+- Update feedback now surfaces the source name or import step that failed instead of hiding behind a generic error.
 - Unique users and unique visitors overview.
 - Delete user accounts and all user-specific saved lists.
 

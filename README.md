@@ -18,6 +18,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Genre, source, details link
   - Share action (deep-link + generated preview image)
   - Add to calendar (`.ics`)
+  - Clearer import/update error messages when a source fails or returns invalid data
 - User area (My Concerts):
   - Register/login
   - Welcome email on successful registration (when mail is configured)
@@ -109,6 +110,7 @@ Optional secret:
 - `PLAYWRIGHT_BASE_URL` (fallback: production URL)
 
 Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts`.
+API smoke tests also check that invalid source-event URLs return readable error messages.
 
 ## API Routing
 

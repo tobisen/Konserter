@@ -20,6 +20,7 @@
 14. Weekly multi-city newsletter for recurring re-engagement.
 15. User-controlled unsubscribe/preferences for newsletter and reminder digests.
 16. A "Latest added" discovery lane that surfaces the newest import batch with actual additions.
+17. Clearer source-update error messages that make failed imports easier to diagnose.
 
 ### Risks / Gaps
 
@@ -33,6 +34,7 @@
 1. Source quality and stability
 - Add parser health metrics by source.
 - Add retry logic and parser diagnostics for failed imports.
+- Keep surfaced import errors descriptive so broken sources are easier to fix quickly.
 
 2. Product polish
 - Complete full SV/EN localization pass for every user-visible string.
