@@ -12,14 +12,17 @@ test.describe('Navigation', () => {
     await expect(page.locator('.brand-block')).toBeVisible()
     await expect(page.locator('.header-quick-nav').getByRole('button', { name: /^Spelningar$/ })).toBeVisible()
     await expect(page.locator('.header-quick-nav').getByRole('button', { name: /^Mina Spelningar$/ })).toBeVisible()
-    await expect(page.getByRole('button', { name: /^SV$/ })).toBeVisible()
+    await expect(page.locator('.header-quick-nav').getByRole('link', { name: /^Stötta$/ })).toHaveAttribute('href', 'https://ko-fi.com/soundcheckfun')
+    await expect(page.getByRole('button', { name: /^Byt till svenska$/ })).toBeVisible()
 
     await openMenu(page)
     await expect(page.getByRole('button', { name: /^Hem$/ })).toBeVisible()
+    await expect(page.locator('.slide-menu').getByRole('link', { name: /^Stötta$/ })).toHaveAttribute('href', 'https://ko-fi.com/soundcheckfun')
     await expect(page.getByRole('button', { name: /^Källor$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Kontakt$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Hjälp$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Admin$/ })).toBeVisible()
+    await expect(page.locator('.site-footer').getByRole('link', { name: /Stötta Soundcheck/ })).toHaveAttribute('href', 'https://ko-fi.com/soundcheckfun')
   })
 
   test('help page opens', async ({ page }) => {

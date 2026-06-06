@@ -7,7 +7,11 @@ test("homepage basic smoke", async ({ page }) => {
   await expect(
     page.locator(".header-quick-nav").getByRole("button", { name: /^Spelningar$/ }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: /^SV$/ })).toBeVisible();
+  await expect(
+    page.locator(".header-quick-nav").getByRole("link", { name: /^Stötta$/ }),
+  ).toHaveAttribute("href", "https://ko-fi.com/soundcheckfun");
+  await expect(page.getByRole("button", { name: /^Byt till svenska$/ })).toBeVisible();
+  await expect(page.locator(".site-footer")).toBeVisible();
 });
 
 test("favicon is loaded", async ({ page }) => {

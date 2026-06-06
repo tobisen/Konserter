@@ -71,6 +71,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Sticky full-width header.
 - Right-side slide menu (hamburger navigation).
 - Header quick actions for Concerts/My Concerts.
+- Ko-fi support link in the header, slide menu, and sticky footer.
 - Language toggle (SV/EN, Swedish default).
 - Help text aligned with the current app flow, including the new Latest added view.
 - Rock-inspired visual theme and concert-first layout.

@@ -38,6 +38,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
 - UI/UX:
   - Sticky full-width header
   - Right-side slide menu (hamburger)
+  - Ko-fi support link in the header, slide menu, and always-visible footer
   - Contact page with menu entry and contact form
   - Language toggle (SV/EN, Swedish default)
   - Dynamic SEO title/description per app view
@@ -109,7 +110,7 @@ If these are missing in production, forgot-password returns an explicit configur
 Optional secret:
 - `PLAYWRIGHT_BASE_URL` (fallback: production URL)
 
-Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts`.
+Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts` and the Ko-fi support links in `tests/e2e/navigation.spec.ts` / `tests/e2e/smoke.spec.ts`.
 API smoke tests also check that invalid source-event URLs return readable error messages, and now cover the Dog Bar and Kulturoasen source parsers too.
 
 ## API Routing

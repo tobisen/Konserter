@@ -212,6 +212,7 @@ const i18n = {
       home: "Hem",
       concerts: "Spelningar",
       myConcerts: "Mina Spelningar",
+      support: "Stötta",
       settings: "Inställningar",
       help: "Hjälp",
       contact: "Kontakt",
@@ -272,6 +273,7 @@ const i18n = {
       home: "Home",
       concerts: "Concerts",
       myConcerts: "My Concerts",
+      support: "Support",
       settings: "Settings",
       help: "Help",
       contact: "Contact",
@@ -2528,6 +2530,14 @@ watch(
         >
           {{ t("nav.myConcerts") }}
         </button>
+        <a
+          class="nav-link nav-support"
+          href="https://ko-fi.com/soundcheckfun"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("nav.support") }}
+        </a>
       </nav>
       <div class="locale-switch" role="group" aria-label="Språk">
         <button
@@ -2600,6 +2610,15 @@ watch(
         >
           {{ t("nav.myConcerts") }}
         </button>
+        <a
+          class="slide-menu-link"
+          href="https://ko-fi.com/soundcheckfun"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click="closeMenu"
+        >
+          {{ t("nav.support") }}
+        </a>
         <button
           class="slide-menu-link"
           :class="{ active: currentView === 'help' }"
@@ -4540,5 +4559,18 @@ watch(
         <p v-if="authError" class="updated">{{ authError }}</p>
       </section>
     </div>
+
+    <footer class="site-footer">
+      <p>
+        Soundcheck samlar spelningar i Uppsala med omnejd.
+        <a
+          href="https://ko-fi.com/soundcheckfun"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("nav.support") }} Soundcheck
+        </a>
+      </p>
+    </footer>
   </main>
 </template>

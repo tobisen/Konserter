@@ -22,6 +22,7 @@
 16. A "Latest added" discovery lane that surfaces the newest import batch with actual additions.
 17. Clearer source-update error messages that make failed imports easier to diagnose.
 18. Expanded venue coverage with new custom parsers for Dog Bar Uppsala and Kulturoasen.
+19. Ko-fi support path is visible from the header, slide menu, and sticky footer.
 
 ### Risks / Gaps
 
@@ -46,6 +47,7 @@
 3. Distribution
 - Launch share-first loop around concert cards.
 - Publish weekly “Top concerts in Uppsala” content on social channels.
+- Use the Ko-fi link as a low-friction support and community funding path.
 
 4. Measurement
 - Track key events (view concert, favorite, booking, share click).
