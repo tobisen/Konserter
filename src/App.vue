@@ -469,18 +469,18 @@ const spotifyError = ref("");
 const monthFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
-      month: "long",
-    }),
-);
-const monthYearFormatter = computed(
-  () =>
-    new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
-      month: "long",
-      year: "numeric",
-    }),
-);
-const appVersion = __APP_VERSION__;
-const appBuildAt = __APP_BUILD_AT__;
+    <footer class="site-footer">
+      <p>
+        Soundcheck samlar spelningar i Uppsala med omnejd.
+        <a
+          href="https://ko-fi.com/soundcheckfun"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("nav.support") }} Soundcheck
+        </a>
+      </p>
+    </footer>
 const updatedAtFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
@@ -2555,6 +2555,14 @@ watch(
         >
           {{ t("nav.merch") }}
         </button>
+        <a
+          class="nav-link nav-support"
+          href="https://ko-fi.com/soundcheckfun"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("nav.support") }}
+        </a>
       </nav>
       <div class="locale-switch" role="group" aria-label="Språk">
         <button
@@ -2635,6 +2643,15 @@ watch(
         >
           {{ t("nav.merch") }}
         </button>
+        <a
+          class="slide-menu-link"
+          href="https://ko-fi.com/soundcheckfun"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click="closeMenu"
+        >
+          {{ t("nav.support") }}
+        </a>
         <button
           class="slide-menu-link"
           :class="{ active: currentView === 'help' }"
