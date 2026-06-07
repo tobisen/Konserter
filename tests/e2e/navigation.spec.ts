@@ -98,6 +98,7 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('heading', { name: 'Backstage Tee' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'The Monogram Tee' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'The Venue Cap' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'For People Who Actually Go To Gigs Sticker' })).toBeVisible()
     await expect(page.getByAltText('The Gig Tee, svart t-shirt med Soundcheck-logga framtill')).toHaveAttribute('src', '/images/signature1.avif')
     await expect(page.getByAltText('The Gig Tee med konsertinspirerat ryggtryck')).toHaveAttribute('src', '/images/signature2.avif')
     await expect(page.getByAltText('The Headliner Tee, svart t-shirt med Soundcheck-logga framtill')).toHaveAttribute('src', '/images/headliner1.avif')
@@ -106,12 +107,14 @@ test.describe('Navigation', () => {
     await expect(page.getByAltText('The Monogram Tee, svart t-shirt med Soundcheck-monogram framtill')).toHaveAttribute('src', '/images/monogram-fram.avif')
     await expect(page.getByAltText('The Monogram Tee med matchande ryggtryck')).toHaveAttribute('src', '/images/monogram-bak.avif')
     await expect(page.getByAltText('The Venue Cap, svart keps med Soundcheck-logga framtill')).toHaveAttribute('src', '/images/merch/soundcheck-cap.jpg')
+    await expect(page.getByAltText('For People Who Actually Go To Gigs Sticker med Soundcheck-tryck')).toHaveAttribute('src', '/images/sticker-1.png')
     const tshirtCard = page.locator('.merch-card').filter({ hasText: 'The Gig Tee' })
     const headlinerCard = page.locator('.merch-card').filter({ hasText: 'The Headliner Tee' })
     const hoodieCard = page.locator('.merch-card').filter({ hasText: 'The Gig Hoodie' })
     const backstageCard = page.locator('.merch-card').filter({ hasText: 'Backstage Tee' })
     const monogramCard = page.locator('.merch-card').filter({ hasText: 'The Monogram Tee' })
     const capCard = page.locator('.merch-card').filter({ hasText: 'The Venue Cap' })
+    const stickerCard = page.locator('.merch-card').filter({ hasText: 'For People Who Actually Go To Gigs Sticker' })
     await expect(tshirtCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('href', 'https://soundcheck-shop.fourthwall.com/en-sek/products/soundcheck-signature-tee')
     await expect(tshirtCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('target', '_blank')
     await expect(tshirtCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('rel', 'noopener noreferrer')
@@ -130,6 +133,9 @@ test.describe('Navigation', () => {
     await expect(capCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('href', 'https://soundcheck-shop.fourthwall.com/en-sek/products/the-venue-cap')
     await expect(capCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('target', '_blank')
     await expect(capCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('rel', 'noopener noreferrer')
+    await expect(stickerCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('href', 'https://soundcheck-shop.fourthwall.com/products/for-people-who-actually-go-to-gigs-sticker')
+    await expect(stickerCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('target', '_blank')
+    await expect(stickerCard.getByRole('link', { name: /^Köp på Fourthwall$/ })).toHaveAttribute('rel', 'noopener noreferrer')
     await expect(page.getByRole('heading', { name: 'Mer än bara konserter' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Upptäck fler spelningar' })).toBeVisible()
     await expect(page.getByRole('link', { name: /^Till spelningarna$/ })).toHaveAttribute('href', '/')
@@ -144,6 +150,25 @@ test.describe('Navigation', () => {
 
     await expect(page).toHaveURL(/\/merch$/)
     await expect(page.getByRole('heading', { name: 'SOUNDCHECK MERCH' })).toBeVisible()
+  })
+
+  test('merch page copy is translated to English', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('soundcheck_locale', 'en'))
+    await page.goto('/merch')
+
+    await expect(page.getByRole('heading', { name: 'SOUNDCHECK MERCH' })).toBeVisible()
+    await expect(page.locator('.merch-hero .kicker', { hasText: 'For people who actually go to shows.' })).toBeVisible()
+    await expect(page.getByText('All products are sold through Fourthwall and made to order.')).toBeVisible()
+    await expect(page.getByText('Premium black t-shirt with a Soundcheck logo on the front and a concert-inspired back print.')).toBeVisible()
+    await expect(page.getByText('Soundcheck sticker with the text For People Who Actually Go To Gigs.')).toBeVisible()
+    await expect(page.getByRole('link', { name: /^Buy on Fourthwall$/ }).first()).toHaveAttribute('target', '_blank')
+    await expect(page.getByRole('heading', { name: 'More than concerts' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Discover more shows' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /^Go to concerts$/ })).toHaveAttribute('href', '/')
+
+    await page.getByRole('button', { name: /^Enlarge The Gig Tee front$/ }).click()
+    await expect(page.getByRole('dialog', { name: /Enlarged image: The Gig Tee/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Close$/ })).toBeVisible()
   })
 
   test('reload keeps the same page route', async ({ page }) => {

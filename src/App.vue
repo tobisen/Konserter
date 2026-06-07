@@ -275,6 +275,24 @@ const i18n = {
       submit: "Skicka",
       submitting: "Skickar...",
     },
+    merch: {
+      subtitle: "För människor som faktiskt går på spelningar.",
+      title: "SOUNDCHECK MERCH",
+      description:
+        "Officiell Soundcheck-merch inspirerad av live-musiken, konsertkvällarna och jakten på nästa spelning.",
+      productGridLabel: "Soundcheck merchprodukter",
+      zoomFront: "Förstora {title} framsida",
+      zoomBack: "Förstora {title} baksida",
+      note: "Alla produkter säljs via Fourthwall och tillverkas på beställning.",
+      storyTitle: "Mer än bara konserter",
+      storyText:
+        "Soundcheck skapades för att göra det enklare att upptäcka spelningar och hitta fler kvällar värda att uppleva live. Merch-kollektionen är framtagen för människor som faktiskt går på spelningar.",
+      ctaTitle: "Upptäck fler spelningar",
+      ctaText: "Hitta konserter från flera källor samlade på ett ställe.",
+      ctaButton: "Till spelningarna",
+      lightboxLabel: "Förstorad bild: {title}",
+      closeLightbox: "Stäng",
+    },
   },
   en: {
     nav: {
@@ -337,6 +355,24 @@ const i18n = {
       submit: "Send",
       submitting: "Sending...",
     },
+    merch: {
+      subtitle: "For people who actually go to shows.",
+      title: "SOUNDCHECK MERCH",
+      description:
+        "Official Soundcheck merch inspired by live music, concert nights, and the hunt for the next show.",
+      productGridLabel: "Soundcheck merch products",
+      zoomFront: "Enlarge {title} front",
+      zoomBack: "Enlarge {title} back",
+      note: "All products are sold through Fourthwall and made to order.",
+      storyTitle: "More than concerts",
+      storyText:
+        "Soundcheck was created to make it easier to discover shows and find more nights worth experiencing live. The merch collection is made for people who actually go to shows.",
+      ctaTitle: "Discover more shows",
+      ctaText: "Find concerts from multiple sources collected in one place.",
+      ctaButton: "Go to concerts",
+      lightboxLabel: "Enlarged image: {title}",
+      closeLightbox: "Close",
+    },
   },
 };
 
@@ -354,6 +390,20 @@ function t(path, params = {}) {
   }
   return text;
 }
+
+const localizedMerchProducts = computed(() =>
+  merchProducts.map((product) => {
+    if (locale.value !== "en") return product;
+    return {
+      ...product,
+      description: product.descriptionEn || product.description,
+      imageAlt: product.imageAltEn || product.imageAlt,
+      secondaryImageAlt: product.secondaryImageAltEn || product.secondaryImageAlt,
+      price: product.priceEn || product.price,
+      cta: product.ctaEn || product.cta,
+    };
+  }),
+);
 
 function upsertMeta(selector, attribute, value) {
   if (typeof document === "undefined") return;
@@ -3171,17 +3221,14 @@ watch(
 
       <section v-if="currentView === 'merch'" class="hero source-panel merch-panel">
         <div class="merch-hero">
-          <p class="kicker">För människor som faktiskt går på spelningar.</p>
-          <h2>SOUNDCHECK MERCH</h2>
-          <p class="lead">
-            Officiell Soundcheck-merch inspirerad av live-musiken,
-            konsertkvällarna och jakten på nästa spelning.
-          </p>
+          <p class="kicker">{{ t("merch.subtitle") }}</p>
+          <h2>{{ t("merch.title") }}</h2>
+          <p class="lead">{{ t("merch.description") }}</p>
         </div>
 
-        <div class="merch-grid" aria-label="Soundcheck merchprodukter">
+        <div class="merch-grid" :aria-label="t('merch.productGridLabel')">
           <article
-            v-for="product in merchProducts"
+            v-for="product in localizedMerchProducts"
             :key="product.id"
             class="merch-card"
           >
@@ -3192,7 +3239,7 @@ watch(
               <button
                 class="merch-image-button"
                 type="button"
-                :aria-label="`Förstora ${product.title} framsida`"
+                :aria-label="t('merch.zoomFront', { title: product.title })"
                 @click="openMerchImage(product.image, product.imageAlt, product.title)"
               >
                 <img :src="product.image" :alt="product.imageAlt" loading="lazy" />
@@ -3201,7 +3248,7 @@ watch(
                 v-if="product.secondaryImage"
                 class="merch-image-button"
                 type="button"
-                :aria-label="`Förstora ${product.title} baksida`"
+                :aria-label="t('merch.zoomBack', { title: product.title })"
                 @click="
                   openMerchImage(
                     product.secondaryImage,
@@ -3238,29 +3285,22 @@ watch(
           </article>
         </div>
 
-        <p class="merch-note">
-          Alla produkter säljs via Fourthwall och tillverkas på beställning.
-        </p>
+        <p class="merch-note">{{ t("merch.note") }}</p>
 
         <section class="merch-story" aria-labelledby="merch-story-title">
           <div>
-            <h3 id="merch-story-title">Mer än bara konserter</h3>
-            <p>
-              Soundcheck skapades för att göra det enklare att upptäcka
-              spelningar och hitta fler kvällar värda att uppleva live.
-              Merch-kollektionen är framtagen för människor som faktiskt går på
-              spelningar.
-            </p>
+            <h3 id="merch-story-title">{{ t("merch.storyTitle") }}</h3>
+            <p>{{ t("merch.storyText") }}</p>
           </div>
         </section>
 
         <section class="merch-cta" aria-labelledby="merch-cta-title">
           <div>
-            <h3 id="merch-cta-title">Upptäck fler spelningar</h3>
-            <p>Hitta konserter från flera källor samlade på ett ställe.</p>
+            <h3 id="merch-cta-title">{{ t("merch.ctaTitle") }}</h3>
+            <p>{{ t("merch.ctaText") }}</p>
           </div>
           <a class="nav-link nav-accent" href="/" @click.prevent="navigateTo('home')">
-            Till spelningarna
+            {{ t("merch.ctaButton") }}
           </a>
         </section>
       </section>
@@ -4712,12 +4752,12 @@ watch(
         class="modal-card merch-lightbox"
         role="dialog"
         aria-modal="true"
-        :aria-label="`Förstorad bild: ${selectedMerchImage.title}`"
+        :aria-label="t('merch.lightboxLabel', { title: selectedMerchImage.title })"
       >
         <div class="auth-header">
           <h2>{{ selectedMerchImage.title }}</h2>
           <button class="link-button neutral" type="button" @click="closeMerchImage">
-            Stäng
+            {{ t("merch.closeLightbox") }}
           </button>
         </div>
         <img

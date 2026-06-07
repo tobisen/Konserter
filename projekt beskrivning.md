@@ -74,6 +74,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Header quick actions for Concerts/My Concerts/Merch/Support, including a mobile-visible quick navigation row.
 - Ko-fi support link in the header and slide menu.
 - Language toggle (SV/EN, Swedish default).
+- Merch page copy, buttons, image labels, and lightbox controls are translated for Swedish and English.
 - Help text aligned with the current app flow, including the new Latest added view.
 - Rock-inspired visual theme and concert-first layout.
 

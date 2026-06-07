@@ -99,4 +99,5 @@ Track weekly:
 3. Analysis/Growth strategy updated
 4. Help view aligned with latest UX
 5. Playwright tests updated for UI changes
-6. Build passes (`npm run build`)
+6. Merch copy remains localized in Swedish and English
+7. Build passes (`npm run build`)
