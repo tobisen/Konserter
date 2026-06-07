@@ -367,6 +367,11 @@ body::before {
   backdrop-filter: blur(8px);
   padding: 8px 30px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .site-footer p {
@@ -384,6 +389,15 @@ body::before {
 
 .site-footer a:hover {
   color: #ffd28a;
+}
+
+.footer-seo-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
 }
 
 .hero {
@@ -470,6 +484,15 @@ h3 {
   font-size: clamp(1.05rem, 2.2vw, 1.35rem);
   color: #f1f3fa;
   text-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+
+.brand-seo-note {
+  max-width: 70ch;
+  margin: 10px 0 0;
+  color: #d7deef;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
 .actions {
@@ -729,6 +752,10 @@ h3 {
   grid-template-columns: 1fr 1.5fr auto;
 }
 
+.admin-concert-search {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .contact-form {
   grid-template-columns: 1fr;
   width: min(100%, 680px);
@@ -846,6 +873,11 @@ h3 {
 
 .link-button.active {
   color: #ffd57a;
+}
+
+.link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .errors ul {

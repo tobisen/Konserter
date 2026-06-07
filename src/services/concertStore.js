@@ -60,3 +60,28 @@ export async function clearStoredConcerts() {
     latestAddedConcertIds: payload.latestAddedConcertIds || []
   }
 }
+
+export async function deleteStoredConcert(concertIndex, concertId) {
+  const params = new URLSearchParams()
+  if (concertId) {
+    params.set('concertId', concertId)
+  }
+
+  const query = params.toString()
+  const response = await fetch(
+    `/api/concerts/${encodeURIComponent(String(concertIndex))}${query ? `?${query}` : ''}`,
+    {
+      method: 'DELETE'
+    }
+  )
+
+  const payload = await parseJson(response)
+
+  return {
+    concerts: payload.concerts || [],
+    deletedConcert: payload.deletedConcert || null,
+    deletedConcertId: payload.deletedConcertId || '',
+    latestAddedAt: payload.latestAddedAt || null,
+    latestAddedConcertIds: payload.latestAddedConcertIds || []
+  }
+}

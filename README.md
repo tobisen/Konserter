@@ -32,6 +32,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
 - Admin area:
   - Source add/remove
   - Update concerts / clear concerts
+  - Remove individual concerts when imports create duplicates
   - Import quality status per source
   - Unique users and unique visitors
   - Delete user accounts (including their saved lists)
@@ -43,7 +44,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Ko-fi support link in the header and slide menu
   - Contact page with menu entry and contact form
   - Language toggle (SV/EN, Swedish default)
-  - Dynamic SEO title/description per app view
+  - Dynamic SEO title/description, brand search variants, clean canonicals, robots directives, sitemap, `llms.txt`, OpenSearch, web manifest, crawlable footer links and structured data per public view
 
 ## Tech
 
@@ -112,7 +113,7 @@ If these are missing in production, forgot-password returns an explicit configur
 Optional secret:
 - `PLAYWRIGHT_BASE_URL` (fallback: production URL)
 
-Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts`, support navigation labels, mobile quick navigation, and the Merch view navigation/reload/product-card/sticker/English translation flow in `tests/e2e/navigation.spec.ts` / `tests/e2e/smoke.spec.ts`.
+Current Playwright coverage includes the new `Senast tillagda` discovery button in `tests/e2e/concerts.spec.ts`, support navigation labels, mobile quick navigation, the Merch view navigation/reload/product-card/sticker/English translation flow in `tests/e2e/navigation.spec.ts` / `tests/e2e/smoke.spec.ts`, SEO canonical/robots/schema/discovery-file checks, and admin-protected concert deletion in `tests/e2e/api.spec.ts`.
 API smoke tests also check that invalid source-event URLs return readable error messages, and now cover the Dog Bar and Kulturoasen source parsers too.
 
 ## API Routing

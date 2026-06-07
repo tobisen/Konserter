@@ -6,6 +6,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { merchProducts } from "./data/merchProducts";
 import {
   clearStoredConcerts,
+  deleteStoredConcert,
   loadStoredConcerts,
   updateConcertsFromSources,
 } from "./services/concertStore";
@@ -35,6 +36,8 @@ import {
 
 const appVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
 const appBuildAt = typeof __APP_BUILD_AT__ !== "undefined" ? __APP_BUILD_AT__ : "";
+const seoBaseUrl = "https://soundcheck.fun";
+const seoImageUrl = `${seoBaseUrl}/background-concert.jpg`;
 
 const concerts = ref([]);
 const lastUpdatedAt = ref(null);
@@ -51,6 +54,8 @@ const adminUsers = ref([]);
 const adminVisitors = ref([]);
 const adminMailStatus = ref({ configured: false, mode: "logs_only" });
 const adminUserDeleteId = ref("");
+const adminConcertSearch = ref("");
+const adminConcertDeleteKey = ref("");
 const popularItems = ref([]);
 const popularLoading = ref(false);
 
@@ -238,6 +243,8 @@ const i18n = {
       title: "Soundcheck",
       lead:
         "Hitta de bästa spelningarna snabbare. Soundcheck samlar konserter från flera källor på ett ställe, så du slipper leta runt och kan fokusera på att upptäcka nytt, spara favoriter och aldrig missa en kväll värd att gå på.",
+      brandNote:
+        "Soundcheck – även sökt som Sound Check, Soundcheck.fun och Soundcheck Uppsala – är en konsertkalender för spelningar, konserter och livemusik.",
       monthHeading: "Spelningar i {month}",
       noMonthConcerts: "Inga spelningar hittades för aktuell månad.",
     },
@@ -318,6 +325,8 @@ const i18n = {
       title: "Soundcheck",
       lead:
         "Find the best live shows faster. Soundcheck collects concerts from multiple sources in one place, so you can skip searching and focus on discovering new artists, saving favorites, and never missing a great night out.",
+      brandNote:
+        "Soundcheck – also searched as Sound Check, Soundcheck.fun and Soundcheck Uppsala – is a concert calendar for gigs, concerts and live music.",
       monthHeading: "Concerts in {month}",
       noMonthConcerts: "No concerts found for the current month.",
     },
@@ -427,33 +436,81 @@ function setCanonical(url) {
   link.setAttribute("href", url);
 }
 
+function upsertJsonLd(id, payload) {
+  if (typeof document === "undefined") return;
+  let el = document.head.querySelector(`script[type="application/ld+json"][data-schema="${id}"]`);
+  if (!el) {
+    el = document.createElement("script");
+    el.setAttribute("type", "application/ld+json");
+    el.setAttribute("data-schema", id);
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(payload);
+}
+
+function getCanonicalUrlForView(view) {
+  return new URL(viewToPath[view] || "/", seoBaseUrl).toString();
+}
+
+function getEventSchemaForConcert(concert) {
+  const date = getConcertDate(concert);
+  if (!date) return null;
+
+  return {
+    "@type": "MusicEvent",
+    "@id": `${seoBaseUrl}/spelningar?concert=${encodeURIComponent(getConcertId(concert))}`,
+    name: concert?.title || concert?.artist || "Spelning",
+    startDate: date.toISOString(),
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    image: [getConcertDisplayImageUrl(concert)].filter(Boolean),
+    url: getConcertReadMoreUrl(concert) || `${seoBaseUrl}/spelningar`,
+    performer: {
+      "@type": "MusicGroup",
+      name: concert?.artist || "Okänd artist",
+    },
+    location: {
+      "@type": "Place",
+      name: concert?.venue || "Okänd scen",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: concert?.city || "Uppsala",
+        addressCountry: "SE",
+      },
+    },
+    organizer: {
+      "@id": `${seoBaseUrl}/#organization`,
+    },
+  };
+}
+
 function getSeoForView(view) {
   const isEn = locale.value === "en";
   const titles = {
-    home: isEn ? "Soundcheck | Live Music in Uppsala" : "Soundcheck | Spelningar i Uppsala",
-    concerts: isEn ? "Concerts | Soundcheck" : "Spelningar | Soundcheck",
+    home: isEn ? "Soundcheck | Live Music and Concerts in Uppsala" : "Soundcheck | Spelningar och konserter i Uppsala",
+    concerts: isEn ? "Concerts in Uppsala | Soundcheck" : "Spelningar i Uppsala | Soundcheck",
     "my-concerts": isEn ? "My Concerts | Soundcheck" : "Mina Spelningar | Soundcheck",
-    merch: isEn ? "Merch | Soundcheck" : "Merch | Soundcheck",
+    merch: isEn ? "Soundcheck Merch | Official Fourthwall Shop" : "Soundcheck Merch | Officiell merch",
     settings: isEn ? "Settings | Soundcheck" : "Inställningar | Soundcheck",
     help: isEn ? "Help | Soundcheck" : "Hjälp | Soundcheck",
     contact: isEn ? "Contact | Soundcheck" : "Kontakt | Soundcheck",
-    sources: isEn ? "Sources | Soundcheck" : "Källor | Soundcheck",
+    sources: isEn ? "Concert Sources | Soundcheck" : "Konsertkällor | Soundcheck",
     admin: "Admin | Soundcheck",
     unsubscribe: isEn ? "Unsubscribe | Soundcheck" : "Avprenumerera | Soundcheck",
   };
   const descriptions = {
     home: isEn
-      ? "Soundcheck collects concerts and live music in one place so you can discover more, faster."
-      : "Soundcheck samlar konserter och spelningar på ett ställe så du hittar nästa kväll snabbare.",
+      ? "Soundcheck, also searched as Sound Check and Soundcheck.fun, collects live music, concerts and gigs in Uppsala and nearby cities."
+      : "Soundcheck, även sökt som Sound Check och Soundcheck.fun, samlar spelningar, konserter och livemusik i Uppsala med omnejd.",
     concerts: isEn
-      ? "Browse upcoming and past concerts. Filter by source, month, genre and date."
-      : "Bläddra bland kommande och tidigare spelningar. Filtrera på källa, månad, genre och datum.",
+      ? "Browse upcoming and past concerts in one searchable view. Filter by source, month, genre, city and date."
+      : "Bläddra bland kommande och tidigare spelningar i en sökbar konsertkalender. Filtrera på källa, månad, genre, stad och datum.",
     "my-concerts": isEn
       ? "Save favorites, mark bookings and track seen concerts."
       : "Spara favoriter, markera bokningar och håll koll på sedda spelningar.",
     merch: isEn
-      ? "Explore official Soundcheck merch sold through Fourthwall."
-      : "Utforska officiell Soundcheck-merch som säljs via Fourthwall.",
+      ? "Explore official Soundcheck merch for people who actually go to shows. Products are sold externally through Fourthwall."
+      : "Utforska officiell Soundcheck-merch för människor som faktiskt går på spelningar. Produkter säljs externt via Fourthwall.",
     settings: isEn
       ? "Manage account email and password settings."
       : "Hantera kontots e-post- och lösenordsinställningar.",
@@ -463,23 +520,120 @@ function getSeoForView(view) {
     admin: isEn ? "Admin tools for Soundcheck." : "Adminverktyg för Soundcheck.",
     unsubscribe: isEn ? "Unsubscribe from email updates." : "Avprenumerera från e-postutskick.",
   };
+  const publicIndexableViews = new Set(["home", "concerts", "merch", "help", "contact", "sources"]);
   return {
     title: titles[view] || "Soundcheck",
     description: descriptions[view] || descriptions.home,
+    canonicalUrl: getCanonicalUrlForView(view),
+    robots: publicIndexableViews.has(view) ? "index, follow" : "noindex, nofollow",
   };
 }
 
 function updateSeo() {
   if (typeof window === "undefined") return;
   const seo = getSeoForView(currentView.value);
+  document.documentElement.lang = locale.value === "en" ? "en" : "sv";
   document.title = seo.title;
   upsertMeta('meta[name="description"]', "name", seo.description);
+  upsertMeta('meta[name="robots"]', "name", seo.robots);
   upsertMeta('meta[property="og:title"]', "property", seo.title);
   upsertMeta('meta[property="og:description"]', "property", seo.description);
-  upsertMeta('meta[property="og:url"]', "property", window.location.href);
+  upsertMeta('meta[property="og:url"]', "property", seo.canonicalUrl);
+  upsertMeta('meta[property="og:image"]', "property", seoImageUrl);
+  upsertMeta('meta[property="og:image:alt"]', "property", "Konsertpublik och scenljus för Soundcheck");
+  upsertMeta('meta[property="og:locale"]', "property", locale.value === "en" ? "en_US" : "sv_SE");
   upsertMeta('meta[name="twitter:title"]', "name", seo.title);
   upsertMeta('meta[name="twitter:description"]', "name", seo.description);
-  setCanonical(window.location.href);
+  upsertMeta('meta[name="twitter:image"]', "name", seoImageUrl);
+  setCanonical(seo.canonicalUrl);
+  upsertJsonLd("soundcheck-page", {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${seo.canonicalUrl}#webpage`,
+    url: seo.canonicalUrl,
+    name: seo.title,
+    description: seo.description,
+    inLanguage: locale.value === "en" ? "en" : "sv-SE",
+    isPartOf: {
+      "@id": `${seoBaseUrl}/#website`,
+    },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: seoImageUrl,
+    },
+  });
+  upsertJsonLd("soundcheck-brand", {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${seoBaseUrl}/#organization`,
+    name: "Soundcheck",
+    alternateName: [
+      "Sound Check",
+      "Soundcheck.fun",
+      "Soundcheck Uppsala",
+      "Soundcheck konserter",
+      "Soundcheck spelningar",
+      "Soundcheck fun",
+    ],
+    url: `${seoBaseUrl}/`,
+    logo: `${seoBaseUrl}/favicon.svg`,
+    sameAs: ["https://ko-fi.com/soundcheckfun"],
+  });
+  upsertJsonLd("soundcheck-website", {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${seoBaseUrl}/#website`,
+    name: "Soundcheck",
+    alternateName: [
+      "Sound Check",
+      "Soundcheck.fun",
+      "Soundcheck Uppsala",
+      "Soundcheck konserter",
+      "Soundcheck spelningar",
+      "Soundcheck fun",
+    ],
+    url: `${seoBaseUrl}/`,
+    inLanguage: locale.value === "en" ? "en" : "sv-SE",
+    publisher: {
+      "@id": `${seoBaseUrl}/#organization`,
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${seoBaseUrl}/spelningar?search={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  });
+  upsertJsonLd("soundcheck-navigation", {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Soundcheck navigation",
+    itemListElement: [
+      { "@type": "SiteNavigationElement", position: 1, name: "Soundcheck", url: `${seoBaseUrl}/` },
+      { "@type": "SiteNavigationElement", position: 2, name: "Spelningar", url: `${seoBaseUrl}/spelningar` },
+      { "@type": "SiteNavigationElement", position: 3, name: "Merch", url: `${seoBaseUrl}/merch` },
+      { "@type": "SiteNavigationElement", position: 4, name: "Källor", url: `${seoBaseUrl}/kallor` },
+      { "@type": "SiteNavigationElement", position: 5, name: "Kontakt", url: `${seoBaseUrl}/kontakt` },
+    ],
+  });
+  const eventItems = concerts.value
+    .filter((concert) => isUpcomingConcert(concert))
+    .slice(0, 12)
+    .map(getEventSchemaForConcert)
+    .filter(Boolean)
+    .map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item,
+    }));
+  if (eventItems.length > 0) {
+    upsertJsonLd("soundcheck-events", {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Kommande spelningar på Soundcheck",
+      url: `${seoBaseUrl}/spelningar`,
+      itemListElement: eventItems,
+    });
+  }
 }
 
 function setLocale(nextLocale) {
@@ -921,6 +1075,22 @@ const latestAddedConcerts = computed(() => {
   if (!ids.size) return [];
 
   return concerts.value.filter((concert) => ids.has(getConcertId(concert)));
+});
+
+const adminConcertItems = computed(() => {
+  const query = normalizeText(adminConcertSearch.value);
+
+  return concerts.value
+    .map((concert, storageIndex) => ({
+      concert,
+      storageIndex,
+      concertId: getConcertId(concert),
+    }))
+    .filter((item) => {
+      if (!query) return true;
+      return getConcertSearchableText(item.concert).includes(query);
+    })
+    .sort((a, b) => getConcertDate(a.concert) - getConcertDate(b.concert));
 });
 
 function getConcertsForQuickMode(mode) {
@@ -2178,6 +2348,7 @@ async function refreshConcerts() {
   latestAddedConcertIds.value = Array.isArray(result.latestAddedConcertIds)
     ? result.latestAddedConcertIds
     : [];
+  updateSeo();
 }
 
 async function refreshPopularConcerts() {
@@ -2255,6 +2426,42 @@ async function clearConcerts() {
     status.value = error.message || "Kunde inte tömma konserter.";
   } finally {
     loading.value = false;
+  }
+}
+
+async function deleteAdminConcert(item) {
+  if (!isAuthenticated.value) {
+    sourceStatus.value = "Du måste vara inloggad för att ta bort spelningar.";
+    return;
+  }
+
+  const concert = item?.concert;
+  const concertId = String(item?.concertId || "").trim();
+  const storageIndex = Number(item?.storageIndex);
+  if (!concert || !concertId || !Number.isInteger(storageIndex)) return;
+
+  const confirmed = window.confirm(
+    `Ta bort spelningen ${concert.artist || concert.title || "Okänd artist"} på ${concert.venue || "okänd scen"} ${formatDate(concert.date)}? Detta kan inte ångras.`,
+  );
+  if (!confirmed) return;
+
+  const deleteKey = `${storageIndex}:${concertId}`;
+  adminConcertDeleteKey.value = deleteKey;
+  sourceStatus.value = "";
+
+  try {
+    const result = await deleteStoredConcert(storageIndex, concertId);
+    concerts.value = result.concerts;
+    latestAddedAt.value = result.latestAddedAt || null;
+    latestAddedConcertIds.value = Array.isArray(result.latestAddedConcertIds)
+      ? result.latestAddedConcertIds
+      : [];
+    sourceStatus.value = `Tog bort ${concert.artist || concert.title || "spelningen"} från listan.`;
+    await refreshPopularConcerts();
+  } catch (error) {
+    sourceStatus.value = error.message || "Kunde inte ta bort spelningen.";
+  } finally {
+    adminConcertDeleteKey.value = "";
   }
 }
 
@@ -2780,6 +2987,7 @@ watch(
         <p class="lead home-lead">
           {{ t("home.lead") }}
         </p>
+        <p class="brand-seo-note">{{ t("home.brandNote") }}</p>
       </section>
 
       <section v-if="currentView === 'home'" class="hero">
@@ -3336,6 +3544,14 @@ watch(
             </button>
             <button
               class="nav-link"
+              :class="{ active: adminSubView === 'concerts' }"
+              type="button"
+              @click="setAdminSubView('concerts')"
+            >
+              Spelningar
+            </button>
+            <button
+              class="nav-link"
               :class="{ active: adminSubView === 'users' }"
               type="button"
               @click="setAdminSubView('users')"
@@ -3485,6 +3701,64 @@ watch(
               </button>
             </form>
             <p v-if="passwordStatus" class="updated">{{ passwordStatus }}</p>
+          </template>
+
+          <template v-else-if="adminSubView === 'concerts'">
+            <p class="lead">
+              Här kan du söka fram och ta bort en enskild spelning, till exempel
+              om en import skapat en dubblett.
+            </p>
+
+            <div class="source-form admin-concert-search">
+              <input
+                v-model="adminConcertSearch"
+                type="search"
+                placeholder="Sök artist, scen, stad, källa eller datum"
+                aria-label="Sök bland spelningar i admin"
+              />
+            </div>
+
+            <p v-if="sourceStatus" class="updated">{{ sourceStatus }}</p>
+            <p class="lead admin-counter">
+              Visar <strong>{{ adminConcertItems.length }}</strong> av
+              <strong>{{ concerts.length }}</strong> spelningar.
+            </p>
+
+            <ul v-if="adminConcertItems.length" class="source-list source-status-list">
+              <li
+                v-for="item in adminConcertItems"
+                :key="`admin-concert-${item.storageIndex}-${item.concertId}`"
+              >
+                <div>
+                  <strong>{{ item.concert.artist }}</strong>
+                  <p>
+                    {{ formatDate(item.concert.date) }} · {{ item.concert.venue
+                    }}{{ item.concert.city ? `, ${item.concert.city}` : "" }}
+                  </p>
+                  <p>
+                    Källa: {{ getConcertSourceName(item.concert) }} · ID:
+                    {{ item.concertId }}
+                  </p>
+                </div>
+                <button
+                  class="link-button danger"
+                  type="button"
+                  :disabled="
+                    adminConcertDeleteKey ===
+                    `${item.storageIndex}:${item.concertId}`
+                  "
+                  @click="deleteAdminConcert(item)"
+                >
+                  {{
+                    adminConcertDeleteKey ===
+                    `${item.storageIndex}:${item.concertId}`
+                      ? "Tar bort..."
+                      : "Ta bort"
+                  }}
+                </button>
+              </li>
+            </ul>
+            <p v-else class="lead">Inga spelningar matchar sökningen.</p>
           </template>
 
           <template v-else-if="adminSubView === 'users'">
@@ -4771,6 +5045,15 @@ watch(
       <p>
         Soundcheck samlar spelningar i Uppsala med omnejd.
       </p>
+      <nav class="footer-seo-links" aria-label="Soundcheck SEO-länkar">
+        <a href="/" @click.prevent="navigateTo('home')">Soundcheck</a>
+        <a href="/spelningar" @click.prevent="navigateTo('concerts')">
+          Spelningar Uppsala
+        </a>
+        <a href="/merch" @click.prevent="navigateTo('merch')">Soundcheck merch</a>
+        <a href="/kallor" @click.prevent="navigateTo('sources')">Konsertkällor</a>
+        <a href="/kontakt" @click.prevent="navigateTo('contact')">Kontakt</a>
+      </nav>
     </footer>
   </main>
 </template>

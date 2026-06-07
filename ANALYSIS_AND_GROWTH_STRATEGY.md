@@ -8,7 +8,7 @@
 2. Strong core UX: filters, search, quick discovery, card/table views.
 3. Retention features: favorites, going, seen, follow artist/venue.
 4. Shareability: deep-links and share preview image.
-5. Admin operations: source management + import quality + usage counters.
+5. Admin operations: source management + import quality + usage counters + single-concert removal for duplicate cleanup.
 6. Solid deployment workflow on Vercel.
 7. Reliable account recovery with real email-based password reset.
 8. User lifecycle controls in admin (including account deletion).
@@ -16,7 +16,7 @@
 10. Direct inbound feedback channel via contact form.
 11. Better route persistence and deep-link reliability on reload.
 12. Stronger retention via branded reminder/follow-match email digest.
-13. SEO foundation (route metadata + sitemap + robots) for organic discovery.
+13. SEO foundation (strong static metadata, brand search variants, route metadata, clean canonicals, schema, crawlable links, sitemap, robots, OpenSearch + `llms.txt`) for organic discovery.
 14. Weekly multi-city newsletter for recurring re-engagement.
 15. User-controlled unsubscribe/preferences for newsletter and reminder digests.
 16. A "Latest added" discovery lane that surfaces the newest import batch with actual additions.

@@ -17,6 +17,14 @@ test.describe('Public API smoke', () => {
     expect(Array.isArray(payload.sources)).toBeTruthy()
   })
 
+  test('DELETE /api/concerts/:index requires admin auth', async ({ request, baseURL }) => {
+    const response = await request.delete(`${baseURL}/api/concerts/0`)
+    expect(response.status()).toBe(401)
+
+    const payload = await response.json()
+    expect(payload.error).toBe('Unauthorized')
+  })
+
   test('GET /api/source-events without url returns 400', async ({ request, baseURL }) => {
     const response = await request.get(`${baseURL}/api/source-events`)
     expect(response.status()).toBe(400)

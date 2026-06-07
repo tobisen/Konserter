@@ -1,0 +1,10 @@
+/* TEAM */
+Soundcheck
+Site: https://soundcheck.fun/
+
+/* SITE */
+Name: Soundcheck
+Also known as: Sound Check, Soundcheck.fun, Soundcheck Uppsala
+Purpose: Samlar spelningar, konserter och livemusik i Uppsala med omnejd.
+Technology: Vue, Vite, Vercel
+Language: Swedish and English

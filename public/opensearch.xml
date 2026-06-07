@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>Soundcheck</ShortName>
+  <Description>Sök spelningar, konserter och livemusik på Soundcheck.</Description>
+  <Tags>Soundcheck Sound Check konserter spelningar Uppsala livemusik gig</Tags>
+  <Contact>hello@soundcheck.fun</Contact>
+  <Url type="text/html" template="https://soundcheck.fun/spelningar?search={searchTerms}" />
+  <Image height="16" width="16" type="image/svg+xml">https://soundcheck.fun/favicon.svg</Image>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Language>sv-SE</Language>
+</OpenSearchDescription>

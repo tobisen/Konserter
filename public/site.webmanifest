@@ -1,0 +1,20 @@
+{
+  "name": "Soundcheck",
+  "short_name": "Soundcheck",
+  "description": "Soundcheck samlar spelningar, konserter och livemusik i Uppsala med omnejd.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f121a",
+  "theme_color": "#ff8a00",
+  "lang": "sv-SE",
+  "categories": ["music", "entertainment", "events"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

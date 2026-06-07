@@ -4,29 +4,119 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0f121a" />
+    <meta name="application-name" content="Soundcheck" />
+    <meta name="apple-mobile-web-app-title" content="Soundcheck" />
+    <meta name="author" content="Soundcheck" />
     <meta
       name="description"
-      content="Soundcheck samlar spelningar och konserter på ett ställe. Filtrera, spara favoriter och hitta nästa kväll i Uppsala och närområdet."
+      content="Soundcheck, även sökt som Sound Check och Soundcheck.fun, samlar spelningar, konserter och livemusik i Uppsala med omnejd. Hitta kommande gig och upptäck nästa konsertkväll."
+    />
+    <meta
+      name="keywords"
+      content="Soundcheck, Sound Check, Soundcheck.fun, Soundcheck Uppsala, Soundcheck konserter, Soundcheck spelningar, sound check fun, spelningar Uppsala, konserter Uppsala, livemusik Uppsala, gig, konsertkalender, musik Uppsala"
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Soundcheck" />
-    <meta property="og:title" content="Soundcheck" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:url" content="https://soundcheck.fun/" />
+    <meta
+      property="og:title"
+      content="Soundcheck | Spelningar och konserter i Uppsala"
+    />
     <meta
       property="og:description"
-      content="Hitta konserter snabbare med Soundcheck."
+      content="Hitta spelningar och konserter snabbare. Soundcheck samlar livemusik från flera källor i en sökbar konsertkalender."
     />
-    <meta property="og:image" content="/background-concert.jpg" />
+    <meta property="og:image" content="https://soundcheck.fun/background-concert.jpg" />
+    <meta property="og:image:alt" content="Konsertpublik och scenljus för Soundcheck" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Soundcheck" />
+    <meta
+      name="twitter:title"
+      content="Soundcheck | Spelningar och konserter i Uppsala"
+    />
     <meta
       name="twitter:description"
-      content="Hitta konserter snabbare med Soundcheck."
+      content="Soundcheck samlar spelningar, konserter och livemusik i Uppsala med omnejd."
     />
-    <meta name="twitter:image" content="/background-concert.jpg" />
+    <meta name="twitter:image" content="https://soundcheck.fun/background-concert.jpg" />
     <link rel="canonical" href="https://soundcheck.fun/" />
-    <title>Soundcheck</title>
+    <link rel="alternate" hreflang="sv-SE" href="https://soundcheck.fun/" />
+    <link rel="alternate" hreflang="en" href="https://soundcheck.fun/" />
+    <link rel="alternate" hreflang="x-default" href="https://soundcheck.fun/" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="search" type="application/opensearchdescription+xml" title="Soundcheck" href="/opensearch.xml" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://soundcheck.fun/#organization",
+            "name": "Soundcheck",
+            "alternateName": [
+              "Sound Check",
+              "Soundcheck.fun",
+              "Soundcheck Uppsala",
+              "Soundcheck konserter",
+              "Soundcheck spelningar",
+              "Soundcheck fun"
+            ],
+            "url": "https://soundcheck.fun/",
+            "logo": "https://soundcheck.fun/favicon.svg",
+            "sameAs": ["https://ko-fi.com/soundcheckfun"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://soundcheck.fun/#website",
+            "name": "Soundcheck",
+            "alternateName": [
+              "Sound Check",
+              "Soundcheck.fun",
+              "Soundcheck Uppsala",
+              "Soundcheck konserter",
+              "Soundcheck spelningar",
+              "Soundcheck fun"
+            ],
+            "url": "https://soundcheck.fun/",
+            "inLanguage": "sv-SE",
+            "publisher": { "@id": "https://soundcheck.fun/#organization" },
+            "description": "Soundcheck samlar spelningar, konserter och livemusik i Uppsala med omnejd."
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://soundcheck.fun/#app",
+            "name": "Soundcheck",
+            "url": "https://soundcheck.fun/",
+            "applicationCategory": "EntertainmentApplication",
+            "operatingSystem": "Web",
+            "inLanguage": ["sv-SE", "en"],
+            "description": "En konsertkalender som samlar spelningar från flera källor i en sökbar vy."
+          }
+        ]
+      }
+    </script>
+    <title>Soundcheck | Spelningar och konserter i Uppsala</title>
   </head>
   <body>
+    <noscript>
+      <main>
+        <h1>Soundcheck – spelningar och konserter i Uppsala</h1>
+        <p>
+          Soundcheck, Sound Check och Soundcheck.fun är en konsertkalender som
+          samlar spelningar, konserter, gig och livemusik i Uppsala med omnejd.
+        </p>
+        <nav aria-label="Soundcheck länkar">
+          <a href="/">Soundcheck startsida</a>
+          <a href="/spelningar">Spelningar i Uppsala</a>
+          <a href="/merch">Soundcheck merch</a>
+          <a href="/kallor">Konsertkällor</a>
+          <a href="/hjalp">Hjälp</a>
+          <a href="/kontakt">Kontakt</a>
+        </nav>
+      </main>
+    </noscript>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

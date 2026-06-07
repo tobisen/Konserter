@@ -1,0 +1,26 @@
+# Soundcheck
+
+Soundcheck is a Swedish concert discovery app at https://soundcheck.fun/.
+It is also searched for as Sound Check, Soundcheck.fun, Soundcheck Uppsala, Soundcheck konserter, Soundcheck spelningar and sound check fun.
+
+## What Soundcheck Does
+
+Soundcheck collects concerts, gigs, live music and spelningar from multiple sources into one searchable view, with a focus on Uppsala and nearby cities.
+Visitors can browse concerts, filter by artist, venue, city, source, month and genre, and use quick views such as this week, this weekend and latest added.
+Signed-in users can save favorites, mark concerts they are going to, track seen concerts, and follow artists and venues.
+
+## Important Pages
+
+- Home: https://soundcheck.fun/
+- Concerts: https://soundcheck.fun/spelningar
+- Merch: https://soundcheck.fun/merch
+- Sources: https://soundcheck.fun/kallor
+- Help: https://soundcheck.fun/hjalp
+- Contact: https://soundcheck.fun/kontakt
+
+## Brand
+
+Preferred name: Soundcheck
+Domain: soundcheck.fun
+Primary Swedish description: Soundcheck samlar spelningar, konserter och livemusik i Uppsala med omnejd.
+Primary English description: Soundcheck collects gigs, concerts and live music in Uppsala and nearby cities.

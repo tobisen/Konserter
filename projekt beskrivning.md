@@ -36,7 +36,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Calendar export (`.ics`).
 - Merch page with product cards, images, prices, and external Fourthwall CTAs.
 - Contact page with a public contact form in the main menu.
-- SEO baseline with dynamic metadata by route plus sitemap/robots.
+- SEO baseline with stronger static metadata, brand search variants, dynamic route metadata, clean canonical URLs, robots directives, structured data, crawlable footer links, sitemap/robots, `llms.txt`, OpenSearch and web manifest.
 - "Latest added" view that shows the concerts from the latest import batch where new additions were found.
 - New source coverage for Dog Bar Uppsala and Kulturoasen, using lightweight source-specific parsers where their markup differs from the standard event feeds.
 
@@ -62,6 +62,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Dedicated admin view.
 - Source add/remove.
 - Update/clear concerts.
+- Remove individual concerts from admin when imports create duplicates.
 - Import quality monitor per source.
 - Update feedback now surfaces the source name or import step that failed instead of hiding behind a generic error.
 - Unique users and unique visitors overview.

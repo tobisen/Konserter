@@ -1191,6 +1191,74 @@ async function handleClearConcerts(request, response) {
   });
 }
 
+async function handleDeleteConcert(request, response, concertIndexValue, url) {
+  const user = requireAuth(request, response);
+  if (!user) return;
+
+  const concertIndex = Number(concertIndexValue);
+  if (!Number.isInteger(concertIndex) || concertIndex < 0) {
+    sendJson(response, 400, { error: "Ogiltigt konsertindex." });
+    return;
+  }
+
+  const currentConcerts = await loadConcertsFromFile();
+  const existing = currentConcerts[concertIndex];
+  if (!existing) {
+    sendJson(response, 404, { error: "Spelningen hittades inte." });
+    return;
+  }
+
+  const expectedConcertId = String(url.searchParams.get("concertId") || "").trim();
+  const deletedConcertId = createStableId(existing);
+  if (expectedConcertId && expectedConcertId !== deletedConcertId) {
+    sendJson(response, 409, {
+      error:
+        "Spelningen har ändrats sedan sidan laddades. Uppdatera listan och försök igen.",
+    });
+    return;
+  }
+
+  const nextConcerts = currentConcerts.filter((_, index) => index !== concertIndex);
+  await saveConcertsToFile(nextConcerts);
+
+  const remainingConcertIds = new Set(nextConcerts.map(createStableId));
+  const meta = await loadMetaFromStore();
+  const latestAddedConcertIds = Array.isArray(meta?.latestAddedConcertIds)
+    ? meta.latestAddedConcertIds.filter((concertId) => remainingConcertIds.has(concertId))
+    : [];
+
+  await saveMetaToStore({
+    ...meta,
+    latestAddedAt: latestAddedConcertIds.length > 0 ? meta.latestAddedAt || null : null,
+    latestAddedConcertIds,
+  });
+
+  if (!remainingConcertIds.has(deletedConcertId)) {
+    const users = await loadUsersFromStore();
+    const nextUsers = users.map((entry) => ({
+      ...entry,
+      favorites: Array.isArray(entry?.favorites)
+        ? entry.favorites.filter((concertId) => concertId !== deletedConcertId)
+        : [],
+      bookings: Array.isArray(entry?.bookings)
+        ? entry.bookings.filter((concertId) => concertId !== deletedConcertId)
+        : [],
+      seen: Array.isArray(entry?.seen)
+        ? entry.seen.filter((concertId) => concertId !== deletedConcertId)
+        : [],
+    }));
+    await saveUsersToStore(nextUsers);
+  }
+
+  sendJson(response, 200, {
+    concerts: nextConcerts,
+    deletedConcert: existing,
+    deletedConcertId,
+    latestAddedAt: latestAddedConcertIds.length > 0 ? meta.latestAddedAt || null : null,
+    latestAddedConcertIds,
+  });
+}
+
 function buildVisitorCookie(visitorId) {
   const secure = process.env.NODE_ENV === "production";
   const parts = [
@@ -1989,6 +2057,12 @@ export async function handleApiRequest(request, response) {
 
   if (pathname === "/api/concerts/clear" && request.method === "POST") {
     await handleClearConcerts(request, response);
+    return;
+  }
+
+  if (pathname.startsWith("/api/concerts/") && request.method === "DELETE") {
+    const concertIndex = decodeURIComponent(pathname.slice("/api/concerts/".length));
+    await handleDeleteConcert(request, response, concertIndex, url);
     return;
   }
 
