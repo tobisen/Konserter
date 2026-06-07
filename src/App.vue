@@ -3,6 +3,7 @@ import flatpickr from "flatpickr";
 import { Swedish } from "flatpickr/dist/l10n/sv.js";
 import "flatpickr/dist/flatpickr.min.css";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { merchProducts } from "./data/merchProducts";
 import {
   clearStoredConcerts,
   loadStoredConcerts,
@@ -54,6 +55,7 @@ const allowedViews = new Set([
   "home",
   "concerts",
   "my-concerts",
+  "merch",
   "settings",
   "help",
   "contact",
@@ -66,6 +68,7 @@ const viewToPath = {
   home: "/",
   concerts: "/spelningar",
   "my-concerts": "/mina-spelningar",
+  merch: "/merch",
   settings: "/installningar",
   help: "/hjalp",
   contact: "/kontakt",
@@ -164,6 +167,7 @@ const contactMessage = ref("");
 const contactSubmitting = ref(false);
 const contactStatus = ref("");
 const contactError = ref("");
+const selectedMerchImage = ref(null);
 
 const passwordCurrent = ref("");
 const passwordNext = ref("");
@@ -212,7 +216,7 @@ const i18n = {
       home: "Hem",
       concerts: "Spelningar",
       myConcerts: "Mina Spelningar",
-      support: "Stötta",
+      merch: "Merch",
       settings: "Inställningar",
       help: "Hjälp",
       contact: "Kontakt",
@@ -273,7 +277,7 @@ const i18n = {
       home: "Home",
       concerts: "Concerts",
       myConcerts: "My Concerts",
-      support: "Support",
+      merch: "Merch",
       settings: "Settings",
       help: "Help",
       contact: "Contact",
@@ -374,6 +378,7 @@ function getSeoForView(view) {
     home: isEn ? "Soundcheck | Live Music in Uppsala" : "Soundcheck | Spelningar i Uppsala",
     concerts: isEn ? "Concerts | Soundcheck" : "Spelningar | Soundcheck",
     "my-concerts": isEn ? "My Concerts | Soundcheck" : "Mina Spelningar | Soundcheck",
+    merch: isEn ? "Merch | Soundcheck" : "Merch | Soundcheck",
     settings: isEn ? "Settings | Soundcheck" : "Inställningar | Soundcheck",
     help: isEn ? "Help | Soundcheck" : "Hjälp | Soundcheck",
     contact: isEn ? "Contact | Soundcheck" : "Kontakt | Soundcheck",
@@ -391,6 +396,9 @@ function getSeoForView(view) {
     "my-concerts": isEn
       ? "Save favorites, mark bookings and track seen concerts."
       : "Spara favoriter, markera bokningar och håll koll på sedda spelningar.",
+    merch: isEn
+      ? "Explore official Soundcheck merch sold through Fourthwall."
+      : "Utforska officiell Soundcheck-merch som säljs via Fourthwall.",
     settings: isEn
       ? "Manage account email and password settings."
       : "Hantera kontots e-post- och lösenordsinställningar.",
@@ -593,6 +601,14 @@ function closeMenu() {
   isMenuOpen.value = false;
 }
 
+function openMerchImage(image, alt, title) {
+  selectedMerchImage.value = { image, alt, title };
+}
+
+function closeMerchImage() {
+  selectedMerchImage.value = null;
+}
+
 function handleBrowserPopState() {
   const viewFromUrl = getViewFromCurrentUrl();
   setView(viewFromUrl || "home", { syncUrl: false });
@@ -602,6 +618,7 @@ function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
     closeMenu();
     closeFiltersModal();
+    closeMerchImage();
     document
       .querySelectorAll(".card-menu[open], .table-row-menu[open]")
       .forEach((menu) => {
@@ -2530,14 +2547,14 @@ watch(
         >
           {{ t("nav.myConcerts") }}
         </button>
-        <a
-          class="nav-link nav-support"
-          href="https://ko-fi.com/soundcheckfun"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          class="nav-link"
+          :class="{ active: currentView === 'merch' }"
+          type="button"
+          @click="navigateTo('merch')"
         >
-          {{ t("nav.support") }}
-        </a>
+          {{ t("nav.merch") }}
+        </button>
       </nav>
       <div class="locale-switch" role="group" aria-label="Språk">
         <button
@@ -2610,15 +2627,14 @@ watch(
         >
           {{ t("nav.myConcerts") }}
         </button>
-        <a
+        <button
           class="slide-menu-link"
-          href="https://ko-fi.com/soundcheckfun"
-          target="_blank"
-          rel="noopener noreferrer"
-          @click="closeMenu"
+          :class="{ active: currentView === 'merch' }"
+          type="button"
+          @click="navigateTo('merch')"
         >
-          {{ t("nav.support") }}
-        </a>
+          {{ t("nav.merch") }}
+        </button>
         <button
           class="slide-menu-link"
           :class="{ active: currentView === 'help' }"
@@ -3063,6 +3079,15 @@ watch(
           </li>
           <li>
             <div>
+              <strong>Merch</strong>
+              <p>
+                Officiell Soundcheck-merch med produkter som säljs externt via
+                Fourthwall.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
               <strong>Kontakt</strong>
               <p>
                 Skicka feedback, felrapporter eller förslag direkt via
@@ -3120,6 +3145,102 @@ watch(
         </form>
         <p v-if="contactStatus" class="updated">{{ contactStatus }}</p>
         <p v-if="contactError" class="error">{{ contactError }}</p>
+      </section>
+
+      <section v-if="currentView === 'merch'" class="hero source-panel merch-panel">
+        <div class="merch-hero">
+          <p class="kicker">För människor som faktiskt går på spelningar.</p>
+          <h2>SOUNDCHECK MERCH</h2>
+          <p class="lead">
+            Officiell Soundcheck-merch inspirerad av live-musiken,
+            konsertkvällarna och jakten på nästa spelning.
+          </p>
+        </div>
+
+        <div class="merch-grid" aria-label="Soundcheck merchprodukter">
+          <article
+            v-for="product in merchProducts"
+            :key="product.id"
+            class="merch-card"
+          >
+            <div
+              class="merch-card-media"
+              :class="{ 'has-secondary': product.secondaryImage }"
+            >
+              <button
+                class="merch-image-button"
+                type="button"
+                :aria-label="`Förstora ${product.title} framsida`"
+                @click="openMerchImage(product.image, product.imageAlt, product.title)"
+              >
+                <img :src="product.image" :alt="product.imageAlt" loading="lazy" />
+              </button>
+              <button
+                v-if="product.secondaryImage"
+                class="merch-image-button"
+                type="button"
+                :aria-label="`Förstora ${product.title} baksida`"
+                @click="
+                  openMerchImage(
+                    product.secondaryImage,
+                    product.secondaryImageAlt,
+                    product.title,
+                  )
+                "
+              >
+                <img
+                  :src="product.secondaryImage"
+                  :alt="product.secondaryImageAlt"
+                  loading="lazy"
+                />
+              </button>
+            </div>
+            <div class="merch-card-content">
+              <div>
+                <p class="merch-type">{{ product.type }}</p>
+                <h3>{{ product.title }}</h3>
+                <p>{{ product.description }}</p>
+              </div>
+              <div class="merch-card-footer">
+                <strong>{{ product.price }}</strong>
+                <a
+                  class="refresh"
+                  :href="product.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ product.cta }}
+                </a>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <p class="merch-note">
+          Alla produkter säljs via Fourthwall och tillverkas på beställning.
+        </p>
+
+        <section class="merch-story" aria-labelledby="merch-story-title">
+          <div>
+            <h3 id="merch-story-title">Mer än bara konserter</h3>
+            <p>
+              Soundcheck skapades för att göra det enklare att upptäcka
+              spelningar och hitta fler kvällar värda att uppleva live.
+              Merch-kollektionen är framtagen för människor som faktiskt går på
+              spelningar.
+            </p>
+          </div>
+        </section>
+
+        <section class="merch-cta" aria-labelledby="merch-cta-title">
+          <div>
+            <h3 id="merch-cta-title">Upptäck fler spelningar</h3>
+            <p>Hitta konserter från flera källor samlade på ett ställe.</p>
+          </div>
+          <a class="nav-link nav-accent" href="/" @click.prevent="navigateTo('home')">
+            Till spelningarna
+          </a>
+        </section>
       </section>
 
       <section v-if="currentView === 'sources'" class="hero source-panel">
@@ -4560,16 +4681,33 @@ watch(
       </section>
     </div>
 
+    <div
+      v-if="selectedMerchImage"
+      class="modal-backdrop merch-lightbox-backdrop"
+      @click.self="closeMerchImage"
+    >
+      <section
+        class="modal-card merch-lightbox"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="`Förstorad bild: ${selectedMerchImage.title}`"
+      >
+        <div class="auth-header">
+          <h2>{{ selectedMerchImage.title }}</h2>
+          <button class="link-button neutral" type="button" @click="closeMerchImage">
+            Stäng
+          </button>
+        </div>
+        <img
+          :src="selectedMerchImage.image"
+          :alt="selectedMerchImage.alt"
+        />
+      </section>
+    </div>
+
     <footer class="site-footer">
       <p>
         Soundcheck samlar spelningar i Uppsala med omnejd.
-        <a
-          href="https://ko-fi.com/soundcheckfun"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t("nav.support") }} Soundcheck
-        </a>
       </p>
     </footer>
   </main>

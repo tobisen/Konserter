@@ -8,8 +8,8 @@ test("homepage basic smoke", async ({ page }) => {
     page.locator(".header-quick-nav").getByRole("button", { name: /^Spelningar$/ }),
   ).toBeVisible();
   await expect(
-    page.locator(".header-quick-nav").getByRole("link", { name: /^Stötta$/ }),
-  ).toHaveAttribute("href", "https://ko-fi.com/soundcheckfun");
+    page.locator(".header-quick-nav").getByRole("button", { name: /^Merch$/ }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /^Byt till svenska$/ })).toBeVisible();
   await expect(page.locator(".site-footer")).toBeVisible();
 });
