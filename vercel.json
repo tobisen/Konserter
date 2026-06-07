@@ -13,6 +13,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/merch",
+      "destination": "/index.html"
+    },
+    {
       "source": "/installningar",
       "destination": "/index.html"
     },

@@ -33,6 +33,9 @@ import {
   updateUserPreferences,
 } from "./services/userStore";
 
+const appVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+const appBuildAt = typeof __APP_BUILD_AT__ !== "undefined" ? __APP_BUILD_AT__ : "";
+
 const concerts = ref([]);
 const lastUpdatedAt = ref(null);
 const latestAddedAt = ref(null);
@@ -217,6 +220,7 @@ const i18n = {
       concerts: "Spelningar",
       myConcerts: "Mina Spelningar",
       merch: "Merch",
+      support: "Stötta",
       settings: "Inställningar",
       help: "Hjälp",
       contact: "Kontakt",
@@ -278,6 +282,7 @@ const i18n = {
       concerts: "Concerts",
       myConcerts: "My Concerts",
       merch: "Merch",
+      support: "Support",
       settings: "Settings",
       help: "Help",
       contact: "Contact",
@@ -469,18 +474,18 @@ const spotifyError = ref("");
 const monthFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
-    <footer class="site-footer">
-      <p>
-        Soundcheck samlar spelningar i Uppsala med omnejd.
-        <a
-          href="https://ko-fi.com/soundcheckfun"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t("nav.support") }} Soundcheck
-        </a>
-      </p>
-    </footer>
+      month: "long",
+    }),
+);
+
+const monthYearFormatter = computed(
+  () =>
+    new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
+      month: "long",
+      year: "numeric",
+    }),
+);
+
 const updatedAtFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "sv-SE", {
@@ -2556,7 +2561,7 @@ watch(
           {{ t("nav.merch") }}
         </button>
         <a
-          class="nav-link nav-support"
+          class="nav-link nav-accent"
           href="https://ko-fi.com/soundcheckfun"
           target="_blank"
           rel="noopener noreferrer"

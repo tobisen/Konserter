@@ -56,13 +56,27 @@ export const merchProducts = [
     cta: "Köp på Fourthwall",
   },
   {
+    id: "the-monogram-tee",
+    title: "The Monogram Tee",
+    type: "T-shirt",
+    description:
+      "Premium svart t-shirt med Soundcheck-monogram framtill och matchande ryggtryck. En renare variant för vardag, gig och sena kvällar.",
+    price: "349 kr",
+    image: "/images/monogram-fram.avif",
+    imageAlt: "The Monogram Tee, svart t-shirt med Soundcheck-monogram framtill",
+    secondaryImage: "/images/monogram-bak.avif",
+    secondaryImageAlt: "The Monogram Tee med matchande ryggtryck",
+    url: "https://soundcheck-shop.fourthwall.com/products/the-monogram-tee",
+    cta: "Köp på Fourthwall",
+  },
+  {
     id: "the-venue-cap",
     title: "The Venue Cap",
     type: "Cap",
     description:
       "Klassisk svart keps med Soundcheck-logga framtill. Inspirerad av känslan före första låten.",
     price: "299 kr",
-    image: "/images/keps.avif",
+    image: "/images/merch/soundcheck-cap.jpg",
     imageAlt: "The Venue Cap, svart keps med Soundcheck-logga framtill",
     url: "https://soundcheck-shop.fourthwall.com/en-sek/products/the-venue-cap",
     cta: "Köp på Fourthwall",
