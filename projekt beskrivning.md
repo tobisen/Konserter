@@ -35,6 +35,7 @@ Soundcheck is a concert discovery platform focused on Uppsala and nearby regions
 - Shareable concert deep-links and preview image generation.
 - Calendar export (`.ics`).
 - Merch page with product cards, images, prices, and external Fourthwall CTAs.
+- Merch page with product cards, images, prices, and external Fourthwall CTAs, now including tote bag and cap variants alongside the shirts, hoodie, sticker, and the new Headliner Tee variant.
 - Contact page with a public contact form in the main menu.
 - SEO baseline with stronger static metadata, brand search variants, dynamic route metadata, clean canonical URLs, robots directives, structured data, crawlable footer links, sitemap/robots, `llms.txt`, OpenSearch and web manifest.
 - "Latest added" view that shows the concerts from the latest import batch where new additions were found.

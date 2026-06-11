@@ -19,6 +19,7 @@ Soundcheck is a Vue + Vite web app that aggregates concerts from multiple source
   - Share action (deep-link + generated preview image)
   - Add to calendar (`.ics`)
   - Clearer import/update error messages when a source fails or returns invalid data
+- Merch view with the growing Soundcheck collection, including tees, hoodie, caps, tote bag, sticker products, and the new Headliner Tee variant with external Fourthwall CTAs.
 - User area (My Concerts):
   - Register/login
   - Welcome email on successful registration (when mail is configured)

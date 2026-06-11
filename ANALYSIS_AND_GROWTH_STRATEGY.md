@@ -24,6 +24,8 @@
 18. Expanded venue coverage with new custom parsers for Dog Bar Uppsala and Kulturoasen.
 19. Ko-fi support is available in global navigation while merch purchases stay external via Fourthwall.
 20. Merch has a dedicated product view with external Fourthwall CTAs.
+21. The merch collection now includes tote bag and cap variants that extend the brand beyond tees and hoodies.
+22. A second Headliner Tee variant adds another branded product without changing the overall merch concept.
 
 ### Risks / Gaps
 

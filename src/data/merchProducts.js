@@ -39,6 +39,28 @@ export const merchProducts = [
     ctaEn: "Buy on Fourthwall",
   },
   {
+    id: "the-headliner-tee-2",
+    title: "The Headliner Tee",
+    type: "T-shirt",
+    description:
+      "En premium t-shirt med Soundchecks exklusiva SC-monogram på bröstet och det kraftfulla Headliner-motivet på ryggen. Inspirerad av ögonblicket när scenljusen tänds och publiken exploderar.",
+    descriptionEn:
+      "A premium t-shirt with Soundcheck's exclusive SC monogram on the chest and the powerful Headliner motif on the back. Inspired by the moment when the stage lights turn on and the crowd erupts.",
+    price: "337 kr",
+    priceEn: "337 SEK",
+    image: "/hendrix1.avif",
+    imageAlt:
+      "The Headliner Tee, svart t-shirt med Soundchecks exklusiva SC-monogram på bröstet",
+    imageAltEn:
+      "The Headliner Tee, black t-shirt with Soundcheck's exclusive SC monogram on the chest",
+    secondaryImage: "/hendrix2.avif",
+    secondaryImageAlt: "The Headliner Tee med Headliner-motiv på ryggen",
+    secondaryImageAltEn: "The Headliner Tee with Headliner motif on the back",
+    url: "https://soundcheck-shop.fourthwall.com/products/the-headliner-tee-2",
+    cta: "Köp på Fourthwall",
+    ctaEn: "Buy on Fourthwall",
+  },
+  {
     id: "the-gig-hoodie",
     title: "The Gig Hoodie",
     type: "Hoodie",
@@ -78,6 +100,27 @@ export const merchProducts = [
     ctaEn: "Buy on Fourthwall",
   },
   {
+    id: "the-backstage-tote",
+    title: "The Backstage Tote",
+    type: "Tote bag",
+    description:
+      "En stilren tote bag med Soundchecks exklusiva SC-monogram på framsidan och ett konsertinspirerat motiv på baksidan. Designad för människor som faktiskt går på spelningar.",
+    descriptionEn:
+      "A clean tote bag with Soundcheck's exclusive SC monogram on the front and a concert-inspired motif on the back. Designed for people who actually go to shows.",
+    price: "337,03 kr SEK",
+    image: "/images/tote1.avif",
+    imageAlt: "The Backstage Tote, tote bag med Soundcheck-monogram på framsidan",
+    imageAltEn:
+      "The Backstage Tote, tote bag with Soundcheck monogram on the front",
+    secondaryImage: "/images/tote2.avif",
+    secondaryImageAlt: "The Backstage Tote med konsertinspirerat motiv på baksidan",
+    secondaryImageAltEn:
+      "The Backstage Tote with concert-inspired motif on the back",
+    url: "https://soundcheck-shop.fourthwall.com/products/the-backstage-tote",
+    cta: "Köp på Fourthwall",
+    ctaEn: "Buy on Fourthwall",
+  },
+  {
     id: "the-monogram-tee",
     title: "The Monogram Tee",
     type: "T-shirt",
@@ -98,6 +141,24 @@ export const merchProducts = [
     ctaEn: "Buy on Fourthwall",
   },
   {
+    id: "the-monogram-cap",
+    title: "The Monogram Cap",
+    type: "Cap",
+    description:
+      "Minimalistisk svart keps med Soundchecks exklusiva SC-monogram i off-white och signaturorange. Designad för människor som faktiskt går på spelningar.",
+    descriptionEn:
+      "Minimalist black cap with Soundcheck's exclusive SC monogram in off-white and signature orange. Designed for people who actually go to shows.",
+    price: "288,88 kr SEK",
+    image: "/images/monogramcap.avif",
+    imageAlt:
+      "The Monogram Cap, svart keps med Soundchecks exklusiva SC-monogram",
+    imageAltEn:
+      "The Monogram Cap, black cap with Soundcheck's exclusive SC monogram",
+    url: "https://soundcheck-shop.fourthwall.com/products/the-monogram-cap",
+    cta: "Köp på Fourthwall",
+    ctaEn: "Buy on Fourthwall",
+  },
+  {
     id: "the-venue-cap",
     title: "The Venue Cap",
     type: "Cap",
@@ -110,6 +171,25 @@ export const merchProducts = [
     imageAlt: "The Venue Cap, svart keps med Soundcheck-logga framtill",
     imageAltEn: "The Venue Cap, black cap with Soundcheck logo on the front",
     url: "https://soundcheck-shop.fourthwall.com/en-sek/products/the-venue-cap",
+    cta: "Köp på Fourthwall",
+    ctaEn: "Buy on Fourthwall",
+  },
+  {
+    id: "the-gig-cap",
+    title: "The Gig Cap",
+    type: "Trucker cap",
+    description:
+      "För människor som faktiskt går på spelningar. Svart truckerkeps med exklusivt Soundcheck-motiv inspirerat av känslan framför scenen när ljuset tänds och konserten ska börja.",
+    descriptionEn:
+      "For people who actually go to shows. A black trucker cap with an exclusive Soundcheck motif inspired by the feeling in front of the stage when the lights come on and the concert is about to begin.",
+    price: "288,88 kr SEK",
+    image: "/images/trucker1.png",
+    imageAlt: "The Gig Cap, svart truckerkeps med Soundcheck-motiv",
+    imageAltEn: "The Gig Cap, black trucker cap with a Soundcheck motif",
+    secondaryImage: "/images/trucker2.png",
+    secondaryImageAlt: "The Gig Cap med baksida och detaljvy",
+    secondaryImageAltEn: "The Gig Cap with back side and detail view",
+    url: "https://soundcheck-shop.fourthwall.com/products/the-venue-cap-2",
     cta: "Köp på Fourthwall",
     ctaEn: "Buy on Fourthwall",
   },
